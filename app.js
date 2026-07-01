@@ -1047,10 +1047,12 @@ function renderShoppingOptions() {
 function renderRecommendationCard(option, label, icon) {
   const article = document.createElement("article");
   article.className = "recommendation-card";
+  const category = option.order ? "eat" : option.bestFor ? "shop" : /breakfast|lunch|dinner/i.test(label) ? "eat" : "shop";
   const rating = option.rating ? `<span class="place-fact"><b>⭐ Google rating</b>${escapeHtml(option.rating)} / 5 <em>· verify live</em></span>` : "";
   const address = option.address ? `<span class="place-fact"><b>📍 Address</b>${escapeHtml(option.address)}</span>` : `<span class="place-fact"><b>📍 Area</b>${escapeHtml(option.area || trip.destination)}</span>`;
   const specialty = option.order ? `<span class="place-fact"><b>🥢 What to order</b>${escapeHtml(option.order)}</span>` : option.bestFor ? `<span class="place-fact"><b>🛍️ Best for</b>${escapeHtml(option.bestFor)}</span>` : "";
-  article.innerHTML = `<span class="recommendation-icon" aria-hidden="true">${icon}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div><a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
+  article.innerHTML = `<img class="recommendation-photo" src="${escapeHtml(option.image || suggestionImagePlaceholder({ name: option.name, category }))}" alt="${escapeHtml(`${option.name} in ${trip.destination}`)}" loading="lazy"><span class="recommendation-icon" aria-hidden="true">${icon}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div><a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
+  hydrateSuggestionImage(article.querySelector(".recommendation-photo"), { name: option.name, category, image: option.image || "" }, trip.destination);
   return article;
 }
 

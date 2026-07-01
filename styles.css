@@ -1544,3 +1544,27 @@ body:not(.trip-mode) .builder-copy { width: 100%; border: 0; border-radius: 0; }
   .activity-menu { display: none; }
   .google-route-frame { min-height: 320px; }
 }
+
+/* Place photography for food and shopping recommendations */
+.recommendation-card { grid-template-columns: 180px 48px minmax(0,1fr); align-items: center; }
+.recommendation-photo { width: 180px; height: 132px; border-radius: 10px; object-fit: cover; background: var(--sage); }
+
+@media (max-width: 680px) {
+  .recommendation-card { grid-template-columns: 105px minmax(0,1fr); align-items: start; }
+  .recommendation-photo { width: 105px; height: 105px; }
+  .recommendation-card .recommendation-icon { display: none; }
+}
+
+/* Photos replace redundant place emojis */
+.activity-card { grid-template-columns: 58px 150px minmax(0,1fr) 24px; }
+.activity-card .activity-icon,
+.recommendation-card .recommendation-icon { display: none; }
+.recommendation-card { grid-template-columns: 180px minmax(0,1fr); }
+
+@media (max-width: 720px) {
+  .activity-card { grid-template-columns: 43px 88px minmax(0,1fr); }
+}
+
+@media (max-width: 680px) {
+  .recommendation-card { grid-template-columns: 105px minmax(0,1fr); }
+}
