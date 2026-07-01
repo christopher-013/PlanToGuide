@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e8">
+  <meta name="referrer" content="no-referrer">
+  <title>x-Travel Guide — Your trip, thoughtfully planned</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260701-18">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="x-Travel Guide home">
+        <span class="brand-mark" aria-hidden="true">↗</span>
+        <span>x-Travel Guide</span>
+      </a>
+      <p>Popular places, personalized around you.</p>
+      <button class="text-button" id="newTripButton" type="button">New trip</button>
+    </header>
+
+    <section class="builder" id="builder" aria-labelledby="builderTitle">
+      <div class="builder-copy">
+        <a class="builder-brand" href="#" aria-label="x-Travel Guide home"><span aria-hidden="true">↗</span><strong>x-Travel Guide</strong></a>
+        <p class="eyebrow">Your next story starts here</p>
+        <h1 id="builderTitle">Where will you <em>travel</em> next?</h1>
+        <p class="lede">Tell us the essentials. We’ll turn them into a thoughtful, day-by-day travel plan you can make your own.</p>
+        <div class="journey-line" aria-hidden="true">
+          <span class="journey-dot start"></span>
+          <span class="journey-path"></span>
+          <span class="journey-plane">✦</span>
+          <span class="journey-path"></span>
+          <span class="journey-dot end"></span>
+        </div>
+        <div class="trust-note">
+          <span class="avatar-stack" aria-hidden="true"><i>🌊</i><i>🌿</i><i>🏛️</i></span>
+          <span>Built for curious travelers, not tour groups.</span>
+        </div>
+      </div>
+
+      <form class="trip-form" id="tripForm">
+        <div class="step-row">
+          <span id="formStepTitle">Trip basics</span>
+          <span class="step-count" id="formStepCount">Step 1 of 3</span>
+        </div>
+        <div class="form-progress" aria-hidden="true"><span class="active"></span><span></span><span></span></div>
+        <div class="security-note" role="note">
+          <span aria-hidden="true">✓</span>
+          <p><strong>Public-safe demo</strong> Runs entirely in your browser with no API key, account, or usage charges.</p>
+        </div>
+
+        <section class="form-step active" data-form-step="1">
+          <div class="field-group no-number">
+            <div class="field-content">
+              <label for="destination">Where are you going?</label>
+              <p>One city, a whole country, or anywhere in between.</p>
+              <div class="input-wrap">
+                <span aria-hidden="true">⌖</span>
+                <input id="destination" name="destination" type="text" placeholder="e.g. Lisbon, Portugal" autocomplete="off" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group no-number last">
+            <div class="field-content">
+              <label>What dates are you going?</label>
+              <p>Choose your arrival and departure dates.</p>
+              <div class="date-grid">
+                <div class="date-field">
+                  <span>Arrive</span>
+                  <input id="startDate" name="startDate" type="date" required>
+                </div>
+                <span class="date-arrow" aria-hidden="true">→</span>
+                <div class="date-field">
+                  <span>Depart</span>
+                  <input id="endDate" name="endDate" type="date" required>
+                </div>
+              </div>
+              <p class="date-error" id="dateError" role="alert"></p>
+            </div>
+          </div>
+          <button class="primary-button compact-next-button" id="nextStepButton" type="button">
+            <span>Next Step</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </section>
+
+        <section class="form-step" data-form-step="2" hidden>
+          <div class="suggestion-intro">
+            <p class="eyebrow">Popular in <span id="suggestionDestination">your destination</span></p>
+            <h2>What sounds good?</h2>
+            <p>Scroll each list and choose as many places as you like. Details and live Google Maps links help you compare options; every selection is prioritized once in your daily itinerary.</p>
+          </div>
+          <div class="suggestion-toolbar">
+            <div><strong>Not sure where to begin?</strong><span>We’ll make a balanced mix for your trip length.</span></div>
+            <button id="surpriseMeButton" type="button">Let Me Choose</button>
+          </div>
+          <div class="suggestion-board" id="suggestionBoard" aria-label="Popular destination suggestions"></div>
+          <div class="selection-summary"><span id="selectionCount">0 selected</span><button id="clearSelectionsButton" type="button">Clear</button></div>
+
+          <div class="wizard-actions preference-actions">
+            <button class="secondary-button icon-nav-button" id="backStepButton" type="button"><span aria-hidden="true">←</span><span>Back</span></button>
+            <button class="primary-button icon-nav-button" id="detailsStepButton" type="button"><span>Next Step</span><span aria-hidden="true">→</span></button>
+          </div>
+
+          <textarea id="wishList" name="wishList" hidden></textarea>
+          <p class="date-error compact-preference-error" id="preferenceError" role="alert"></p>
+
+        </section>
+        <section class="form-step" data-form-step="3" hidden>
+          <div class="suggestion-intro">
+            <p class="eyebrow">Shape each day</p><h2>How do you like to travel?</h2>
+            <p>These answers set the number of stops, timing, meal style, and how much walking we build into every day.</p>
+          </div>
+          <div class="trip-style-grid">
+            <label class="style-question"><span>Trip pace</span><small>How full should each day feel?</small><select id="tripPace"><option value="relaxed">Relaxed · 6 stops</option><option value="balanced" selected>Balanced · 8 stops</option><option value="packed">Packed · 10 stops</option></select></label>
+            <label class="style-question"><span>Who is traveling?</span><small>Helps tune breaks and activities.</small><select id="tripParty"><option value="solo">Solo</option><option value="couple" selected>Couple</option><option value="family">Family</option><option value="friends">Friends</option></select></label>
+            <label class="style-question"><span>When should days begin?</span><small>We will shift the morning schedule.</small><select id="dayStart"><option value="early">Early · around 7:30</option><option value="standard" selected>Standard · around 8:30</option><option value="slow">Slow · around 10:00</option></select></label>
+            <label class="style-question"><span>Evening style</span><small>Quiet nights or one more adventure?</small><select id="eveningStyle"><option value="quiet">Quiet · finish after dinner</option><option value="flexible" selected>Flexible</option><option value="nightlife">Nightlife & late stops</option></select></label>
+            <label class="style-question"><span>Getting around</span><small>Sets route and rest guidance.</small><select id="transportStyle"><option value="transit" selected>Walking + public transit</option><option value="mixed">Transit + taxis</option><option value="low-walking">Keep walking minimal</option></select></label>
+            <label class="style-question"><span>Daily budget</span><small>Guides meals and optional experiences.</small><select id="tripBudget"><option value="value">Value conscious</option><option value="balanced" selected>Balanced</option><option value="splurge">Room to splurge</option></select></label>
+          </div>
+          <label class="style-question style-notes"><span>What do you want to see, eat, and shop for?</span><small>Optional—add specific neighborhoods, foods, hobbies, shops, landmarks, or experiences to weave into your itinerary.</small><textarea id="mobilityNotes" rows="3" placeholder="e.g. tile-covered streets, a seafood dinner, local ceramics, bookstores…"></textarea></label>
+          <div class="wizard-actions final-actions">
+            <button class="secondary-button" id="detailsBackButton" type="button">← Back</button>
+            <button class="primary-button final-create-button" type="submit"><span>Create my full itinerary</span><span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+        <p class="form-footnote">No account needed. Your draft stays in this browser.</p>
+      </form>
+    </section>
+
+    <section class="result" id="result" aria-live="polite" hidden>
+      <div class="trip-app">
+        <header class="trip-app-header">
+          <a class="brand app-brand" href="#" aria-label="x-Travel Guide trip home"><span class="brand-mark">↗</span><span>x-Travel Guide</span></a>
+          <span class="app-destination" id="appDestination">Your trip</span>
+          <button class="back-button" id="editTripButton" type="button">Edit trip</button>
+        </header>
+
+        <div class="report-day-bar">
+          <div class="report-day-heading">
+            <strong id="reportTripName">Your trip</strong>
+            <span>Select a day</span>
+          </div>
+          <nav class="day-strip" id="dayNav" aria-label="Trip dates"></nav>
+        </div>
+
+        <div class="trip-app-views">
+          <section class="app-panel active" data-panel="home" aria-label="Trip home">
+            <div class="app-home-hero">
+              <div class="hero-orbit" aria-hidden="true"></div>
+              <p class="eyebrow light">Your personal itinerary</p>
+              <h2 id="resultTitle">A few beautiful days away</h2>
+              <p id="resultDates"></p>
+              <div class="trip-stats" id="tripStats"></div>
+            </div>
+            <div class="home-weather-wrap">
+              <section class="trip-weather-card" id="tripWeatherCard" aria-labelledby="weatherLocation">
+                <div class="trip-weather-bg" id="tripWeatherBg" aria-hidden="true">🌤️</div>
+                <div class="trip-weather-top">
+                  <div>
+                    <p class="weather-location" id="weatherLocation">Destination weather</p>
+                    <p class="weather-kicker" id="weatherKicker">Loading current-day forecast</p>
+                  </div>
+                  <span class="weather-date" id="weatherDate"></span>
+                </div>
+                <div class="weather-main">
+                  <span class="weather-icon" id="weatherIcon" aria-hidden="true">🌤️</span>
+                  <div><strong id="weatherTemp">--°</strong><span class="weather-condition" id="weatherCondition">Current conditions</span></div>
+                </div>
+                <p class="weather-summary" id="weatherSummary"></p>
+                <div class="weather-metrics-row" id="weatherMetrics"></div>
+                <small class="weather-disclaimer" id="weatherDisclaimer">Loading live conditions. Seasonal planning guidance is used when the forecast is unavailable.</small>
+              </section>
+            </div>
+            <div class="app-panel-body home-panel-body">
+              <div class="welcome-row">
+                <div><p class="eyebrow">Ready when you are</p><h3>Your trip at a glance</h3></div>
+                <span class="saved-pill">Draft saved</span>
+              </div>
+              <div class="today-card" id="todayCard"></div>
+              <div class="home-days">
+                <div class="section-heading"><p>Day by day</p><button type="button" data-open-tab="itinerary">View all →</button></div>
+                <div id="homeDayList"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="app-panel" data-panel="itinerary" aria-label="Day-by-day itinerary">
+            <div class="compact-app-hero">
+              <div><p class="eyebrow light">Day by day</p><h2>Your itinerary</h2></div>
+              <button class="print-button" id="printButton" type="button">Print</button>
+            </div>
+            <div class="itinerary-panel app-panel-body">
+              <div class="panel-heading">
+                <div><p class="eyebrow" id="activeDayLabel">Trip date</p><h3 id="activeDayTitle">Settle in & wander</h3></div>
+              </div>
+              <section class="route-flow-widget" id="routeFlowWidget" aria-label="Route flow for selected day"></section>
+              <div class="day-content" id="dayContent"></div>
+            </div>
+          </section>
+
+          <section class="app-panel" data-panel="bookings" aria-label="Bookings">
+            <div class="compact-app-hero bookings-hero"><div><p class="eyebrow light">Confirm</p><h2>Bookings</h2><p>Reservations, tickets, and confirmation details.</p></div></div>
+            <div class="app-panel-body"><div class="empty-section"><span>✅</span><h3>No bookings yet</h3><p>Confirmed hotels, tickets, tours, and restaurant reservations will appear here.</p></div></div>
+          </section>
+
+          <section class="app-panel" data-panel="maps" aria-label="Maps">
+            <div class="compact-app-hero maps-hero"><div><p class="eyebrow light">Navigate</p><h2>Maps</h2><p>Every planned stop, grouped by day.</p></div></div>
+            <div class="route-map-shell app-panel-body" id="routeMapPreview"></div>
+            <div class="collection-list app-panel-body" id="mapsList"></div>
+          </section>
+
+          <section class="app-panel" data-panel="food" aria-label="Food and dining">
+            <div class="compact-app-hero food-hero"><div><p class="eyebrow light">Taste</p><h2>Food & dining</h2><p>Three popular breakfast, lunch, and dinner options.</p></div></div>
+            <div class="collection-list app-panel-body" id="foodList"></div>
+          </section>
+
+          <section class="app-panel" data-panel="shop" aria-label="Shopping">
+            <div class="compact-app-hero shop-hero"><div><p class="eyebrow light">Browse</p><h2>Shopping</h2><p>Three popular shopping areas worth exploring.</p></div></div>
+            <div class="collection-list app-panel-body" id="shopList"></div>
+          </section>
+
+          <section class="app-panel" data-panel="photos" aria-label="Photos">
+            <div class="compact-app-hero photos-hero"><div><p class="eyebrow light">Remember</p><h2>Photos</h2><p>Your trip gallery and visual journal.</p></div></div>
+            <div class="app-panel-body"><div class="empty-section"><span>📷</span><h3>No photos yet</h3><p>Photos and travel memories can be added here before, during, or after the trip.</p></div></div>
+          </section>
+        </div>
+
+        <nav class="app-nav" aria-label="Trip sections">
+          <button class="app-nav-button active" type="button" data-tab="home"><span>🏠</span><small>Home</small></button>
+          <button class="app-nav-button" type="button" data-tab="itinerary"><span>📅</span><small>Itinerary</small></button>
+          <button class="app-nav-button" type="button" data-tab="bookings"><span>✅</span><small>Bookings</small></button>
+          <button class="app-nav-button" type="button" data-tab="maps"><span>🗺️</span><small>Maps</small></button>
+          <button class="app-nav-button" type="button" data-tab="food"><span>🍽️</span><small>Food</small></button>
+          <button class="app-nav-button" type="button" data-tab="shop"><span>🛍️</span><small>Shop</small></button>
+          <button class="app-nav-button" type="button" data-tab="photos"><span>📷</span><small>Photos</small></button>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <template id="activityTemplate">
+    <article class="activity-card" tabindex="0">
+      <div class="activity-time"></div>
+      <div class="activity-icon"></div>
+      <img class="activity-photo" alt="" loading="lazy">
+      <div class="activity-copy">
+        <span class="activity-type"></span>
+        <h4></h4>
+        <p></p>
+      </div>
+      <button class="activity-menu" type="button" aria-label="Edit activity">•••</button>
+    </article>
+  </template>
+
+  <template id="collectionTemplate">
+    <article class="collection-card">
+      <div class="collection-icon"></div>
+      <div><span class="collection-day"></span><h3></h3><p></p></div>
+      <span class="collection-arrow" aria-hidden="true">›</span>
+    </article>
+  </template>
+
+  <script src="app.js?v=20260701-13"></script>
+</body>
+</html>
