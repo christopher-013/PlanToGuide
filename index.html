@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260701-20">
+  <link rel="stylesheet" href="styles.css?v=20260702-1">
 </head>
 <body>
   <main class="page-shell">
@@ -138,7 +138,10 @@
         <header class="trip-app-header">
           <a class="brand app-brand" href="#" aria-label="x-Travel Guide trip home"><span class="brand-mark">↗</span><span>x-Travel Guide</span></a>
           <span class="app-destination" id="appDestination">Your trip</span>
-          <button class="back-button" id="editTripButton" type="button">Edit trip</button>
+          <div class="trip-header-actions">
+            <button class="export-button" id="exportTripButton" type="button">Export</button>
+            <button class="back-button" id="editTripButton" type="button">Edit trip</button>
+          </div>
         </header>
 
         <div class="report-day-bar">
@@ -244,6 +247,16 @@
     </section>
   </main>
 
+  <dialog class="export-dialog" id="exportDialog" aria-labelledby="exportDialogTitle">
+    <button class="export-dialog-close" id="exportDialogClose" type="button" aria-label="Close">×</button>
+    <span class="export-dialog-icon" aria-hidden="true">✓</span>
+    <p class="eyebrow">Export complete</p>
+    <h2 id="exportDialogTitle">Website and Markdown files are ready</h2>
+    <p>Your ZIP includes a standalone website, stylesheet, README, and a detailed AI planning handoff.</p>
+    <ul><li><strong>index.html</strong> — shareable itinerary website</li><li><strong>styles.css</strong> — website styling</li><li><strong>TRIP-PLAN.md</strong> — full AI-ready planning context</li><li><strong>README.md</strong> — publishing instructions</li></ul>
+    <button class="primary-button" id="exportDialogDone" type="button">Done</button>
+  </dialog>
+
   <template id="activityTemplate">
     <article class="activity-card" tabindex="0">
       <div class="activity-time"></div>
@@ -266,6 +279,6 @@
     </article>
   </template>
 
-  <script src="app.js?v=20260701-14"></script>
+  <script src="app.js?v=20260702-1"></script>
 </body>
 </html>

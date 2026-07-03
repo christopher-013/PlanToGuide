@@ -1568,3 +1568,22 @@ body:not(.trip-mode) .builder-copy { width: 100%; border: 0; border-radius: 0; }
 @media (max-width: 680px) {
   .recommendation-card { grid-template-columns: 105px minmax(0,1fr); }
 }
+
+/* Export package controls */
+.trip-header-actions { justify-self: end; display: flex; align-items: center; gap: 9px; }
+.export-button { min-height: 34px; padding: 7px 13px; border: 1px solid rgba(255,255,255,.34); border-radius: 999px; color: white; background: rgba(255,255,255,.1); cursor: pointer; font: 700 10px "DM Sans", sans-serif; }
+.export-button:hover { border-color: var(--gold); color: #101412; background: var(--gold); }
+.export-dialog { width: min(520px, calc(100vw - 32px)); padding: 30px; border: 0; border-radius: 18px; color: var(--ink); background: #fffdf8; box-shadow: 0 28px 90px rgba(0,0,0,.34); }
+.export-dialog::backdrop { background: rgba(8,18,15,.66); backdrop-filter: blur(5px); }
+.export-dialog-close { position: absolute; right: 15px; top: 12px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 25px; }
+.export-dialog-icon { display: grid; width: 48px; height: 48px; place-items: center; margin-bottom: 17px; border-radius: 50%; color: white; background: var(--forest); font-size: 22px; }
+.export-dialog h2 { margin: 4px 0 10px; font: 600 28px/1.08 "Fraunces", serif; }
+.export-dialog > p:not(.eyebrow) { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.export-dialog ul { margin: 18px 0; padding: 14px 14px 14px 31px; border-radius: 10px; background: var(--sage); color: var(--forest-dark); font-size: 10px; line-height: 1.8; }
+.export-dialog .primary-button { width: 100%; }
+
+@media (max-width: 640px) {
+  .trip-header-actions { gap: 6px; }
+  .export-button { padding-inline: 10px; }
+  .trip-header-actions .back-button { font-size: 10px; }
+}

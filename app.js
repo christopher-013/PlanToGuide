@@ -293,6 +293,9 @@ document.querySelector("#newTripButton").addEventListener("click", () => {
   destinationInput.focus();
 });
 document.querySelector("#printButton").addEventListener("click", () => window.print());
+document.querySelector("#exportTripButton").addEventListener("click", exportTripPackage);
+document.querySelector("#exportDialogClose").addEventListener("click", closeExportDialog);
+document.querySelector("#exportDialogDone").addEventListener("click", closeExportDialog);
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.tab)));
 document.querySelectorAll("[data-open-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.openTab)));
 
@@ -302,6 +305,93 @@ function showBuilder() {
   document.body.classList.remove("trip-mode");
   showFormStep(1);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function closeExportDialog() {
+  const dialog = document.querySelector("#exportDialog");
+  if (typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+}
+
+function exportTripPackage() {
+  if (!trip) return;
+  const slug = trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
+  const websiteHtml = createExportWebsite();
+  const websiteCss = createExportStyles();
+  const markdown = createTripMarkdown();
+  const readme = `# ${trip.destination} Travel Website\n\nThis package was exported from x-Travel Guide.\n\n## Use the website\n\nOpen \`index.html\` in a browser, or upload \`index.html\` and \`styles.css\` to GitHub Pages, Netlify, Cloudflare Pages, or any static web host.\n\n## Continue with AI\n\nUpload \`TRIP-PLAN.md\` to your preferred AI agent and ask it to verify opening hours, reservations, prices, accessibility, transit, and current recommendations before travel.\n\nNo API key or private account information is included.\n`;
+  const zip = createZip([
+    { name: "index.html", content: websiteHtml },
+    { name: "styles.css", content: websiteCss },
+    { name: "TRIP-PLAN.md", content: markdown },
+    { name: "README.md", content: readme }
+  ]);
+  const url = URL.createObjectURL(zip);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slug}-travel-guide.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  const dialog = document.querySelector("#exportDialog");
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+}
+
+function createExportWebsite() {
+  const dayNav = trip.days.map((day, index) => `<a href="#day-${index + 1}">${escapeHtml(formatDate(day.date, false))}</a>`).join("");
+  const days = trip.days.map((day, dayIndex) => `<section class="day" id="day-${dayIndex + 1}"><header><p>${escapeHtml(formatDate(day.date, true))}</p><h2>${escapeHtml(day.title)}</h2></header>${day.activities.map((item) => `<article class="stop"><time>${escapeHtml(item.time)}</time><div><span>${escapeHtml(item.type)}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p><a href="${googleMapsSearchUrl(cleanActivityTitle(item.title))}" target="_blank" rel="noopener">Google Maps details ↗</a></div></article>`).join("")}</section>`).join("");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(trip.destination)} Travel Guide</title><link rel="stylesheet" href="styles.css"></head><body><header class="hero" style="--banner:url('${trip.guide.banner}')"><p>x-Travel Guide</p><h1>${escapeHtml(trip.destination)}</h1><span>${escapeHtml(formatDate(trip.start, true))} — ${escapeHtml(formatDate(trip.end, true))}</span></header><nav>${dayNav}</nav><main>${days}</main><footer>Exported from x-Travel Guide · Verify live details before traveling.</footer></body></html>`;
+}
+
+function createExportStyles() {
+  return `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Fraunces:wght@600&display=swap');*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#1c1f26;background:#f5f1e8;font-family:'DM Sans',sans-serif}.hero{min-height:340px;display:flex;flex-direction:column;justify-content:end;padding:48px max(24px,calc((100% - 1000px)/2));color:white;background:linear-gradient(110deg,rgba(18,45,39,.88),rgba(22,55,48,.42)),var(--banner);background-position:center;background-size:cover}.hero p{margin:0 0 12px;color:#f5c84b;font-weight:700}.hero h1{margin:0;font:600 clamp(48px,8vw,90px)/1 'Fraunces',serif}.hero span{margin-top:14px}nav{position:sticky;top:0;z-index:2;display:flex;gap:8px;overflow:auto;padding:12px max(18px,calc((100% - 1000px)/2));background:#173e35}nav a{flex:none;padding:9px 13px;border-radius:999px;color:white;background:rgba(255,255,255,.12);font-size:12px;text-decoration:none}main{max-width:1000px;margin:auto;padding:36px 22px 70px}.day{margin-bottom:54px}.day>header{padding-bottom:14px;border-bottom:2px solid #24594c}.day>header p{margin:0;color:#8a6500;font-size:12px;font-weight:700}.day h2{margin:4px 0 0;font:600 32px 'Fraunces',serif}.stop{display:grid;grid-template-columns:72px 1fr;gap:18px;padding:22px 0;border-bottom:1px solid #d8d1c3}.stop time{color:#24594c;font-weight:700}.stop span{color:#8a6500;font-size:10px;font-weight:700;text-transform:uppercase}.stop h3{margin:4px 0 7px;color:#254b7a}.stop p{margin:0;color:#626c68;line-height:1.6}.stop a{display:inline-block;margin-top:9px;color:#24594c;font-size:12px;font-weight:700}footer{padding:24px;text-align:center;color:#69716f;background:#ece6da;font-size:12px}@media(max-width:600px){.hero{min-height:280px;padding:32px 20px}.stop{grid-template-columns:1fr;gap:6px}.day h2{font-size:26px}}`;
+}
+
+function createTripMarkdown() {
+  const preferenceLines = Object.entries(trip.preferences).filter(([, value]) => value).map(([key, value]) => `- **${titleCase(key)}:** ${value}`).join("\n");
+  const selected = trip.selections.length ? trip.selections.map((item) => `- ${item.name}${item.area ? ` — ${item.area}` : ""}: ${item.detail}`).join("\n") : "- No manually selected places.";
+  const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time} — ${item.title}\n\n- Type: ${item.type}\n- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}`).join("\n\n")}`).join("\n\n---\n\n");
+  return `# ${trip.destination} Trip Plan\n\n> AI handoff exported from x-Travel Guide. Use this file as planning context. Verify all live facts before the trip.\n\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Destination:** ${trip.destination}\n\n## Traveler preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected priorities\n\n${selected}\n\n## Instructions for the next AI agent\n\n1. Preserve the traveler’s selected priorities.\n2. Verify current hours, ratings, reservation requirements, closures, and ticket rules.\n3. Keep each day geographically compact around its stated area focus.\n4. Flag anything uncertain instead of inventing details.\n5. Suggest improvements without duplicating places already assigned.\n\n---\n\n${days}\n`;
+}
+
+function createZip(files) {
+  const encoder = new TextEncoder();
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+  files.forEach((file) => {
+    const name = encoder.encode(file.name);
+    const data = encoder.encode(file.content);
+    const crc = crc32(data);
+    const local = new Uint8Array(30 + name.length);
+    const view = new DataView(local.buffer);
+    view.setUint32(0, 0x04034b50, true); view.setUint16(4, 20, true); view.setUint16(6, 0x0800, true); view.setUint16(8, 0, true); view.setUint16(10, dosTime, true); view.setUint16(12, dosDate, true); view.setUint32(14, crc, true); view.setUint32(18, data.length, true); view.setUint32(22, data.length, true); view.setUint16(26, name.length, true); view.setUint16(28, 0, true); local.set(name, 30);
+    chunks.push(local, data);
+    const record = new Uint8Array(46 + name.length);
+    const centralView = new DataView(record.buffer);
+    centralView.setUint32(0, 0x02014b50, true); centralView.setUint16(4, 20, true); centralView.setUint16(6, 20, true); centralView.setUint16(8, 0x0800, true); centralView.setUint16(10, 0, true); centralView.setUint16(12, dosTime, true); centralView.setUint16(14, dosDate, true); centralView.setUint32(16, crc, true); centralView.setUint32(20, data.length, true); centralView.setUint32(24, data.length, true); centralView.setUint16(28, name.length, true); centralView.setUint16(30, 0, true); centralView.setUint16(32, 0, true); centralView.setUint16(34, 0, true); centralView.setUint16(36, 0, true); centralView.setUint32(38, 0, true); centralView.setUint32(42, offset, true); record.set(name, 46);
+    central.push(record);
+    offset += local.length + data.length;
+  });
+  const centralSize = central.reduce((sum, chunk) => sum + chunk.length, 0);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true); endView.setUint16(4, 0, true); endView.setUint16(6, 0, true); endView.setUint16(8, files.length, true); endView.setUint16(10, files.length, true); endView.setUint32(12, centralSize, true); endView.setUint32(16, offset, true); endView.setUint16(20, 0, true);
+  return new Blob([...chunks, ...central, end], { type: "application/zip" });
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 function showFormStep(stepNumber) {
