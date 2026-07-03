@@ -1092,6 +1092,116 @@ body.trip-mode .result,
   .report-day-bar .day-button { min-width: 62px; min-height: 38px; padding-inline: 6px; }
 }
 
+/* Selected-day editorial navigation */
+.trip-app-header .app-destination { display: none; }
+.trip-app-header { grid-template-columns: minmax(180px, 1fr) auto; }
+.trip-header-actions .export-button {
+  min-width: 82px;
+  min-height: 38px;
+  border-radius: 999px;
+  transition: color .22s ease, background-color .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+}
+.trip-header-actions .export-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(0,0,0,.25);
+}
+.day-banner-source { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.report-day-bar::after { content: none; }
+.report-day-bar {
+  grid-template-columns: minmax(190px, 270px) minmax(0,1fr);
+  min-height: 116px;
+  padding: 14px clamp(18px,3vw,46px);
+  transition: background-image .38s ease-in-out;
+}
+.report-day-heading { position: relative; z-index: 2; color: white; }
+.report-day-heading strong { display: block; color: white; font-size: clamp(17px,2vw,25px); line-height: 1.05; }
+.report-day-heading span { display: -webkit-box; max-width: 260px; margin-top: 7px; overflow: hidden; color: rgba(255,255,255,.86); font-size: 10px; line-height: 1.35; letter-spacing: 0; text-transform: none; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.report-day-bar #dayNav.day-strip { gap: 9px; align-items: stretch; }
+.report-day-bar .day-button { min-width: 142px; min-height: 76px; flex-direction: row; justify-content: flex-start; gap: 9px; padding: 10px 12px; text-align: left; }
+.report-day-bar .day-nav-icon { flex: 0 0 auto; font-size: 26px; }
+.day-nav-copy { display: grid; min-width: 0; gap: 5px; }
+.report-day-bar .day-nav-date { font-size: 12px; }
+.report-day-bar .day-nav-title { max-width: 96px; overflow: hidden; color: rgba(255,255,255,.76); font-size: 9px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.report-day-bar .day-button.active .day-nav-title { color: rgba(26,10,4,.7); }
+.app-nav { flex-basis: 98px; min-height: 98px; padding-block: 8px max(12px,env(safe-area-inset-bottom)); }
+.app-nav-button { gap: 6px; }
+.app-nav-button > span { width: 56px; height: 56px; font-size: 26px; transition: transform .2s ease, background-color .2s ease; }
+.app-nav-button:hover > span { transform: translateY(-3px) scale(1.04); }
+.app-nav-button small { font-size: 11px; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .report-day-bar { grid-template-columns: 1fr; min-height: 0; gap: 9px; padding: 11px 12px; }
+  .report-day-heading span { max-width: none; -webkit-line-clamp: 1; }
+  .report-day-bar .day-button { min-width: 124px; min-height: 66px; }
+  .app-nav { flex-basis: 88px; min-height: 88px; }
+  .app-nav-button > span { width: 48px; height: 48px; font-size: 22px; }
+  .app-nav-button small { font-size: 9px; }
+}
+
+/* Final responsive questionnaire grid */
+.builder.builder-wide .suggestion-board { display: block; width: 100%; }
+.builder.builder-wide .suggestion-group { width: 100%; max-width: none; padding: 0; border: 0; }
+.builder.builder-wide .suggestion-card-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); height: clamp(520px,66vh,780px); max-height: none; gap: 14px; padding: 4px 12px 18px 4px; align-content: start; }
+.builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 118px minmax(0,1fr); min-height: 164px; }
+.builder.builder-wide .suggestion-card-image { width: 118px; min-height: 164px; }
+@media (min-width: 1500px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 108px minmax(0,1fr); }
+  .builder.builder-wide .suggestion-card-image { width: 108px; }
+}
+@media (max-width: 1050px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(2,minmax(0,1fr)); height: clamp(500px,64vh,720px); }
+}
+@media (max-width: 680px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: 1fr; height: clamp(500px,68vh,720px); padding-right: 6px; }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 105px minmax(0,1fr); min-height: 150px; }
+  .builder.builder-wide .suggestion-card-image { width: 105px; min-height: 150px; }
+}
+
+/* Unified Aptos typography */
+html, body, body *, button, input, select, textarea, dialog, option {
+  font-family: Aptos, "Aptos Display", "Segoe UI", Arial, sans-serif !important;
+}
+
+/* Responsive multi-column questionnaire choices */
+.builder.builder-wide .suggestion-board { display: block; width: 100%; }
+.builder.builder-wide .suggestion-group { width: 100%; max-width: none; padding: 0; border: 0; }
+.builder.builder-wide .suggestion-card-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  height: clamp(520px, 66vh, 780px);
+  max-height: none;
+  gap: 14px;
+  padding: 4px 12px 18px 4px;
+  align-content: start;
+}
+.builder.builder-wide .suggestion-card-list .suggestion-bubble {
+  grid-template-columns: 118px minmax(0,1fr);
+  min-height: 164px;
+}
+.builder.builder-wide .suggestion-card-image { width: 118px; min-height: 164px; }
+
+@media (min-width: 1500px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 108px minmax(0,1fr); }
+  .builder.builder-wide .suggestion-card-image { width: 108px; }
+}
+
+@media (max-width: 1050px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(2, minmax(0,1fr)); height: clamp(500px, 64vh, 720px); }
+}
+
+@media (max-width: 680px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: 1fr; height: clamp(500px, 68vh, 720px); padding-right: 6px; }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 105px minmax(0,1fr); min-height: 150px; }
+  .builder.builder-wide .suggestion-card-image { width: 105px; min-height: 150px; }
+}
+
+/* One recommendation category per questionnaire step */
+.builder.builder-wide .suggestion-board { grid-template-columns: minmax(0,1fr); }
+.builder.builder-wide .suggestion-group { width: 100%; max-width: none; padding-right: 0; border-right: 0; }
+.builder.builder-wide .suggestion-card-list { max-height: min(58vh, 620px); }
+
 /* Full-width report pages and destination-image date banner */
 .app-panel-body,
 .home-panel-body,
@@ -1587,3 +1697,58 @@ body:not(.trip-mode) .builder-copy { width: 100%; border: 0; border-radius: 0; }
   .export-button { padding-inline: 10px; }
   .trip-header-actions .back-button { font-size: 10px; }
 }
+
+/* Final selected-day navigation sizing */
+.trip-app-header .app-destination { display: none; }
+.trip-app-header { grid-template-columns: minmax(180px,1fr) auto; }
+.trip-header-actions .export-button { min-width: 82px; min-height: 38px; border-radius: 999px; transition: color .22s ease, background-color .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease; }
+.trip-header-actions .export-button:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(0,0,0,.25); }
+.report-day-bar::after { content: none; }
+.report-day-bar { grid-template-columns: minmax(190px,270px) minmax(0,1fr); min-height: 116px; padding: 14px clamp(18px,3vw,46px); transition: background-image .38s ease-in-out; }
+.report-day-heading { position: relative; z-index: 2; color: white; }
+.report-day-heading strong { display: block; color: white; font-size: clamp(17px,2vw,25px); line-height: 1.05; }
+.report-day-heading span { display: -webkit-box; max-width: 260px; margin-top: 7px; overflow: hidden; color: rgba(255,255,255,.86); font-size: 10px; line-height: 1.35; letter-spacing: 0; text-transform: none; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.report-day-bar #dayNav.day-strip { height: auto; gap: 9px; align-items: stretch; }
+.report-day-bar .day-button { flex: 0 0 auto; min-width: 142px; min-height: 76px; flex-direction: row; justify-content: flex-start; gap: 9px; padding: 10px 12px; text-align: left; }
+.report-day-bar .day-nav-icon { flex: 0 0 auto; font-size: 26px; }
+.day-nav-copy { display: grid; min-width: 0; gap: 5px; }
+.report-day-bar .day-nav-date { font-size: 12px; }
+.report-day-bar .day-nav-title { max-width: 96px; overflow: hidden; color: rgba(255,255,255,.76); font-size: 9px; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.report-day-bar .day-button.active .day-nav-title { color: rgba(26,10,4,.7); }
+.app-nav { flex-basis: 98px; min-height: 98px; padding-block: 8px max(12px,env(safe-area-inset-bottom)); }
+.app-nav-button { gap: 6px; }
+.app-nav-button > span { width: 56px; height: 56px; font-size: 26px; transition: transform .2s ease, background-color .2s ease; }
+.app-nav-button:hover > span { transform: translateY(-3px) scale(1.04); }
+.app-nav-button small { font-size: 11px; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .report-day-bar { grid-template-columns: 1fr; min-height: 0; gap: 9px; padding: 11px 12px; }
+  .report-day-heading span { max-width: none; -webkit-line-clamp: 1; }
+  .report-day-bar .day-button { min-width: 124px; min-height: 66px; }
+  .app-nav { flex-basis: 88px; min-height: 88px; }
+  .app-nav-button > span { width: 48px; height: 48px; font-size: 22px; }
+  .app-nav-button small { font-size: 9px; }
+}
+
+/* Final responsive questionnaire grid */
+.builder.builder-wide .suggestion-board { display: block; width: 100%; }
+.builder.builder-wide .suggestion-group { width: 100%; max-width: none; padding: 0; border: 0; }
+.builder.builder-wide .suggestion-card-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); height: clamp(520px,66vh,780px); max-height: none; gap: 14px; padding: 4px 12px 18px 4px; align-content: start; }
+.builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 118px minmax(0,1fr); min-height: 164px; }
+.builder.builder-wide .suggestion-card-image { width: 118px; min-height: 164px; }
+@media (min-width: 1500px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 108px minmax(0,1fr); }
+  .builder.builder-wide .suggestion-card-image { width: 108px; }
+}
+@media (max-width: 1050px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: repeat(2,minmax(0,1fr)); height: clamp(500px,64vh,720px); }
+}
+@media (max-width: 680px) {
+  .builder.builder-wide .suggestion-card-list { grid-template-columns: 1fr; height: clamp(500px,68vh,720px); padding-right: 6px; }
+  .builder.builder-wide .suggestion-card-list .suggestion-bubble { grid-template-columns: 105px minmax(0,1fr); min-height: 150px; }
+  .builder.builder-wide .suggestion-card-image { width: 105px; min-height: 150px; }
+}
+
+/* Unified Aptos typography */
+html, body, body *, button, input, select, textarea, dialog, option { font-family: Aptos, "Aptos Display", "Segoe UI", Arial, sans-serif !important; }

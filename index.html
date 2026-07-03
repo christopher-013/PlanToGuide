@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f1e8">
   <meta name="referrer" content="no-referrer">
-  <title>x-Travel Guide — Your trip, thoughtfully planned</title>
+  <title>x-Travel Agent — Your trip, thoughtfully planned</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260702-1">
+  <link rel="stylesheet" href="styles.css?v=20260703-4">
 </head>
 <body>
   <main class="page-shell">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="x-Travel Guide home">
+      <a class="brand" href="#" aria-label="x-Travel Agent home">
         <span class="brand-mark" aria-hidden="true">↗</span>
-        <span>x-Travel Guide</span>
+        <span>x-Travel Agent</span>
       </a>
       <p>Popular places, personalized around you.</p>
       <button class="text-button" id="newTripButton" type="button">New trip</button>
@@ -24,7 +24,7 @@
 
     <section class="builder" id="builder" aria-labelledby="builderTitle">
       <div class="builder-copy">
-        <a class="builder-brand" href="#" aria-label="x-Travel Guide home"><span aria-hidden="true">↗</span><strong>x-Travel Guide</strong></a>
+        <a class="builder-brand" href="#" aria-label="x-Travel Agent home"><span aria-hidden="true">↗</span><strong>x-Travel Agent</strong></a>
         <p class="eyebrow">Your next story starts here</p>
         <h1 id="builderTitle">Where will you <em>travel</em> next?</h1>
         <p class="lede">Tell us the essentials. We’ll turn them into a thoughtful, day-by-day travel plan you can make your own.</p>
@@ -44,9 +44,9 @@
       <form class="trip-form" id="tripForm">
         <div class="step-row">
           <span id="formStepTitle">Trip basics</span>
-          <span class="step-count" id="formStepCount">Step 1 of 3</span>
+          <span class="step-count" id="formStepCount">Step 1 of 5</span>
         </div>
-        <div class="form-progress" aria-hidden="true"><span class="active"></span><span></span><span></span></div>
+        <div class="form-progress" aria-hidden="true"><span class="active"></span><span></span><span></span><span></span><span></span></div>
         <div class="security-note" role="note">
           <span aria-hidden="true">✓</span>
           <p><strong>Public-safe demo</strong> Runs entirely in your browser with no API key, account, or usage charges.</p>
@@ -91,8 +91,8 @@
         <section class="form-step" data-form-step="2" hidden>
           <div class="suggestion-intro">
             <p class="eyebrow">Popular in <span id="suggestionDestination">your destination</span></p>
-            <h2>What sounds good?</h2>
-            <p>Scroll each list and choose as many places as you like. Details and live Google Maps links help you compare options; every selection is prioritized once in your daily itinerary.</p>
+            <h2 id="adventureStepTitle">Choose your own adventure</h2>
+            <p id="adventureStepCopy">Start with the places you would most like to see. Every selection is prioritized once in your daily itinerary.</p>
           </div>
           <div class="suggestion-toolbar">
             <div><strong>Not sure where to begin?</strong><span>We’ll make a balanced mix for your trip length.</span></div>
@@ -136,15 +136,16 @@
     <section class="result" id="result" aria-live="polite" hidden>
       <div class="trip-app">
         <header class="trip-app-header">
-          <a class="brand app-brand" href="#" aria-label="x-Travel Guide trip home"><span class="brand-mark">↗</span><span>x-Travel Guide</span></a>
+          <a class="brand app-brand" href="#" aria-label="x-Travel Agent trip home"><span class="brand-mark">↗</span><span>x-Travel Agent</span></a>
           <span class="app-destination" id="appDestination">Your trip</span>
           <div class="trip-header-actions">
             <button class="export-button" id="exportTripButton" type="button">Export</button>
-            <button class="back-button" id="editTripButton" type="button">Edit trip</button>
+            <button class="export-button" id="editTripButton" type="button">Edit trip</button>
           </div>
         </header>
 
         <div class="report-day-bar">
+          <img class="day-banner-source" id="dayBannerSource" alt="" aria-hidden="true">
           <div class="report-day-heading">
             <strong id="reportTripName">Your trip</strong>
             <span>Select a day</span>
@@ -252,8 +253,8 @@
     <span class="export-dialog-icon" aria-hidden="true">✓</span>
     <p class="eyebrow">Export complete</p>
     <h2 id="exportDialogTitle">Website and Markdown files are ready</h2>
-    <p>Your ZIP includes a standalone website, stylesheet, README, and a detailed AI planning handoff.</p>
-    <ul><li><strong>index.html</strong> — shareable itinerary website</li><li><strong>styles.css</strong> — website styling</li><li><strong>TRIP-PLAN.md</strong> — full AI-ready planning context</li><li><strong>README.md</strong> — publishing instructions</li></ul>
+    <p>Your ZIP includes the complete interactive report, every date and section, available bundled graphics, and a detailed AI planning handoff.</p>
+    <ul><li><strong>index.html</strong> — complete visual itinerary website</li><li><strong>styles.css + app.js</strong> — report styling and navigation</li><li><strong>assets/</strong> — bundled banners and place graphics</li><li><strong>TRIP-PLAN.md</strong> — full AI-ready planning context</li><li><strong>README.md</strong> — publishing instructions</li></ul>
     <button class="primary-button" id="exportDialogDone" type="button">Done</button>
   </dialog>
 
@@ -279,6 +280,7 @@
     </article>
   </template>
 
-  <script src="app.js?v=20260702-1"></script>
+  <script src="export-styles.js?v=20260703-4"></script>
+  <script src="app.js?v=20260703-3"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@ import { z } from "zod";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const widgetHtml = readFileSync(join(here, "public", "x-travel-widget.html"), "utf8");
-const WIDGET_URI = "ui://widget/x-travel-guide.html";
+const WIDGET_URI = "ui://widget/x-travel-agent.html";
 const MCP_PATH = "/mcp";
 
 const activitySchema = z.object({
@@ -75,11 +75,11 @@ const itinerarySchema = {
 };
 
 function createTravelServer() {
-  const server = new McpServer({ name: "x-travel-guide", version: "0.1.0" });
+  const server = new McpServer({ name: "x-travel-agent", version: "0.1.0" });
 
   registerAppResource(
     server,
-    "x-travel-guide-widget",
+    "x-travel-agent-widget",
     WIDGET_URI,
     {},
     async () => ({
@@ -99,9 +99,9 @@ function createTravelServer() {
     server,
     "render_travel_itinerary",
     {
-      title: "Create x-Travel Guide itinerary",
+      title: "Create x-Travel Agent itinerary",
       description: [
-        "Create and display a detailed x-Travel Guide itinerary.",
+        "Create and display a detailed x-Travel Agent itinerary.",
         "Before calling this tool, make sure the conversation provides exactly three essentials: destination, arrival/departure dates, and the user's places or interests for sightseeing, food, and shopping.",
         "Ask only for essentials that are missing. Then use your travel knowledge to produce a practical plan for every calendar date in the range.",
         "Honor every explicit request, group stops geographically, use realistic meal times, include exactly three distinct breakfast, lunch, and dinner choices and three shopping choices per day, and do not repeat a venue anywhere in the itinerary unless the user explicitly requests it.",
@@ -112,8 +112,8 @@ function createTravelServer() {
       _meta: {
         ui: { resourceUri: WIDGET_URI },
         "openai/outputTemplate": WIDGET_URI,
-        "openai/toolInvocation/invoking": "Building your x-Travel Guide…",
-        "openai/toolInvocation/invoked": "Your x-Travel Guide is ready.",
+        "openai/toolInvocation/invoking": "Building your x-Travel Agent…",
+        "openai/toolInvocation/invoked": "Your x-Travel Agent is ready.",
       },
     },
     async (itinerary) => {
@@ -144,7 +144,7 @@ function createTravelServer() {
         structuredContent: itinerary,
         content: [{
           type: "text",
-          text: `Created a ${itinerary.days.length}-day x-Travel Guide for ${itinerary.destination}. The interactive guide includes daily routes, dining choices, shopping, weather guidance, and planning notes.`,
+          text: `Created a ${itinerary.days.length}-day x-Travel Agent for ${itinerary.destination}. The interactive guide includes daily routes, dining choices, shopping, weather guidance, and planning notes.`,
         }],
       };
     },
@@ -181,7 +181,7 @@ const httpServer = createServer(async (req, res) => {
 
   if (req.method === "GET" && url.pathname === "/") {
     res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({ name: "x-Travel Guide", status: "ok", mcp: MCP_PATH, preview: "/preview" }));
+    res.end(JSON.stringify({ name: "x-Travel Agent", status: "ok", mcp: MCP_PATH, preview: "/preview" }));
     return;
   }
 
@@ -221,6 +221,6 @@ const httpServer = createServer(async (req, res) => {
 });
 
 httpServer.listen(port, () => {
-  console.log(`x-Travel Guide MCP server listening on http://localhost:${port}${MCP_PATH}`);
+  console.log(`x-Travel Agent MCP server listening on http://localhost:${port}${MCP_PATH}`);
   console.log(`Widget preview: http://localhost:${port}/preview`);
 });

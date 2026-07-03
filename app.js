@@ -165,6 +165,9 @@ const selectedSuggestions = new Map();
 const suggestionImageCache = new Map();
 let suggestionLookup = new Map();
 let suggestionDestination = "";
+let dayBannerRenderVersion = 0;
+let suggestionGroups = [];
+let activeSuggestionCategory = 0;
 
 const today = new Date();
 const defaultStart = new Date(today.getFullYear(), today.getMonth() + 1, 8);
@@ -196,14 +199,27 @@ function goToPreferencesStep() {
     wishListInput.value = "";
     preferenceError.textContent = "";
   }
+  activeSuggestionCategory = 0;
   renderSuggestionPicker(nextDestination);
   showFormStep(2);
 }
 window.xTravelNextStep = goToPreferencesStep;
 document.querySelector("#nextStepButton").addEventListener("click", goToPreferencesStep);
 
-document.querySelector("#backStepButton").addEventListener("click", () => showFormStep(1));
+document.querySelector("#backStepButton").addEventListener("click", () => {
+  if (activeSuggestionCategory > 0) {
+    activeSuggestionCategory -= 1;
+    renderSuggestionCategory();
+    showFormStep(2);
+  } else showFormStep(1);
+});
 document.querySelector("#detailsStepButton").addEventListener("click", () => {
+  if (activeSuggestionCategory < 2) {
+    activeSuggestionCategory += 1;
+    renderSuggestionCategory();
+    showFormStep(2);
+    return;
+  }
   if (!selectedSuggestions.size && !wishListInput.value.trim()) {
     preferenceError.textContent = "Choose at least one suggestion or tell us what interests you.";
     wishListInput.focus();
@@ -212,7 +228,11 @@ document.querySelector("#detailsStepButton").addEventListener("click", () => {
   preferenceError.textContent = "";
   showFormStep(3);
 });
-document.querySelector("#detailsBackButton").addEventListener("click", () => showFormStep(2));
+document.querySelector("#detailsBackButton").addEventListener("click", () => {
+  activeSuggestionCategory = 2;
+  renderSuggestionCategory();
+  showFormStep(2);
+});
 document.querySelector("#clearSelectionsButton").addEventListener("click", () => {
   selectedSuggestions.clear();
   suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((button) => {
@@ -276,12 +296,13 @@ form.addEventListener("submit", (event) => {
   document.body.classList.add("trip-mode");
   renderTrip();
   switchAppTab("home");
-  safeStorageSet("x-travel-guide-trip", JSON.stringify({ destination: destinationInput.value, start: startDateInput.value, end: endDateInput.value, wishes: wishListInput.value, selections, preferences }));
+  safeStorageSet("x-travel-agent-trip", JSON.stringify({ destination: destinationInput.value, start: startDateInput.value, end: endDateInput.value, wishes: wishListInput.value, selections, preferences }));
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 document.querySelector("#editTripButton").addEventListener("click", showBuilder);
 document.querySelector("#newTripButton").addEventListener("click", () => {
+  safeStorageRemove("x-travel-agent-trip");
   safeStorageRemove("x-travel-guide-trip");
   safeStorageRemove("roam-trip");
   form.reset();
@@ -313,36 +334,178 @@ function closeExportDialog() {
   else dialog.removeAttribute("open");
 }
 
-function exportTripPackage() {
+async function exportTripPackage() {
   if (!trip) return;
+  const exportButton = document.querySelector("#exportTripButton");
+  const originalLabel = exportButton.textContent;
+  exportButton.disabled = true;
+  exportButton.textContent = "Preparing…";
   const slug = trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
-  const websiteHtml = createExportWebsite();
-  const websiteCss = createExportStyles();
-  const markdown = createTripMarkdown();
-  const readme = `# ${trip.destination} Travel Website\n\nThis package was exported from x-Travel Guide.\n\n## Use the website\n\nOpen \`index.html\` in a browser, or upload \`index.html\` and \`styles.css\` to GitHub Pages, Netlify, Cloudflare Pages, or any static web host.\n\n## Continue with AI\n\nUpload \`TRIP-PLAN.md\` to your preferred AI agent and ask it to verify opening hours, reservations, prices, accessibility, transit, and current recommendations before travel.\n\nNo API key or private account information is included.\n`;
-  const zip = createZip([
-    { name: "index.html", content: websiteHtml },
-    { name: "styles.css", content: websiteCss },
-    { name: "TRIP-PLAN.md", content: markdown },
-    { name: "README.md", content: readme }
-  ]);
-  const url = URL.createObjectURL(zip);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${slug}-travel-guide.zip`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-  const dialog = document.querySelector("#exportDialog");
-  if (typeof dialog.showModal === "function") dialog.showModal();
-  else dialog.setAttribute("open", "");
+  const savedDay = activeDay;
+  const savedTab = activeTab;
+  try {
+    const captures = [];
+    for (let dayIndex = 0; dayIndex < trip.days.length; dayIndex += 1) {
+      activeDay = dayIndex;
+      activeTab = "home";
+      renderTrip();
+      await waitForHydratedImages(document.querySelector(".trip-app"));
+      const clone = document.querySelector(".trip-app").cloneNode(true);
+      clone.querySelectorAll("#exportTripButton,#editTripButton,.activity-menu,#printButton").forEach((element) => element.remove());
+      clone.querySelectorAll(".day-button").forEach((button, index) => button.dataset.exportDay = index);
+      clone.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === "home"));
+      clone.querySelectorAll("[data-tab]").forEach((button) => button.classList.toggle("active", button.dataset.tab === "home"));
+      captures.push(clone.outerHTML);
+    }
+    let websiteHtml = createCapturedExportWebsite(captures);
+    const websiteCss = await collectExportStyles();
+    if (!websiteCss.includes(".trip-app") || websiteCss.length < 10000) throw new Error("The complete report stylesheet could not be read. Please reload x-Travel Agent and export again.");
+    const bundled = await bundleExportImages(websiteHtml);
+    websiteHtml = bundled.html;
+    const markdown = createTripMarkdown();
+    const runtime = createExportRuntime();
+    const readme = `# ${trip.destination} x-Travel Agent Website\n\nThis package is a complete visual export of the generated x-Travel Agent report. It includes every date, section, navigation control, map, recommendation, and available bundled image.\n\n## Files\n\n- \`index.html\` — complete report website\n- \`styles.css\` — the report’s visual styling\n- \`app.js\` — offline date/tab navigation\n- \`assets/\` — successfully downloaded banners and place images\n- \`TRIP-PLAN.md\` — full AI planning handoff\n\nOpen \`index.html\` locally or upload the package to any static host. Google Maps embeds and links still require an internet connection. Images that could not be legally downloaded remain linked to their original public source.\n`;
+    const zip = createZip([
+      { name: "index.html", content: websiteHtml },
+      { name: "styles.css", content: websiteCss },
+      { name: "app.js", content: runtime },
+      { name: "TRIP-PLAN.md", content: markdown },
+      { name: "README.md", content: readme },
+      ...bundled.files
+    ]);
+    const url = URL.createObjectURL(zip);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${slug}-complete-travel-guide.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    const dialog = document.querySelector("#exportDialog");
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  } catch (error) {
+    console.error("Export failed", error);
+    window.alert(error?.message || "The website export could not be completed. Please reload and try again.");
+  } finally {
+    activeDay = savedDay;
+    activeTab = savedTab;
+    renderTrip();
+    exportButton.disabled = false;
+    exportButton.textContent = originalLabel;
+  }
+}
+
+function createCapturedExportWebsite(capturedViews) {
+  const templates = capturedViews.map((view, index) => `<template data-export-template="${index}">${view}</template>`).join("");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101412"><title>${escapeHtml(trip.destination)} · x-Travel Agent</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head><body class="trip-mode"><main class="page-shell"><section class="result">${capturedViews[0] || ""}</section></main>${templates}<script src="app.js"><\/script></body></html>`;
+}
+
+function waitForHydratedImages(root, timeout = 1800) {
+  if (!root || !root.querySelector('[data-image-lookup="loading"]')) return Promise.resolve();
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const check = () => {
+      if (!root.querySelector('[data-image-lookup="loading"]') || Date.now() - started >= timeout) resolve();
+      else setTimeout(check, 60);
+    };
+    check();
+  });
+}
+
+async function collectExportStyles() {
+  if (window.XTRAVEL_STYLES_GZIP_BASE64) {
+    try {
+      const source = await decompressBase64Gzip(window.XTRAVEL_STYLES_GZIP_BASE64);
+      if (source.includes(".trip-app") && source.length > 10000) return source;
+    } catch (_) { /* Continue through browser-readable stylesheet fallbacks. */ }
+  }
+  const localSheet = Array.from(document.styleSheets).find((sheet) => /styles\.css(?:\?|$)/.test(sheet.href || ""));
+  if (localSheet?.href) {
+    try {
+      const response = await fetch(localSheet.href);
+      if (response.ok) {
+        const source = await response.text();
+        if (source.includes(".trip-app") && source.length > 10000) return source;
+      }
+    } catch (_) { /* file:// exports fall back to the already-applied CSS rules below. */ }
+  }
+  const appliedRules = Array.from(document.styleSheets).map((sheet) => {
+    try { return Array.from(sheet.cssRules || []).map((rule) => rule.cssText).join("\n"); }
+    catch (_) { return ""; }
+  }).filter(Boolean).join("\n");
+  if (appliedRules.includes(".trip-app") && appliedRules.length > 10000) return appliedRules;
+  if (localSheet?.href) {
+    try {
+      const source = await readLocalTextAsset(localSheet.href);
+      if (source.includes(".trip-app") && source.length > 10000) return source;
+    } catch (_) { /* The caller reports a clear export error if all methods fail. */ }
+  }
+  return appliedRules;
+}
+
+async function decompressBase64Gzip(value) {
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).text();
+}
+
+function readLocalTextAsset(url) {
+  return new Promise((resolve, reject) => {
+    const frame = document.createElement("iframe");
+    frame.hidden = true;
+    const timer = setTimeout(() => { frame.remove(); reject(new Error("Stylesheet read timed out")); }, 3000);
+    frame.onload = () => {
+      try {
+        const text = frame.contentDocument?.body?.innerText || frame.contentDocument?.documentElement?.textContent || "";
+        clearTimeout(timer);
+        frame.remove();
+        resolve(text);
+      } catch (error) {
+        clearTimeout(timer);
+        frame.remove();
+        reject(error);
+      }
+    };
+    frame.onerror = () => { clearTimeout(timer); frame.remove(); reject(new Error("Stylesheet read failed")); };
+    frame.src = url;
+    document.body.appendChild(frame);
+  });
+}
+
+function createExportRuntime() {
+  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});showTab('home');`;
+}
+
+async function bundleExportImages(html) {
+  const sourceDocument = new DOMParser().parseFromString(html, "text/html");
+  const urls = new Set([trip.guide.banner]);
+  sourceDocument.querySelectorAll("img").forEach((image) => { if (/^https?:/i.test(image.src)) urls.add(image.src); });
+  sourceDocument.querySelectorAll("template").forEach((template) => template.content.querySelectorAll("img").forEach((image) => { if (/^https?:/i.test(image.src)) urls.add(image.src); }));
+  const results = await Promise.all([...urls].map(async (source, index) => {
+    try {
+      const response = await fetch(source, { mode: "cors" });
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      if (!blob.type.startsWith("image/")) return null;
+      const extension = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : blob.type.includes("gif") ? "gif" : "jpg";
+      return { source, path: `assets/place-${String(index + 1).padStart(2, "0")}.${extension}`, content: new Uint8Array(await blob.arrayBuffer()) };
+    } catch (_) { return null; }
+  }));
+  const files = [];
+  let updatedHtml = html;
+  results.filter(Boolean).forEach(({ source, path, content }) => {
+    files.push({ name: path, content });
+    updatedHtml = updatedHtml.split(source).join(path).split(source.replaceAll("&", "&amp;")).join(path);
+  });
+  return { html: updatedHtml, files };
 }
 
 function createExportWebsite() {
   const dayNav = trip.days.map((day, index) => `<a href="#day-${index + 1}">${escapeHtml(formatDate(day.date, false))}</a>`).join("");
   const days = trip.days.map((day, dayIndex) => `<section class="day" id="day-${dayIndex + 1}"><header><p>${escapeHtml(formatDate(day.date, true))}</p><h2>${escapeHtml(day.title)}</h2></header>${day.activities.map((item) => `<article class="stop"><time>${escapeHtml(item.time)}</time><div><span>${escapeHtml(item.type)}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p><a href="${googleMapsSearchUrl(cleanActivityTitle(item.title))}" target="_blank" rel="noopener">Google Maps details ↗</a></div></article>`).join("")}</section>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(trip.destination)} Travel Guide</title><link rel="stylesheet" href="styles.css"></head><body><header class="hero" style="--banner:url('${trip.guide.banner}')"><p>x-Travel Guide</p><h1>${escapeHtml(trip.destination)}</h1><span>${escapeHtml(formatDate(trip.start, true))} — ${escapeHtml(formatDate(trip.end, true))}</span></header><nav>${dayNav}</nav><main>${days}</main><footer>Exported from x-Travel Guide · Verify live details before traveling.</footer></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(trip.destination)} Travel Guide</title><link rel="stylesheet" href="styles.css"></head><body><header class="hero" style="--banner:url('${trip.guide.banner}')"><p>x-Travel Agent</p><h1>${escapeHtml(trip.destination)}</h1><span>${escapeHtml(formatDate(trip.start, true))} — ${escapeHtml(formatDate(trip.end, true))}</span></header><nav>${dayNav}</nav><main>${days}</main><footer>Exported from x-Travel Agent · Verify live details before traveling.</footer></body></html>`;
 }
 
 function createExportStyles() {
@@ -353,7 +516,7 @@ function createTripMarkdown() {
   const preferenceLines = Object.entries(trip.preferences).filter(([, value]) => value).map(([key, value]) => `- **${titleCase(key)}:** ${value}`).join("\n");
   const selected = trip.selections.length ? trip.selections.map((item) => `- ${item.name}${item.area ? ` — ${item.area}` : ""}: ${item.detail}`).join("\n") : "- No manually selected places.";
   const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time} — ${item.title}\n\n- Type: ${item.type}\n- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}`).join("\n\n")}`).join("\n\n---\n\n");
-  return `# ${trip.destination} Trip Plan\n\n> AI handoff exported from x-Travel Guide. Use this file as planning context. Verify all live facts before the trip.\n\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Destination:** ${trip.destination}\n\n## Traveler preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected priorities\n\n${selected}\n\n## Instructions for the next AI agent\n\n1. Preserve the traveler’s selected priorities.\n2. Verify current hours, ratings, reservation requirements, closures, and ticket rules.\n3. Keep each day geographically compact around its stated area focus.\n4. Flag anything uncertain instead of inventing details.\n5. Suggest improvements without duplicating places already assigned.\n\n---\n\n${days}\n`;
+  return `# ${trip.destination} Trip Plan\n\n> AI handoff exported from x-Travel Agent. Use this file as planning context. Verify all live facts before the trip.\n\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Destination:** ${trip.destination}\n\n## Traveler preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected priorities\n\n${selected}\n\n## Instructions for the next AI agent\n\n1. Preserve the traveler’s selected priorities.\n2. Verify current hours, ratings, reservation requirements, closures, and ticket rules.\n3. Keep each day geographically compact around its stated area focus.\n4. Flag anything uncertain instead of inventing details.\n5. Suggest improvements without duplicating places already assigned.\n\n---\n\n${days}\n`;
 }
 
 function createZip(files) {
@@ -366,7 +529,7 @@ function createZip(files) {
   let offset = 0;
   files.forEach((file) => {
     const name = encoder.encode(file.name);
-    const data = encoder.encode(file.content);
+    const data = file.content instanceof Uint8Array ? file.content : encoder.encode(file.content);
     const crc = crc32(data);
     const local = new Uint8Array(30 + name.length);
     const view = new DataView(local.buffer);
@@ -401,9 +564,11 @@ function showFormStep(stepNumber) {
     step.hidden = !active;
     step.classList.toggle("active", active);
   });
-  document.querySelectorAll(".form-progress span").forEach((bar, index) => bar.classList.toggle("active", index < stepNumber));
-  document.querySelector("#formStepTitle").textContent = ["", "Trip basics", "Places & preferences", "Trip style"][stepNumber];
-  document.querySelector("#formStepCount").textContent = `Step ${stepNumber} of 3`;
+  const displayedStep = stepNumber === 1 ? 1 : stepNumber === 2 ? activeSuggestionCategory + 2 : 5;
+  const suggestionTitles = ["Places to see", "Places to eat", "Places to shop"];
+  document.querySelectorAll(".form-progress span").forEach((bar, index) => bar.classList.toggle("active", index < displayedStep));
+  document.querySelector("#formStepTitle").textContent = stepNumber === 1 ? "Trip basics" : stepNumber === 2 ? suggestionTitles[activeSuggestionCategory] : "Trip style";
+  document.querySelector("#formStepCount").textContent = `Step ${displayedStep} of 5`;
   if (stepNumber === 2) document.querySelector(".suggestion-intro").scrollIntoView({ block: "nearest" });
 }
 
@@ -429,13 +594,15 @@ function renderSuggestionPicker(destination) {
   if (suggestionDestination && suggestionDestination !== normalizedDestination) selectedSuggestions.clear();
   suggestionDestination = normalizedDestination;
   document.querySelector("#suggestionDestination").textContent = destination;
-  const groups = createSuggestionGroups(destination);
-  suggestionLookup = new Map(groups.flatMap((group) => group.items.map((suggestion) => [suggestion.key, suggestion])));
+  suggestionGroups = createSuggestionGroups(destination);
+  suggestionLookup = new Map(suggestionGroups.flatMap((group) => group.items.map((suggestion) => [suggestion.key, suggestion])));
   suggestionBoard.innerHTML = "";
 
-  groups.forEach((group) => {
+  suggestionGroups.forEach((group, groupIndex) => {
     const section = document.createElement("section");
     section.className = "suggestion-group";
+    section.dataset.suggestionCategory = groupIndex;
+    section.hidden = groupIndex !== activeSuggestionCategory;
     section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${group.icon}</span><h3>${group.label}</h3><small>${group.items.length} ideas</small></div>`;
     const bubbles = document.createElement("div");
     bubbles.className = "suggestion-bubbles suggestion-card-list";
@@ -466,6 +633,23 @@ function renderSuggestionPicker(destination) {
     });
     section.appendChild(bubbles);
     suggestionBoard.appendChild(section);
+  });
+  renderSuggestionCategory();
+  updateSelectionCount();
+}
+
+function renderSuggestionCategory() {
+  const group = suggestionGroups[activeSuggestionCategory];
+  if (!group) return;
+  const descriptions = [
+    "Choose landmarks, neighborhoods, museums, and experiences you would most like to see.",
+    "Choose restaurants, markets, cafés, and local dishes you would like built into the route.",
+    "Choose markets, shopping streets, boutiques, and specialty stores you want time to explore."
+  ];
+  document.querySelector("#adventureStepTitle").textContent = `Choose your own adventure · ${group.label}`;
+  document.querySelector("#adventureStepCopy").textContent = descriptions[activeSuggestionCategory];
+  suggestionBoard.querySelectorAll("[data-suggestion-category]").forEach((section) => {
+    section.hidden = Number(section.dataset.suggestionCategory) !== activeSuggestionCategory;
   });
   updateSelectionCount();
 }
@@ -529,21 +713,21 @@ function createSuggestionGroups(destination) {
     { name: "landmark walk", detail: "A compact route linking the neighborhood’s defining architecture, public spaces, and most-photographed viewpoints." },
     { name: "museum or cultural highlight", detail: "A well-reviewed cultural stop that explains the area’s art, history, or contemporary identity." },
     { name: "park and scenic viewpoint", detail: "A popular outdoor pause chosen for atmosphere, photography, and a broader sense of the district." }
-  ], 14);
+  ], 20);
   addDiscoveryIdeas(eat, "eat", [
     { name: "top-rated local restaurant", detail: "A highly reviewed neighborhood option; use the live Maps listing to compare current rating, hours, and reservations.", meta: "Regional cuisine" },
     { name: "popular casual lunch", detail: "A busy local favorite suited to the day’s route, with a shorter service time and a signature neighborhood dish.", meta: "Casual local cuisine" },
     { name: "specialty café or bakery", detail: "A well-liked coffee, pastry, or dessert stop that works naturally between nearby sights.", meta: "Café and bakery" }
-  ], 14);
+  ], 20);
   addDiscoveryIdeas(shop, "shop", [
     { name: "independent shopping street", detail: "A walkable cluster of local boutiques and small businesses rather than a single isolated store.", meta: "Local fashion, design, books, and gifts" },
     { name: "market and specialty shops", detail: "A popular place to browse regional products and useful souvenirs while staying inside the day’s neighborhood.", meta: "Food gifts, crafts, and regional specialties" },
     { name: "design and vintage district", detail: "A neighborhood shopping circuit known for distinctive independent finds and browsing.", meta: "Vintage, design, and independent labels" }
-  ], 12);
+  ], 20);
   return [
-    { label: "Places to see", icon: "🏛️", items: see },
-    { label: "Places to eat", icon: "🍽️", items: eat },
-    { label: "Places to shop", icon: "🛍️", items: shop }
+    { label: "Places to see", icon: "🏛️", items: see.slice(0, 20) },
+    { label: "Places to eat", icon: "🍽️", items: eat.slice(0, 20) },
+    { label: "Places to shop", icon: "🛍️", items: shop.slice(0, 20) }
   ];
 }
 
@@ -555,11 +739,14 @@ function suggestionImagePlaceholder(suggestion) {
 }
 
 async function hydrateSuggestionImage(imageElement, suggestion, destination) {
-  if (!imageElement || suggestion.image) return;
+  if (!imageElement) return;
+  if (suggestion.image) { imageElement.dataset.imageLookup = "ready"; return; }
+  imageElement.dataset.imageLookup = "loading";
   const cacheKey = `${suggestion.name}|${destination}`.toLowerCase();
   if (suggestionImageCache.has(cacheKey)) {
     const cached = suggestionImageCache.get(cacheKey);
     if (cached) imageElement.src = cached;
+    imageElement.dataset.imageLookup = "ready";
     return;
   }
   try {
@@ -573,6 +760,8 @@ async function hydrateSuggestionImage(imageElement, suggestion, destination) {
     if (source && imageElement.isConnected) imageElement.src = source;
   } catch (_) {
     suggestionImageCache.set(cacheKey, "");
+  } finally {
+    imageElement.dataset.imageLookup = "ready";
   }
 }
 
@@ -791,9 +980,8 @@ function getDestinationGuide(destination) {
 }
 
 function renderTrip() {
-  document.querySelector("#appDestination").textContent = trip.destination;
-  document.querySelector("#reportTripName").textContent = `${trip.destination} · ${formatDate(trip.start, true)} — ${formatDate(trip.end, true)}`;
-  document.querySelector("#resultTitle").textContent = `${trip.destination}, your way`;
+  document.querySelector("#appDestination").textContent = "";
+  document.querySelector("#resultTitle").textContent = trip.destination;
   document.querySelector("#resultDates").textContent = `${formatDate(trip.start, true)} — ${formatDate(trip.end, true)}`;
   document.querySelector("#tripStats").innerHTML = [
     `${trip.days.length} ${trip.days.length === 1 ? "day" : "days"}`,
@@ -803,7 +991,7 @@ function renderTrip() {
 
   const dayBar = document.querySelector(".report-day-bar");
   dayBar.style.setProperty("--destination-banner", `url("${trip.guide.banner}")`);
-  dayBar.dataset.destination = trip.destination;
+  dayBar.dataset.destination = "";
   document.querySelector(".app-home-hero").style.setProperty("--destination-banner", `url("${trip.guide.banner}")`);
   document.querySelectorAll(".compact-app-hero").forEach((banner) => banner.style.setProperty("--destination-banner", `url("${trip.guide.banner}")`));
 
@@ -814,12 +1002,15 @@ function renderTrip() {
     button.type = "button";
     button.className = `day-button${index === activeDay ? " active" : ""}`;
     button.setAttribute("aria-label", `${formatDate(day.date, false)} — ${day.title}`);
-    button.innerHTML = `<span class="day-nav-icon" aria-hidden="true">${getDayIcon(day, index)}</span><span class="day-nav-date">${formatDate(day.date, false)}</span>`;
+    button.innerHTML = `<span class="day-nav-icon" aria-hidden="true">${getDayIcon(day, index)}</span><span class="day-nav-copy"><span class="day-nav-date">${formatDate(day.date, false)}</span><span class="day-nav-title">${escapeHtml(shortDayTitle(day.title))}</span></span>`;
     button.addEventListener("click", () => { activeDay = index; renderTrip(); });
     nav.appendChild(button);
   });
 
   const day = trip.days[activeDay];
+  document.querySelector("#reportTripName").textContent = formatDate(day.date, true);
+  document.querySelector(".report-day-heading span").textContent = day.title;
+  updateSelectedDayBanner(day, activeDay);
   document.querySelector("#activeDayLabel").textContent = formatDate(day.date, false);
   document.querySelector("#activeDayTitle").textContent = day.title;
   const content = document.querySelector("#dayContent");
@@ -831,6 +1022,29 @@ function renderTrip() {
   renderWeatherPanel();
   renderCollections();
   switchAppTab(activeTab);
+}
+
+function shortDayTitle(title) {
+  const clean = String(title || "").replace(/\s*[·—-]\s*.*/, "").trim();
+  return clean.length > 30 ? `${clean.slice(0, 28).trim()}…` : clean;
+}
+
+async function updateSelectedDayBanner(day, index) {
+  const version = ++dayBannerRenderVersion;
+  const dayBar = document.querySelector(".report-day-bar");
+  const image = document.querySelector("#dayBannerSource");
+  const highlight = day.activities.find((item) => !/arrival|departure|orientation|rest|break/i.test(item.type)) || day.activities[0];
+  if (!image || !highlight) return;
+  image.src = trip.guide.banner;
+  dayBar.style.setProperty("--destination-banner", `url("${trip.guide.banner}")`);
+  await hydrateSuggestionImage(image, {
+    name: cleanActivityTitle(highlight.title),
+    category: highlight.type === "Eat" ? "eat" : highlight.type === "Shop" ? "shop" : "see",
+    image: ""
+  }, trip.destination);
+  if (version !== dayBannerRenderVersion || index !== activeDay) return;
+  const source = image.currentSrc || image.src;
+  if (source && !source.startsWith("data:")) dayBar.style.setProperty("--destination-banner", `url("${source}")`);
 }
 
 function renderHomePanel() {
@@ -1245,7 +1459,7 @@ function safeStorageRemove(key) {
 
 function restoreSavedTrip() {
   let saved = null;
-  try { saved = JSON.parse(safeStorageGet("x-travel-guide-trip") || safeStorageGet("roam-trip") || "null"); } catch (error) { saved = null; }
+  try { saved = JSON.parse(safeStorageGet("x-travel-agent-trip") || safeStorageGet("x-travel-guide-trip") || safeStorageGet("roam-trip") || "null"); } catch (error) { saved = null; }
   if (!saved) return;
 
   destinationInput.value = saved.destination || "";
