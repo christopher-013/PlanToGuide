@@ -168,8 +168,6 @@ let suggestionDestination = "";
 let dayBannerRenderVersion = 0;
 let suggestionGroups = [];
 let activeSuggestionCategory = 0;
-let lastExportHtml = "";
-let lastStandaloneHtml = "";
 
 const today = new Date();
 const defaultStart = new Date(today.getFullYear(), today.getMonth() + 1, 8);
@@ -235,10 +233,6 @@ document.querySelector("#detailsBackButton").addEventListener("click", () => {
   renderSuggestionCategory();
   showFormStep(2);
 });
-document.querySelector("#constraintsStepButton").addEventListener("click", () => showFormStep(4));
-document.querySelector("#constraintsBackButton").addEventListener("click", () => showFormStep(3));
-document.querySelector("#outputStepButton").addEventListener("click", () => showFormStep(5));
-document.querySelector("#outputBackButton").addEventListener("click", () => showFormStep(4));
 document.querySelector("#clearSelectionsButton").addEventListener("click", () => {
   selectedSuggestions.clear();
   suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((button) => {
@@ -296,7 +290,7 @@ form.addEventListener("submit", (event) => {
   const preferences = getTripPreferences();
   trip = buildTrip(destinationInput.value.trim(), start, end, wishListInput.value.trim(), selections, preferences);
   activeDay = 0;
-  activeTab = preferences.outputTemplate === "photo" ? "photos" : "home";
+  activeTab = "home";
   builder.hidden = true;
   result.hidden = false;
   document.body.classList.add("trip-mode");
@@ -323,17 +317,6 @@ document.querySelector("#printButton").addEventListener("click", () => window.pr
 document.querySelector("#exportTripButton").addEventListener("click", exportTripPackage);
 document.querySelector("#exportDialogClose").addEventListener("click", closeExportDialog);
 document.querySelector("#exportDialogDone").addEventListener("click", closeExportDialog);
-document.querySelector("#exportDownloadMarkdown").addEventListener("click", downloadTripMarkdown);
-document.querySelector("#exportDownloadZip").addEventListener("click", exportTripPackage);
-document.querySelector("#exportDownloadHtml").addEventListener("click", downloadStandaloneHtml);
-document.querySelector("#exportCopyChatGpt").addEventListener("click", () => copyAiPrompt("ChatGPT"));
-document.querySelector("#exportCopyClaude").addEventListener("click", () => copyAiPrompt("Claude"));
-document.querySelector("#exportPreviewWebsite").addEventListener("click", previewExportWebsite);
-document.querySelector("#downloadMarkdownButton").addEventListener("click", downloadTripMarkdown);
-document.querySelector("#downloadHtmlButton").addEventListener("click", downloadStandaloneHtml);
-document.querySelector("#copyMarkdownButton").addEventListener("click", () => copyText(createTripMarkdown(), "Markdown copied"));
-document.querySelector("#copyChatGptButton").addEventListener("click", () => copyAiPrompt("ChatGPT"));
-document.querySelector("#copyClaudeButton").addEventListener("click", () => copyAiPrompt("Claude"));
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.tab)));
 document.querySelectorAll("[data-open-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.openTab)));
 
@@ -375,14 +358,12 @@ async function exportTripPackage() {
       captures.push(clone.outerHTML);
     }
     let websiteHtml = createCapturedExportWebsite(captures);
-    lastExportHtml = websiteHtml;
     const websiteCss = await collectExportStyles();
     if (!websiteCss.includes(".trip-app") || websiteCss.length < 10000) throw new Error("The complete report stylesheet could not be read. Please reload x-Travel Agent and export again.");
     const bundled = await bundleExportImages(websiteHtml);
     websiteHtml = bundled.html;
     const markdown = createTripMarkdown();
     const runtime = createExportRuntime();
-    lastStandaloneHtml = websiteHtml.replace('<link rel="stylesheet" href="styles.css">', `<style>${websiteCss}</style>`).replace('<script src="app.js"><\/script>', `<script>${runtime}<\/script>`);
     const readme = `# ${trip.destination} x-Travel Agent Website\n\nThis package is a complete visual export of the generated x-Travel Agent report. It includes every date, section, navigation control, map, recommendation, and available bundled image.\n\n## Files\n\n- \`index.html\` — complete report website\n- \`styles.css\` — the report’s visual styling\n- \`app.js\` — offline date/tab navigation\n- \`assets/\` — successfully downloaded banners and place images\n- \`TRIP-PLAN.md\` — full AI planning handoff\n\nOpen \`index.html\` locally or upload the package to any static host. Google Maps embeds and links still require an internet connection. Images that could not be legally downloaded remain linked to their original public source.\n`;
     const zip = createZip([
       { name: "index.html", content: websiteHtml },
@@ -534,37 +515,8 @@ function createExportStyles() {
 function createTripMarkdown() {
   const preferenceLines = Object.entries(trip.preferences).filter(([, value]) => value).map(([key, value]) => `- **${titleCase(key)}:** ${value}`).join("\n");
   const selected = trip.selections.length ? trip.selections.map((item) => `- ${item.name}${item.area ? ` — ${item.area}` : ""}: ${item.detail}`).join("\n") : "- No manually selected places.";
-  const locked = trip.bookings.length ? trip.bookings.map((item) => `- **${item.name}** — ${item.date || "date flexible"} — ${item.time || "time TBD"} — ${titleCase(item.status)}`).join("\n") : "- No locked bookings supplied.";
-  const optional = trip.days.flatMap((day) => day.activities.filter((item) => /optional|backup/i.test(item.status || "")).map((item) => `- ${formatDate(day.date, false)} — ${item.title} — ${item.status}`)).join("\n") || "- No optional items marked.";
-  const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time} — ${item.title}\n\n- Status: ${item.status || "Recommended"}\n- Type: ${item.type}\n- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}`).join("\n\n")}`).join("\n\n---\n\n");
-  return `# Trip Source of Truth\n\n> Exported from x-Travel Agent. Use this as the authoritative planning context.\n\n## Trip Overview\n\n- **Destination:** ${trip.destination}\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Travelers:** ${trip.preferences.groupSize || "Not specified"} · ages ${trip.preferences.travelerAges || "not specified"}\n- **Home base:** ${trip.preferences.homeBase || "Not specified"}\n- **Trip purpose:** ${trip.preferences.purpose || "Not specified"}\n- **Trip style:** ${trip.preferences.outputTemplate || "Mobile Trip App"}\n\n## Locked Bookings\n\nDo not move or remove confirmed items unless explicitly requested.\n\n${locked}\n\n## Optional Items\n\n${optional}\n\n## Food Preferences & Restrictions\n\n${trip.preferences.foodRestrictions || "None supplied."}\n\n## Mobility & Walking Constraints\n\n${trip.preferences.mobilityNeeds || "None supplied."}\n\n## Things to Avoid\n\n${trip.preferences.avoid || "None supplied."}\n\n## Traveler Preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected Priorities\n\n${selected}\n\n## AI Instructions\n\n1. Use this file as the source of truth.\n2. Preserve confirmed bookings and traveler-designated must-do activities.\n3. Optimize each day geographically around its stated area and home base.\n4. Warn when an activity adds unnecessary travel time.\n5. Verify current hours, prices, closures, ratings, reservations, and availability.\n6. Label uncertain browser-only suggestions as Needs verification.\n7. Never invent live facts.\n\n---\n\n${days}\n`;
-}
-
-function downloadTripMarkdown() {
-  if (!trip) return;
-  const blob = new Blob([createTripMarkdown()], { type: "text/markdown;charset=utf-8" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "trip"}-source-of-truth.md`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-}
-function aiPrompt(platform) { return `Continue planning this trip in ${platform}. Treat the Markdown below as the source of truth. Preserve confirmed bookings, optimize geographically, flag live facts that need verification, and ask before changing locked items.\n\n${createTripMarkdown()}`; }
-async function copyText(text, confirmation = "Copied") { try { await navigator.clipboard.writeText(text); window.alert(confirmation); } catch (_) { window.prompt("Copy this text:", text); } }
-function copyAiPrompt(platform) { if (trip) copyText(aiPrompt(platform), `${platform} prompt copied`); }
-function previewExportWebsite() {
-  if (!lastStandaloneHtml) return window.alert("Export the website once before previewing it.");
-  const url = URL.createObjectURL(new Blob([lastStandaloneHtml], { type: "text/html" }));
-  window.open(url, "_blank", "noopener");
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
-}
-function downloadStandaloneHtml() {
-  if (!lastStandaloneHtml) return window.alert("Use Export once to prepare the complete website, then download the standalone HTML.");
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(new Blob([lastStandaloneHtml], { type: "text/html;charset=utf-8" }));
-  link.download = `${trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "trip"}-travel-website.html`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time} — ${item.title}\n\n- Type: ${item.type}\n- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}`).join("\n\n")}`).join("\n\n---\n\n");
+  return `# ${trip.destination} Trip Plan\n\n> AI handoff exported from x-Travel Agent. Use this file as planning context. Verify all live facts before the trip.\n\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Destination:** ${trip.destination}\n\n## Traveler preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected priorities\n\n${selected}\n\n## Instructions for the next AI agent\n\n1. Preserve the traveler’s selected priorities.\n2. Verify current hours, ratings, reservation requirements, closures, and ticket rules.\n3. Keep each day geographically compact around its stated area focus.\n4. Flag anything uncertain instead of inventing details.\n5. Suggest improvements without duplicating places already assigned.\n\n---\n\n${days}\n`;
 }
 
 function createZip(files) {
@@ -612,9 +564,10 @@ function showFormStep(stepNumber) {
     step.hidden = !active;
     step.classList.toggle("active", active);
   });
-  const displayedStep = stepNumber;
+  const displayedStep = stepNumber === 1 ? 1 : stepNumber === 2 ? activeSuggestionCategory + 2 : 5;
+  const suggestionTitles = ["Places to see", "Places to eat", "Places to shop"];
   document.querySelectorAll(".form-progress span").forEach((bar, index) => bar.classList.toggle("active", index < displayedStep));
-  document.querySelector("#formStepTitle").textContent = ["", "Trip basics", "Choose your adventure", "Travelers & style", "Bookings & constraints", "Output style"][stepNumber];
+  document.querySelector("#formStepTitle").textContent = stepNumber === 1 ? "Trip basics" : stepNumber === 2 ? suggestionTitles[activeSuggestionCategory] : "Trip style";
   document.querySelector("#formStepCount").textContent = `Step ${displayedStep} of 5`;
   if (stepNumber === 2) document.querySelector(".suggestion-intro").scrollIntoView({ block: "nearest" });
 }
@@ -627,26 +580,13 @@ function getTripPreferences() {
     evening: document.querySelector("#eveningStyle").value,
     transport: document.querySelector("#transportStyle").value,
     budget: document.querySelector("#tripBudget").value,
-    notes: document.querySelector("#mobilityNotes").value.trim(),
-    homeBase: document.querySelector("#homeBase").value.trim(),
-    groupSize: document.querySelector("#groupSize").value,
-    travelerAges: document.querySelector("#travelerAges").value.trim(),
-    purpose: document.querySelector("#tripPurpose").value.trim(),
-    foodRestrictions: document.querySelector("#foodRestrictions").value.trim(),
-    mobilityNeeds: document.querySelector("#mobilityNeeds").value.trim(),
-    mustDos: document.querySelector("#mustDos").value.trim(),
-    avoid: document.querySelector("#avoidList").value.trim(),
-    bookedItems: document.querySelector("#bookedItems").value.trim(),
-    outputTemplate: document.querySelector('[name="outputTemplate"]:checked')?.value || "mobile",
-    appMode: document.querySelector('[name="appMode"]:checked')?.value || "free"
+    notes: document.querySelector("#mobilityNotes").value.trim()
   };
 }
 
 function setTripPreferences(preferences = {}) {
-  const fields = { tripPace: "pace", tripParty: "party", dayStart: "start", eveningStyle: "evening", transportStyle: "transport", tripBudget: "budget", mobilityNotes: "notes", homeBase: "homeBase", groupSize: "groupSize", travelerAges: "travelerAges", tripPurpose: "purpose", foodRestrictions: "foodRestrictions", mobilityNeeds: "mobilityNeeds", mustDos: "mustDos", avoidList: "avoid", bookedItems: "bookedItems" };
+  const fields = { tripPace: "pace", tripParty: "party", dayStart: "start", eveningStyle: "evening", transportStyle: "transport", tripBudget: "budget", mobilityNotes: "notes" };
   Object.entries(fields).forEach(([id, key]) => { if (preferences[key]) document.querySelector(`#${id}`).value = preferences[key]; });
-  if (preferences.outputTemplate) document.querySelector(`[name="outputTemplate"][value="${preferences.outputTemplate}"]`)?.click();
-  if (preferences.appMode) document.querySelector(`[name="appMode"][value="${preferences.appMode}"]`)?.click();
 }
 
 function renderSuggestionPicker(destination) {
@@ -675,7 +615,7 @@ function renderSuggestionPicker(destination) {
         : suggestion.category === "shop"
           ? [suggestion.area, suggestion.bestFor || "Popular local shopping"]
           : [suggestion.area, "Popular place to see"];
-      button.innerHTML = `<img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="${escapeHtml(`${suggestion.name} in ${destination}`)}" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-transparency"><b>Sample suggestion</b><i>Needs verification</i></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span><a class="suggestion-map-link" href="${googleMapsSearchUrl(`${suggestion.name} ${destination}`)}" target="_blank" rel="noopener noreferrer">Live data unavailable in browser-only mode · verify on Google Maps ↗</a></span>`;
+      button.innerHTML = `<img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="${escapeHtml(`${suggestion.name} in ${destination}`)}" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span><a class="suggestion-map-link" href="${googleMapsSearchUrl(`${suggestion.name} ${destination}`)}" target="_blank" rel="noopener noreferrer">View live details on Google Maps ↗</a></span>`;
       hydrateSuggestionImage(button.querySelector(".suggestion-card-image"), suggestion, destination);
       button.dataset.suggestionKey = suggestion.key;
       button.setAttribute("aria-pressed", selectedSuggestions.has(suggestion.key) ? "true" : "false");
@@ -858,30 +798,12 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
     );
     activities = fillFullDay(activities, { relaxed: 6, balanced: 8, packed: 10 }[preferences.pace] || 8, seenRecommendations, destination, date, preferences, dayZones[index]).sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
     activities = assignDistinctActivityIcons(activities, index);
-    activities.forEach((item) => { item.status = "Recommended"; });
     return {
       date,
       zone: dayZones[index],
       title: `${dayZones[index].name} · ${activities[1].title}`,
       activities
     };
-  });
-  const bookings = parseBookedItems(preferences.bookedItems);
-  bookings.forEach((booking) => {
-    const dayIndex = booking.date ? itineraryDays.findIndex((day) => toInputDate(day.date) === booking.date) : 0;
-    const targetDay = itineraryDays[Math.max(0, dayIndex)];
-    const match = targetDay.activities.find((item) => item.title.toLowerCase().includes(booking.name.toLowerCase()) || booking.name.toLowerCase().includes(cleanActivityTitle(item.title).toLowerCase()));
-    if (match) {
-      match.status = titleCase(booking.status);
-      if (booking.time) match.time = booking.time;
-    } else {
-      targetDay.activities.push(activity("Booking", "🔒", booking.time || "TBD", booking.name, "Locked booking supplied by the traveler. Build the surrounding route around this anchor.", titleCase(booking.status)));
-      targetDay.activities.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
-    }
-  });
-  parseList(preferences.mustDos).forEach((name, index) => {
-    const targetDay = itineraryDays[index % itineraryDays.length];
-    if (!itineraryDays.some((day) => day.activities.some((item) => item.title.toLowerCase().includes(name.toLowerCase())))) targetDay.activities.push(activity("Must do", "⭐", "Flexible", name, "Traveler-designated must-do activity. Preserve it unless the traveler explicitly changes it.", "Confirmed"));
   });
 
   return {
@@ -891,27 +813,9 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
     wishes,
     selections,
     preferences,
-    bookings,
     guide,
     days: itineraryDays
   };
-}
-
-function parseList(value = "") { return String(value).split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean); }
-function parseBookedItems(value = "") {
-  return String(value).split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
-    const [name, date = "", time = "", status = "confirmed"] = line.split("|").map((item) => item.trim());
-    return { name, date, time, status: normalizeStatus(status) };
-  });
-}
-function normalizeStatus(value = "") {
-  const text = value.toLowerCase();
-  if (text.includes("confirm")) return "confirmed";
-  if (text.includes("backup")) return "backup";
-  if (text.includes("optional")) return "optional";
-  if (text.includes("booking")) return "needs booking";
-  if (text.includes("verif")) return "needs verification";
-  return "recommended";
 }
 
 function makeActivitiesUnique(activities, seen, destination, date, preferences) {
@@ -1047,7 +951,7 @@ function timeToMinutes(value) {
   return hour * 60 + minute;
 }
 
-function activity(type, icon, time, title, description, status = "Recommended") { return { type, icon, time, title, description, status }; }
+function activity(type, icon, time, title, description) { return { type, icon, time, title, description }; }
 function place(name, area, detail, metadata = {}) { return { name, area, detail, ...metadata }; }
 function areaText(item) { return item.area ? `Area: ${item.area}.` : ""; }
 
@@ -1076,8 +980,6 @@ function getDestinationGuide(destination) {
 }
 
 function renderTrip() {
-  document.querySelector(".trip-app").dataset.template = trip.preferences.outputTemplate || "mobile";
-  document.querySelector(".trip-app").dataset.mode = trip.preferences.appMode || "free";
   document.querySelector("#appDestination").textContent = "";
   document.querySelector("#resultTitle").textContent = trip.destination;
   document.querySelector("#resultDates").textContent = `${formatDate(trip.start, true)} — ${formatDate(trip.end, true)}`;
@@ -1119,10 +1021,6 @@ function renderTrip() {
   renderHomePanel();
   renderWeatherPanel();
   renderCollections();
-  renderBookings();
-  renderDuringTripTools();
-  renderRefinementActions();
-  document.querySelector("#markdownPreview").textContent = createTripMarkdown();
   switchAppTab(activeTab);
 }
 
@@ -1150,7 +1048,7 @@ async function updateSelectedDayBanner(day, index) {
 }
 
 function renderHomePanel() {
-  const firstDay = trip.days[activeDay];
+  const firstDay = trip.days[0];
   const todayCard = document.querySelector("#todayCard");
   todayCard.innerHTML = `
     <div class="today-card-head">
@@ -1158,7 +1056,7 @@ function renderHomePanel() {
       <button type="button" data-card-itinerary>Open day →</button>
     </div>
     <div class="today-stops">${firstDay.activities.slice(0, 3).map((activity) => `<div class="today-stop"><time>${escapeHtml(activity.time)}</time><strong><span aria-hidden="true">${activity.icon}</span> ${escapeHtml(activity.title)}</strong></div>`).join("")}</div>`;
-  todayCard.querySelector("[data-card-itinerary]").addEventListener("click", () => switchAppTab("itinerary"));
+  todayCard.querySelector("[data-card-itinerary]").addEventListener("click", () => { activeDay = 0; renderTrip(); switchAppTab("itinerary"); });
 
   const list = document.querySelector("#homeDayList");
   list.innerHTML = "";
@@ -1171,42 +1069,6 @@ function renderHomePanel() {
     button.addEventListener("click", () => { activeDay = index; renderTrip(); switchAppTab("itinerary"); });
     list.appendChild(button);
   });
-}
-
-function renderDuringTripTools() {
-  const day = trip.days[activeDay];
-  const nextBooking = day.activities.find((item) => /confirmed|needs booking/i.test(item.status || ""));
-  const backup = day.activities.find((item) => /backup|optional/i.test(item.status || "")) || day.activities[day.activities.length - 1];
-  const homeBase = trip.preferences.homeBase || "Add your hotel or home base";
-  document.querySelector("#duringTripTools").innerHTML = [
-    ["🗓️", "Today’s plan", `${day.activities.length} stops · ${day.zone?.name || trip.destination}`],
-    ["⏰", "Next reservation", nextBooking ? `${nextBooking.time} · ${nextBooking.title}` : "No locked reservation today"],
-    ["🚇", "Transit note", `Start and finish near ${homeBase}. Keep transfers geographically compact.`],
-    ["🧳", "Luggage note", activeDay === 0 || activeDay === trip.days.length - 1 ? "Confirm hotel storage before arrival/departure." : "Leave bags at your home base."],
-    ["🌧️", "Rainy-day backup", `Use ${backup?.title || "a nearby indoor stop"} as the flexible alternative.`],
-    ["🆘", "Emergency card", "Save hotel address, insurance details, local emergency number, and embassy contact offline."]
-  ].map(([icon, title, copy]) => `<article><span>${icon}</span><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div></article>`).join("");
-}
-
-function renderBookings() {
-  const container = document.querySelector("#bookingList");
-  if (!trip.bookings.length) {
-    container.innerHTML = `<div class="empty-section"><span>✅</span><h3>No locked bookings yet</h3><p>Add hotels, tickets, flights, tours, or restaurant reservations through Edit trip.</p></div>`;
-    return;
-  }
-  container.innerHTML = `<div class="booking-cards">${trip.bookings.map((item) => `<article><span class="status-tag status-${item.status.replace(/\s+/g,"-")}">${escapeHtml(titleCase(item.status))}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.date || "Date flexible")} · ${escapeHtml(item.time || "Time TBD")}</p><small>Traveler supplied · preserve this anchor</small></article>`).join("")}</div>`;
-}
-
-function renderRefinementActions() {
-  const actions = ["Make this more relaxed", "Add more food options", "Reduce walking", "Add rainy-day backups", "Add kid-friendly options", "Optimize by geography", "Add shopping", "Add free activities", "Make it more luxury", "Make it cheaper", "Create airport plan", "Create packing list", "Create one-page summary"];
-  const container = document.querySelector("#refineActions");
-  container.innerHTML = actions.map((label) => `<button type="button">${escapeHtml(label)}</button>`).join("");
-  container.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
-    const instruction = `${button.textContent}. Preserve confirmed bookings and must-do items. Use the AI Planning File as the source of truth.`;
-    navigator.clipboard?.writeText(`${instruction}\n\n${createTripMarkdown()}`);
-    button.textContent = "Prompt copied ✓";
-    setTimeout(() => { button.textContent = actions[[...container.children].indexOf(button)]; }, 1600);
-  }));
 }
 
 function renderWeatherPanel() {
@@ -1550,9 +1412,6 @@ function renderActivity(activity) {
   fragment.querySelector(".activity-time").textContent = activity.time;
   fragment.querySelector(".activity-icon").textContent = activity.icon;
   fragment.querySelector(".activity-type").textContent = activity.type;
-  const status = fragment.querySelector(".activity-status");
-  status.textContent = activity.status || "Recommended";
-  status.className = `activity-status status-${normalizeStatus(activity.status).replace(/\s+/g, "-")}`;
   fragment.querySelector("h4").textContent = activity.title;
   const activityImage = fragment.querySelector(".activity-photo");
   const activityName = cleanActivityTitle(activity.title);
