@@ -630,7 +630,7 @@ body.trip-mode { display: block; }
   .app-nav-button small { font-size: 7px; }
 }
 
-/* Animated x-Travel Agent compass-X branding */
+/* Animated xTravel Agent compass-X branding */
 .brand-mark, .builder-brand > span { overflow:visible; padding:0; border:0; background:transparent !important; }
 .brand-mark img, .builder-brand img { display:block; width:100%; height:100%; object-fit:contain; }
 .builder-brand > span { width:38px; height:38px; }
@@ -641,7 +641,7 @@ body.trip-mode { display: block; }
 .output-created-list article strong { font-size:14px; }
 .output-created-list article span { color:var(--muted); font-size:10px; line-height:1.45; }
 
-/* Animated X-Travel Agent identity */
+/* Animated xTravel Agent identity */
 .builder:not(.builder-wide) .builder-copy::after {
   content:"✈️";
   right:clamp(24px,7vw,112px);

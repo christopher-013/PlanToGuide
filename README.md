@@ -1,6 +1,6 @@
-# x-Travel Agent
+# xTravel Agent
 
-x-Travel Agent now has two complementary editions.
+xTravel Agent now has two complementary editions.
 
 ## 1. Static GitHub Pages demo
 
@@ -18,9 +18,9 @@ Read [STANDALONE.md](STANDALONE.md) for the isolated GitHub Pages deployment.
 
 ## 2. ChatGPT App
 
-The Apps SDK edition lives in `server.mjs` and `public/x-travel-widget.html`. Users add x-Travel Agent to a ChatGPT conversation. ChatGPT asks for the destination, dates, and interests, creates the detailed structured itinerary, and renders it in the interactive widget.
+The Apps SDK edition lives in `server.mjs` and `public/x-travel-widget.html`. Users add xTravel Agent to a ChatGPT conversation. ChatGPT asks for the destination, dates, and interests, creates the detailed structured itinerary, and renders it in the interactive widget.
 
-This architecture does not use an OpenAI API key in the project. ChatGPT supplies the model experience under the end user's ChatGPT account; the x-Travel Agent server only exposes the MCP tool and widget.
+This architecture does not use an OpenAI API key in the project. ChatGPT supplies the model experience under the end user's ChatGPT account; the xTravel Agent server only exposes the MCP tool and widget.
 
 Requirements: Node.js 18 or newer.
 
