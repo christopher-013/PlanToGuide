@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" href="x-travel-agent-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260706-brand-name-1">
+  <link rel="stylesheet" href="styles.css?v=20260706-round-trip-1">
 </head>
 <body>
   <main class="page-shell">
@@ -29,7 +29,8 @@
         <p class="eyebrow">Trip website builder · Free browser mode</p>
         <h1 id="builderTitle">Create a trip website and<br><em>AI-ready planning file in minutes</em></h1>
         <p class="lede homepage-tagline">Answer a few questions, then generate a polished travel website, a day-by-day itinerary, and a file you can reuse in ChatGPT, Claude, or your favorite AI tools.</p>
-        <div class="demo-showcase"><strong>Example: Tokyo 2026 Family Trip</strong><span>Locked bookings, route flow, food, shopping, maps, weather, photos, and AI-ready planning structure.</span><a href="../Codex/2026-05-28/tokyo-2026-photo-version/index.html">View demo trip →</a></div>
+        <div class="demo-showcase"><strong>Example: Tokyo 2026 Family Trip</strong><span>Locked bookings, route flow, food, shopping, maps, weather, photos, and AI-ready planning structure.</span><a href="https://christopher-013.github.io/Tokyo2026/" target="_blank" rel="noopener">View demo trip →</a></div>
+        <div class="import-callout"><strong>Already have an AI-updated plan?</strong><span>Paste the TRIP-PLAN.md your AI returned and re-render your trip website instantly.</span><button type="button" class="text-button" data-open-import>Import updated plan →</button></div>
         <div class="journey-line" aria-hidden="true">
           <span class="journey-dot start"></span>
           <span class="journey-path"></span>
@@ -283,7 +284,7 @@
           </section>
           <section class="app-panel" data-panel="ai" aria-label="AI Planning File">
             <div class="compact-app-hero ai-hero"><div><p class="eyebrow light">Source of truth</p><h2>AI Planning File</h2><p>Preview and reuse the exact context that keeps bookings and constraints intact.</p></div></div>
-            <div class="app-panel-body ai-file-panel"><div class="ai-file-actions"><button type="button" id="copyMarkdownButton">Copy Markdown</button><button type="button" id="downloadMarkdownButton">Download .md</button><button type="button" id="downloadHtmlButton">Download .html</button><button type="button" id="copyChatGptButton">Copy ChatGPT prompt</button><button type="button" id="copyClaudeButton">Copy Claude prompt</button></div><pre id="markdownPreview"></pre></div>
+            <div class="app-panel-body ai-file-panel"><div class="ai-file-actions"><button type="button" id="copyMarkdownButton">Copy Markdown</button><button type="button" id="downloadMarkdownButton">Download .md</button><button type="button" id="downloadHtmlButton">Download .html</button><button type="button" id="copyChatGptButton">Copy ChatGPT prompt</button><button type="button" id="copyClaudeButton">Copy Claude prompt</button><button type="button" data-open-import>Import updated plan</button></div><pre id="markdownPreview"></pre></div>
           </section>
         </div>
 
@@ -317,9 +318,24 @@
     <p class="eyebrow">Export complete</p>
     <h2 id="exportDialogTitle">Website and Markdown files are ready</h2>
     <p>Your ZIP includes the complete interactive report, every date and section, available bundled graphics, and a detailed AI planning handoff.</p>
-    <ul><li><strong>index.html</strong> — complete visual itinerary website</li><li><strong>styles.css + app.js</strong> — report styling and navigation</li><li><strong>assets/</strong> — bundled banners and place graphics</li><li><strong>TRIP-PLAN.md</strong> — full AI-ready planning context</li><li><strong>README.md</strong> — publishing instructions</li></ul>
+    <ul><li><strong>index.html</strong> — complete visual itinerary website</li><li><strong>styles.css + app.js</strong> — report styling and navigation</li><li><strong>assets/</strong> — bundled banners and place graphics</li><li><strong>TRIP-PLAN.md + TRIP-DATA.json</strong> — human- and machine-readable source of truth</li><li><strong>AGENT-INSTRUCTIONS.md</strong> — rules for continued AI planning</li><li><strong>README.md</strong> — publishing instructions</li></ul>
     <div class="export-action-grid"><button id="exportDownloadZip" type="button">Download Website ZIP</button><button id="exportDownloadHtml" type="button">Download HTML</button><button id="exportDownloadMarkdown" type="button">Download Markdown</button><button id="exportCopyChatGpt" type="button">Copy ChatGPT Prompt</button><button id="exportCopyClaude" type="button">Copy Claude Prompt</button><button id="exportPreviewWebsite" type="button">Preview Website</button><a href="https://docs.github.com/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener">Publish to GitHub Pages Guide</a></div>
     <button class="primary-button" id="exportDialogDone" type="button">Done</button>
+  </dialog>
+
+  <dialog class="export-dialog import-dialog" id="importDialog" aria-labelledby="importDialogTitle">
+    <button class="export-dialog-close" id="importDialogClose" type="button" aria-label="Close">×</button>
+    <span class="export-dialog-icon" aria-hidden="true">⤵</span>
+    <p class="eyebrow">Close the loop</p>
+    <h2 id="importDialogTitle">Import an AI-updated plan</h2>
+    <p>Paste the complete TRIP-PLAN.md your AI assistant returned (or just its <code>json xtravel-trip</code> block), or choose the file. xTravel Agent reads the Machine-Readable Trip Data section and re-renders your trip website.</p>
+    <textarea id="importPlanText" rows="9" placeholder="Paste the full TRIP-PLAN.md returned by Claude, ChatGPT, or another AI…" aria-label="Updated plan content"></textarea>
+    <div class="import-error" id="importError" role="alert" hidden></div>
+    <div class="import-actions">
+      <label class="secondary-button import-file-label">Choose .md file<input id="importPlanFile" type="file" accept=".md,.markdown,.txt,.json" hidden></label>
+      <button class="secondary-button" id="importDialogCancel" type="button">Cancel</button>
+      <button class="primary-button" id="importPlanButton" type="button">Import &amp; render trip</button>
+    </div>
   </dialog>
 
   <template id="activityTemplate">
@@ -345,8 +361,9 @@
     </article>
   </template>
 
-  <script src="export-styles.js?v=20260706-brand-name-1"></script>
+  <script src="export-styles.js?v=20260706-round-trip-1"></script>
   <script src="icon-source.js?v=20260706-brand-name-1"></script>
-  <script src="app.js?v=20260706-brand-name-1"></script>
+  <script src="trip-schema.js?v=20260706-round-trip-1"></script>
+  <script src="app.js?v=20260706-round-trip-1"></script>
 </body>
 </html>

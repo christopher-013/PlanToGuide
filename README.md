@@ -1,10 +1,30 @@
 # xTravel Agent
 
-xTravel Agent now has two complementary editions.
+Create a polished trip website, then keep improving it with ChatGPT, Claude, Codex, or another AI assistant.
 
-## 1. Static GitHub Pages demo
+## Core workflow
 
-The existing `index.html`, `app.js`, and `styles.css` turn three answers into a polished sample itinerary in the visitor's browser. This edition makes no OpenAI requests, needs no account or key, stores drafts only in `localStorage`, and can be hosted on GitHub Pages. Its optional live weather uses Open-Meteo's public keyless endpoints and falls back to a bundled seasonal estimate.
+1. **Generate:** Complete the five-step wizard. The browser builds a day-by-day trip website with bookings and constraints preserved.
+2. **Export:** Download the website ZIP or `TRIP-PLAN.md`. The planning file includes versioned, machine-readable trip data.
+3. **Enrich:** Give the planning file to your preferred AI assistant. It is instructed to preserve confirmed items and return the complete updated file.
+4. **Import:** Choose **Import updated plan** in xTravel Agent. Paste or upload the returned file to re-render the website.
+5. **Publish:** Export again and host the static files on GitHub Pages, Netlify Drop, or another static host.
+
+See [SCHEMA.md](SCHEMA.md) for the `xtravel-trip` schema and import rules.
+
+## Export contents
+
+- `index.html`, `styles.css`, and `app.js` — complete static trip website
+- `TRIP-PLAN.md` — human-readable source of truth with embedded trip JSON
+- `TRIP-DATA.json` — machine-readable trip data
+- `AGENT-INSTRUCTIONS.md` — editing rules for AI agents
+- `assets/` — available bundled banners and place images
+
+## Featured example
+
+[Tokyo 2026 Family Trip](https://christopher-013.github.io/Tokyo2026/) demonstrates the richer target experience: daily routes, locked bookings, maps, food, shopping, weather, practical information, notes, and photos.
+
+## Run locally
 
 Open `index.html` directly, or run:
 
@@ -14,28 +34,4 @@ powershell -ExecutionPolicy Bypass -File .\dev-server.ps1
 
 Then visit `http://127.0.0.1:8767`.
 
-Read [STANDALONE.md](STANDALONE.md) for the isolated GitHub Pages deployment.
-
-## 2. ChatGPT App
-
-The Apps SDK edition lives in `server.mjs` and `public/x-travel-widget.html`. Users add xTravel Agent to a ChatGPT conversation. ChatGPT asks for the destination, dates, and interests, creates the detailed structured itinerary, and renders it in the interactive widget.
-
-This architecture does not use an OpenAI API key in the project. ChatGPT supplies the model experience under the end user's ChatGPT account; the xTravel Agent server only exposes the MCP tool and widget.
-
-Requirements: Node.js 18 or newer.
-
-```powershell
-npm install
-npm start
-```
-
-- Widget preview: `http://localhost:8787/preview`
-- MCP endpoint: `http://localhost:8787/mcp`
-
-Read [CHATGPT-APP.md](CHATGPT-APP.md) for ChatGPT connection and deployment instructions.
-
-## Security
-
-No edition should contain an OpenAI API key. The ChatGPT App prototype is stateless and unauthenticated because it has no saved accounts, bookings, or private records. Add OAuth before introducing user-specific server data.
-
-See [SECURITY.md](SECURITY.md) before adding external services.
+The browser edition requires no account or API key. Optional live weather uses keyless Open-Meteo endpoints.

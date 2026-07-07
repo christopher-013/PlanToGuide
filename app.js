@@ -12,6 +12,19 @@ const preferenceError = document.querySelector("#preferenceError");
 const suggestionBoard = document.querySelector("#suggestionBoard");
 const selectionCount = document.querySelector("#selectionCount");
 
+function brandIconSource() {
+  return window.XTRAVEL_ICON_BASE64 ? `data:image/svg+xml;base64,${window.XTRAVEL_ICON_BASE64}` : "x-travel-agent-icon.svg";
+}
+
+function hydrateBrandIcons() {
+  const source = brandIconSource();
+  document.querySelectorAll('img[src^="x-travel-agent-icon.svg"]').forEach((image) => { image.src = source; });
+  const favicon = document.querySelector('link[rel="icon"]');
+  if (favicon) favicon.href = source;
+}
+
+hydrateBrandIcons();
+
 const destinationCatalogs = [
   {
     match: /tokyo|japan/i,
@@ -54,7 +67,17 @@ const destinationCatalogs = [
       place("Ginza", "Chūō", "Tokyo’s polished retail district: begin at the Ginza 4-chome crossing, compare historic department stores, then browse stationery and basement food halls.", { address: "Ginza 4-chome Crossing, Chuo City, Tokyo 104-0061", bestFor: "Luxury flagships, Japanese stationery, beauty, and gourmet gifts" }),
       place("Shibuya and Harajuku", "Shibuya", "A fashion circuit linking Shibuya’s vertical malls with Cat Street, Takeshita Street, and Omotesando design stores.", { address: "Shibuya Station to Jingumae, Shibuya City, Tokyo", bestFor: "Youth fashion, sneakers, vintage clothing, and character goods" }),
       place("Akihabara", "Chiyoda", "Explore Chuo-dori and its side streets for electronics megastores, specialist hobby floors, arcades, and collectibles.", { address: "Akihabara Station, Sotokanda, Chiyoda City, Tokyo 101-0021", bestFor: "Electronics, anime, games, models, and retro technology" })
-    ]
+    ],
+    practical: {
+      emergencyNumbers: "Police 110 · Fire / Ambulance 119",
+      touristHotline: "Japan Visitor Hotline (JNTO, 24h) 050-3816-2787",
+      nearestEmbassy: "Needs verification — depends on your nationality; ask your AI to add your embassy in Tokyo",
+      hospitalOrClinic: "Needs verification — English-friendly clinic near your home base",
+      transitTips: "Get a Suica or Pasmo IC card (physical or in your phone wallet) for trains, subways, buses, and convenience stores.",
+      tipping: "Tipping is not customary in Japan and can cause confusion; excellent service is standard.",
+      keyPhrases: ["Sumimasen — excuse me / sorry", "Arigatou gozaimasu — thank you", "Eigo no menyuu wa arimasu ka? — do you have an English menu?"],
+      notes: ""
+    }
   },
   {
     match: /paris|france/i,
@@ -507,7 +530,7 @@ async function exportTripPackage() {
   const originalLabel = exportButton.textContent;
   exportButton.disabled = true;
   exportButton.classList.add("loading");
-  exportButton.innerHTML = `<img src="x-travel-agent-icon.svg" alt="">Preparing…`;
+  exportButton.innerHTML = `<img src="${brandIconSource()}" alt="">Preparing…`;
   const slug = trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
   const savedDay = activeDay;
   const savedTab = activeTab;
@@ -535,12 +558,14 @@ async function exportTripPackage() {
     const runtime = createExportRuntime();
     const inlineIcon = `data:image/svg+xml;base64,${window.XTRAVEL_ICON_BASE64 || ""}`;
     lastStandaloneHtml = websiteHtml.replaceAll("x-travel-agent-icon.svg", inlineIcon).replace('<link rel="stylesheet" href="styles.css">', `<style>${websiteCss}</style>`).replace('<script src="app.js"><\/script>', `<script>${runtime}<\/script>`);
-    const readme = `# ${trip.destination} xTravel Agent Website\n\nThis package is a complete visual export of the generated xTravel Agent report. It includes every date, section, navigation control, map, recommendation, and available bundled image.\n\n## Files\n\n- \`index.html\` — complete report website\n- \`styles.css\` — the report’s visual styling\n- \`app.js\` — offline date/tab navigation\n- \`assets/\` — successfully downloaded banners and place images\n- \`TRIP-PLAN.md\` — full AI planning handoff\n\nOpen \`index.html\` locally or upload the package to any static host. Google Maps embeds and links still require an internet connection. Images that could not be legally downloaded remain linked to their original public source.\n`;
+    const readme = `# ${trip.destination} xTravel Agent Website\n\nThis package contains the complete visual trip website and a round-trip AI planning workflow.\n\n## Keep planning\n\n1. Give \`TRIP-PLAN.md\` to ChatGPT, Claude, or another AI assistant.\n2. Ask it to return the complete updated file, including the \`json xtravel-trip\` block.\n3. In xTravel Agent, choose **Import updated plan** to re-render the website.\n4. Export a fresh package.\n\n## Publishing\n\nOpen \`index.html\` locally, drag the folder to Netlify Drop, or upload it to any static host such as GitHub Pages. Google Maps and remote images require an internet connection.\n`;
     const zip = createZip([
       { name: "index.html", content: websiteHtml },
       { name: "styles.css", content: websiteCss },
       { name: "app.js", content: runtime },
       { name: "TRIP-PLAN.md", content: markdown },
+      { name: "TRIP-DATA.json", content: serializeTripJson(trip) },
+      { name: "AGENT-INSTRUCTIONS.md", content: createAgentInstructions(trip) },
       { name: "README.md", content: readme },
       { name: "x-travel-agent-icon.svg", content: base64ToBytes(window.XTRAVEL_ICON_BASE64 || "") },
       ...bundled.files
@@ -695,7 +720,18 @@ function createTripMarkdown() {
   const locked = trip.bookings.length ? trip.bookings.map((item) => `- **${item.name}** — ${item.date || "date flexible"} — ${item.time || "time TBD"} — ${titleCase(item.status)}`).join("\n") : "- No locked bookings supplied.";
   const optional = trip.days.flatMap((day) => day.activities.filter((item) => /optional|backup/i.test(item.status || "")).map((item) => `- ${formatDate(day.date, false)} — ${item.title} — ${item.status}`)).join("\n") || "- No optional items marked.";
   const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time} — ${item.title}\n\n- Status: ${item.status || "Recommended"}\n- Type: ${item.type}\n- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}`).join("\n\n")}`).join("\n\n---\n\n");
-  return `# Trip Source of Truth\n\n> Exported from xTravel Agent. Use this as the authoritative planning context.\n\n## Trip Overview\n\n- **Destination:** ${trip.destination}\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Travelers:** ${trip.preferences.groupSize || "Not specified"} · ages ${trip.preferences.travelerAges || "not specified"}\n- **Home base:** ${trip.preferences.homeBase || "Not specified"}\n- **Trip purpose:** ${trip.preferences.purpose || "Not specified"}\n- **Trip style:** ${trip.preferences.outputTemplate || "Mobile Trip App"}\n\n## Locked Bookings\n\nDo not move or remove confirmed items unless explicitly requested.\n\n${locked}\n\n## Optional Items\n\n${optional}\n\n## Food Preferences & Restrictions\n\n${trip.preferences.foodRestrictions || "None supplied."}\n\n## Mobility & Walking Constraints\n\n${trip.preferences.mobilityNeeds || "None supplied."}\n\n## Things to Avoid\n\n${trip.preferences.avoid || "None supplied."}\n\n## Traveler Preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected Priorities\n\n${selected}\n\n## AI Instructions\n\n1. Use this file as the source of truth.\n2. Preserve confirmed bookings and traveler-designated must-do activities.\n3. Optimize each day geographically around its stated area and home base.\n4. Warn when an activity adds unnecessary travel time.\n5. Verify current hours, prices, closures, ratings, reservations, and availability.\n6. Label uncertain browser-only suggestions as Needs verification.\n7. Never invent live facts.\n\n---\n\n${days}\n`;
+  const practical = trip.practical || createEmptyPracticalInfo(trip.destination);
+  const practicalLines = [
+    `- **Emergency numbers:** ${practical.emergencyNumbers || "Needs verification"}`,
+    `- **Tourist hotline:** ${practical.touristHotline || "Needs verification"}`,
+    `- **Nearest embassy / consulate:** ${practical.nearestEmbassy || "Needs verification"}`,
+    `- **English-friendly hospital or clinic:** ${practical.hospitalOrClinic || "Needs verification"}`,
+    `- **Transit tips:** ${practical.transitTips || "Needs verification"}`,
+    `- **Tipping etiquette:** ${practical.tipping || "Needs verification"}`,
+    practical.keyPhrases && practical.keyPhrases.length ? `- **Key phrases:** ${practical.keyPhrases.join("; ")}` : "- **Key phrases:** Needs verification — a few useful local phrases",
+    practical.notes ? `- **Notes:** ${practical.notes}` : ""
+  ].filter(Boolean).join("\n");
+  return `# Trip Source of Truth\n\n> Exported from xTravel Agent. Use this as the authoritative planning context.\n\n## Trip Overview\n\n- **Destination:** ${trip.destination}\n- **Dates:** ${formatDate(trip.start, true)} through ${formatDate(trip.end, true)}\n- **Duration:** ${trip.days.length} days\n- **Travelers:** ${trip.preferences.groupSize || "Not specified"} · ages ${trip.preferences.travelerAges || "not specified"}\n- **Home base:** ${trip.preferences.homeBase || "Not specified"}\n- **Trip purpose:** ${trip.preferences.purpose || "Not specified"}\n- **Trip style:** ${trip.preferences.outputTemplate || "Mobile Trip App"}\n\n## Locked Bookings\n\nDo not move or remove confirmed items unless explicitly requested.\n\n${locked}\n\n## Optional Items\n\n${optional}\n\n## Food Preferences & Restrictions\n\n${trip.preferences.foodRestrictions || "None supplied."}\n\n## Mobility & Walking Constraints\n\n${trip.preferences.mobilityNeeds || "None supplied."}\n\n## Things to Avoid\n\n${trip.preferences.avoid || "None supplied."}\n\n## Traveler Preferences\n\n${preferenceLines || "- No additional preferences."}\n\n## Selected Priorities\n\n${selected}\n\n## Practical Info (verify and fill in)\n\nThe AI assistant should research and replace every "Needs verification" value below with verified, current details.\n\n${practicalLines}\n\n## AI Instructions\n\n1. Use this file as the source of truth.\n2. Preserve confirmed bookings and traveler-designated must-do activities.\n3. Optimize each day geographically around its stated area and home base.\n4. Warn when an activity adds unnecessary travel time.\n5. Verify current hours, prices, closures, ratings, reservations, and availability.\n6. Label uncertain browser-only suggestions as Needs verification.\n7. Never invent live facts.\n8. Research and fill the Practical Info section with verified details.\n9. **Return format (required):** reply with the COMPLETE updated version of this file — every heading above, your improved day-by-day plan, and an updated "Machine-Readable Trip Data" JSON block that exactly matches your revised plan (same schema, same field names, dates as YYYY-MM-DD).\n10. The traveler will import your JSON block back into xTravel Agent to re-render their trip website, so the JSON block must be complete and valid.\n\n---\n\n${days}\n\n---\n\n## Machine-Readable Trip Data\n\nDo not remove this section. Update it to match any changes you make above. xTravel Agent's "Import updated plan" feature reads this block.\n\n${TRIP_JSON_FENCE_OPEN}\n${serializeTripJson(trip)}\n\`\`\`\n`;
 }
 
 function downloadTripMarkdown() {
@@ -707,7 +743,7 @@ function downloadTripMarkdown() {
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
-function aiPrompt(platform) { return `Continue planning this trip in ${platform}. Treat the Markdown below as the source of truth. Preserve confirmed bookings, optimize geographically, flag live facts that need verification, and ask before changing locked items.\n\n${createTripMarkdown()}`; }
+function aiPrompt(platform) { return `Continue planning this trip in ${platform}. Treat the Markdown below as the source of truth. Preserve confirmed bookings, optimize geographically, research and verify live facts (hours, prices, closures, reservations, emergency and practical info), and ask before changing locked items.\n\nIMPORTANT — return format: reply with the COMPLETE updated TRIP-PLAN.md file, keeping every heading, and update the fenced \`\`\`json xtravel-trip block at the end so it exactly matches your revised plan (same schema and field names, dates as YYYY-MM-DD). I will import that JSON block back into xTravel Agent to re-render my trip website, so it must be complete and valid.\n\n${createTripMarkdown()}`; }
 async function copyText(text, confirmation = "Copied") { try { await navigator.clipboard.writeText(text); window.alert(confirmation); } catch (_) { window.prompt("Copy this text:", text); } }
 function copyAiPrompt(platform) { if (trip) copyText(aiPrompt(platform), `${platform} prompt copied`); }
 function previewExportWebsite() {
@@ -806,7 +842,7 @@ async function showTripCreationTransition() {
   logo.removeAttribute("src");
   void logo.offsetWidth;
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  logo.src = `x-travel-agent-icon.svg?transition=${Date.now()}`;
+  logo.src = brandIconSource();
   await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 650 : 4300));
   overlay.classList.add("finishing");
   await new Promise((resolve) => setTimeout(resolve, 280));
@@ -1088,6 +1124,7 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
     preferences,
     bookings,
     guide,
+    practical: guide.practical || null,
     researchMode: Boolean(guide.researchMode),
     days: itineraryDays
   };
@@ -1399,8 +1436,25 @@ function renderDuringTripTools() {
     ["🚇", "Transit note", `Start and finish near ${homeBase}. Keep transfers geographically compact.`],
     ["🧳", "Luggage note", activeDay === 0 || activeDay === trip.days.length - 1 ? "Confirm hotel storage before arrival/departure." : "Leave bags at your home base."],
     ["🌧️", "Rainy-day backup", `Use ${backup?.title || "a nearby indoor stop"} as the flexible alternative.`],
-    ["🆘", "Emergency card", "Save hotel address, insurance details, local emergency number, and embassy contact offline."]
+    ...createPracticalToolEntries()
   ].map(([icon, title, copy]) => `<article><span>${icon}</span><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div></article>`).join("");
+}
+
+function createPracticalToolEntries() {
+  const practical = trip.practical;
+  const hasVerified = (value) => value && !/needs verification/i.test(value);
+  if (!practical || !["emergencyNumbers", "touristHotline", "nearestEmbassy", "hospitalOrClinic", "transitTips", "tipping"].some((key) => hasVerified(practical[key]))) {
+    return [["🆘", "Emergency card", "Save your hotel address, insurance details, local emergency number, and embassy contact offline. Ask your AI to fill the Practical Info section, then import the updated plan."]];
+  }
+  const entries = [];
+  if (hasVerified(practical.emergencyNumbers)) entries.push(["🆘", "Emergency numbers", practical.emergencyNumbers]);
+  if (hasVerified(practical.touristHotline)) entries.push(["☎️", "Tourist hotline", practical.touristHotline]);
+  if (hasVerified(practical.nearestEmbassy)) entries.push(["🏛️", "Embassy / consulate", practical.nearestEmbassy]);
+  if (hasVerified(practical.hospitalOrClinic)) entries.push(["🏥", "Hospital / clinic", practical.hospitalOrClinic]);
+  if (hasVerified(practical.transitTips)) entries.push(["🎫", "Transit tips", practical.transitTips]);
+  if (hasVerified(practical.tipping)) entries.push(["💴", "Tipping", practical.tipping]);
+  if (practical.keyPhrases?.length) entries.push(["🗣️", "Key phrases", practical.keyPhrases.join(" · ")]);
+  return entries;
 }
 
 function renderBookings() {
