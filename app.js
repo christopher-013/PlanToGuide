@@ -16,11 +16,23 @@ function brandIconSource() {
   return window.XTRAVEL_ICON_BASE64 ? `data:image/svg+xml;base64,${window.XTRAVEL_ICON_BASE64}` : "x-travel-agent-icon.svg";
 }
 
+function brandIconAnimationSource() {
+  if (!window.XTRAVEL_ICON_BASE64) return `x-travel-agent-icon.svg?animation=${Date.now()}-${Math.random()}`;
+  return URL.createObjectURL(new Blob([base64ToBytes(window.XTRAVEL_ICON_BASE64)], { type: "image/svg+xml" }));
+}
+
+function releaseBrandIconSource(source, delay = 6000) {
+  if (source?.startsWith("blob:")) window.setTimeout(() => URL.revokeObjectURL(source), delay);
+}
+
 function hydrateBrandIcons() {
-  const source = brandIconSource();
-  document.querySelectorAll('img[src^="x-travel-agent-icon.svg"]').forEach((image) => { image.src = source; });
+  document.querySelectorAll('img[src^="x-travel-agent-icon.svg"]').forEach((image) => {
+    const source = brandIconAnimationSource();
+    image.src = source;
+    releaseBrandIconSource(source);
+  });
   const favicon = document.querySelector('link[rel="icon"]');
-  if (favicon) favicon.href = source;
+  if (favicon) favicon.href = brandIconSource();
 }
 
 hydrateBrandIcons();
@@ -292,6 +304,7 @@ let activeSuggestionCategory = 0;
 let currentFormStep = 1;
 let lastExportHtml = "";
 let lastStandaloneHtml = "";
+let focusedPhotoId = "";
 
 const today = new Date();
 const defaultStart = new Date(today.getFullYear(), today.getMonth() + 1, 8);
@@ -509,6 +522,10 @@ document.querySelector("#copyChatGptButton").addEventListener("click", () => cop
 document.querySelector("#copyClaudeButton").addEventListener("click", () => copyAiPrompt("Claude"));
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.tab)));
 document.querySelectorAll("[data-open-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.openTab)));
+document.querySelector("#photoUploadInput").addEventListener("change", handlePhotoUploads);
+document.querySelector("#addBookingEntry").addEventListener("click", () => addUserEntry("booking"));
+document.querySelector("#addFoodEntry").addEventListener("click", () => addUserEntry("food"));
+document.querySelector("#addShopEntry").addEventListener("click", () => addUserEntry("shop"));
 
 function showBuilder() {
   result.hidden = true;
@@ -542,7 +559,7 @@ async function exportTripPackage() {
       renderTrip();
       await waitForHydratedImages(document.querySelector(".trip-app"));
       const clone = document.querySelector(".trip-app").cloneNode(true);
-      clone.querySelectorAll("#exportTripButton,#editTripButton,.hero-export-button,.activity-menu").forEach((element) => element.remove());
+      clone.querySelectorAll("#exportTripButton,#editTripButton,.hero-export-button,.activity-menu,.photo-manager,.photo-remove-button,.photo-bottom-upload,.user-entry-manager").forEach((element) => element.remove());
       clone.querySelectorAll(".day-button").forEach((button, index) => button.dataset.exportDay = index);
       clone.querySelectorAll("[data-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === "home"));
       clone.querySelectorAll("[data-tab]").forEach((button) => button.classList.toggle("active", button.dataset.tab === "home"));
@@ -612,12 +629,6 @@ function waitForHydratedImages(root, timeout = 1800) {
 }
 
 async function collectExportStyles() {
-  if (window.XTRAVEL_STYLES_GZIP_BASE64) {
-    try {
-      const source = await decompressBase64Gzip(window.XTRAVEL_STYLES_GZIP_BASE64);
-      if (source.includes(".trip-app") && source.length > 10000) return source;
-    } catch (_) { /* Continue through browser-readable stylesheet fallbacks. */ }
-  }
   const localSheet = Array.from(document.styleSheets).find((sheet) => /styles\.css(?:\?|$)/.test(sheet.href || ""));
   if (localSheet?.href) {
     try {
@@ -633,6 +644,12 @@ async function collectExportStyles() {
     catch (_) { return ""; }
   }).filter(Boolean).join("\n");
   if (appliedRules.includes(".trip-app") && appliedRules.length > 10000) return appliedRules;
+  if (window.XTRAVEL_STYLES_GZIP_BASE64) {
+    try {
+      const source = await decompressBase64Gzip(window.XTRAVEL_STYLES_GZIP_BASE64);
+      if (source.includes(".trip-app") && source.length > 10000) return source;
+    } catch (_) { /* Continue through browser-readable stylesheet fallbacks. */ }
+  }
   if (localSheet?.href) {
     try {
       const source = await readLocalTextAsset(localSheet.href);
@@ -816,7 +833,19 @@ function showFormStep(stepNumber) {
   });
   document.querySelector("#formStepTitle").textContent = ["", "Trip basics", "Choose your adventure", "Travelers & style", "Bookings & constraints", "Output style"][stepNumber];
   document.querySelector("#formStepCount").textContent = `Step ${displayedStep} of 5`;
-  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  forceWizardTop();
+}
+
+function forceWizardTop() {
+  const reset = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    builder.scrollTop = 0;
+    form.scrollTop = 0;
+  };
+  reset();
+  requestAnimationFrame(() => { reset(); requestAnimationFrame(reset); });
 }
 
 function navigateToWizardStep(stepNumber) {
@@ -842,13 +871,15 @@ async function showTripCreationTransition() {
   logo.removeAttribute("src");
   void logo.offsetWidth;
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  logo.src = brandIconSource();
+  const animationSource = brandIconAnimationSource();
+  logo.src = animationSource;
   await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 650 : 4300));
   overlay.classList.add("finishing");
   await new Promise((resolve) => setTimeout(resolve, 280));
   overlay.hidden = true;
   overlay.classList.remove("finishing");
   document.body.classList.remove("creating-trip");
+  releaseBrandIconSource(animationSource, 0);
 }
 
 function getTripPreferences() {
@@ -1370,6 +1401,7 @@ function renderTrip() {
   renderBookings();
   renderDuringTripTools();
   renderRefinementActions();
+  renderPhotos();
   document.querySelector("#markdownPreview").textContent = createTripMarkdown();
   switchAppTab(activeTab);
 }
@@ -1459,11 +1491,22 @@ function createPracticalToolEntries() {
 
 function renderBookings() {
   const container = document.querySelector("#bookingList");
-  if (!trip.bookings.length) {
+  const allBookings = trip.bookings.concat(loadUserEntries("booking").map((item) => ({ name: item.title, date: item.date, time: item.details || "Confirmed", status: "confirmed" })));
+  syncUserEntryDates();
+  if (!allBookings.length) {
     container.innerHTML = `<div class="empty-section"><span>✅</span><h3>No locked bookings yet</h3><p>Add hotels, tickets, flights, tours, or restaurant reservations through Edit trip.</p></div>`;
     return;
   }
   container.innerHTML = `<div class="booking-cards">${trip.bookings.map((item) => `<article><span class="status-tag status-${item.status.replace(/\s+/g,"-")}">${escapeHtml(titleCase(item.status))}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.date || "Date flexible")} · ${escapeHtml(item.time || "Time TBD")}</p><small>Traveler supplied · preserve this anchor</small></article>`).join("")}</div>`;
+  const customCards = loadUserEntries("booking");
+  if (customCards.length) {
+    const grid = container.querySelector(".booking-cards");
+    customCards.forEach((item) => {
+      const card = document.createElement("article");
+      card.innerHTML = `<span class="status-tag status-confirmed">Confirmed</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.date || "Date flexible")}</p><small>${escapeHtml(item.details || "Traveler supplied · preserve this anchor")}</small>`;
+      grid.appendChild(card);
+    });
+  }
 }
 
 function renderRefinementActions() {
@@ -1781,6 +1824,7 @@ function renderFoodOptions() {
     section.appendChild(grid);
     container.appendChild(section);
   });
+  renderUserEntryCards(container, "food", "Your saved food places");
   container.appendChild(renderPlanningNote("Restaurant popularity, hours, and reservation policies change. Verify details before visiting."));
 }
 
@@ -1790,7 +1834,75 @@ function renderShoppingOptions() {
   container.innerHTML = `<div class="selected-date-context"><span>Selected date · ${escapeHtml(activeZone ? activeZone.name : trip.destination)}</span><strong>${formatDate(trip.days[activeDay].date, false)}</strong><a class="google-maps-link" href="${googleMapsSearchUrl(`best shopping ${activeZone ? activeZone.name : ""}`)}" target="_blank" rel="noopener noreferrer">Discover more on Google Maps ↗</a></div><section class="option-group"><div class="option-group-heading"><span>🛍️</span><div><p>Popular near today’s route</p><h3>Where to shop</h3></div></div><div class="option-card-grid" id="shoppingOptionGrid"></div></section>`;
   const grid = container.querySelector("#shoppingOptionGrid");
   rankForZone(trip.guide.shopping, activeZone).slice(0, 3).forEach((option, index) => grid.appendChild(renderRecommendationCard(option, `Shopping option ${index + 1}`, "🛍️")));
+  renderUserEntryCards(container, "shop", "Your saved shopping places");
   container.appendChild(renderPlanningNote("Market days and store hours vary. Confirm schedules before building the final route."));
+}
+
+function userEntryStorageKey(kind) {
+  const destination = (trip?.destination || "trip").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
+  return `x-travel-agent-${kind}-entries-${destination}`;
+}
+
+function loadUserEntries(kind) {
+  try {
+    const entries = JSON.parse(safeStorageGet(userEntryStorageKey(kind)) || "[]");
+    return Array.isArray(entries) ? entries.filter((item) => item?.title) : [];
+  } catch (_) { return []; }
+}
+
+function saveUserEntries(kind, entries) {
+  safeStorageSet(userEntryStorageKey(kind), JSON.stringify(entries));
+}
+
+function syncUserEntryDates() {
+  if (!trip?.days?.[activeDay]) return;
+  const selectedDate = toInputDate(trip.days[activeDay].date);
+  ["booking", "food", "shop"].forEach((kind) => {
+    const input = document.querySelector(`#${kind}EntryDate`);
+    if (input && !input.value) input.value = selectedDate;
+  });
+}
+
+function addUserEntry(kind) {
+  const titleInput = document.querySelector(`#${kind}EntryTitle`);
+  const dateInput = document.querySelector(`#${kind}EntryDate`);
+  const detailsInput = document.querySelector(`#${kind}EntryDetails`);
+  const status = document.querySelector(`#${kind}EntryStatus`);
+  const title = titleInput.value.trim();
+  if (!title) {
+    status.textContent = "Add a location or name before saving.";
+    status.classList.add("error");
+    titleInput.focus();
+    return;
+  }
+  const entries = loadUserEntries(kind);
+  entries.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, title, date: dateInput.value || currentPhotoDate(), details: detailsInput.value.trim() });
+  saveUserEntries(kind, entries);
+  titleInput.value = "";
+  detailsInput.value = "";
+  status.textContent = `${title} added.`;
+  status.classList.remove("error");
+  if (kind === "booking") renderBookings();
+  if (kind === "food") renderFoodOptions();
+  if (kind === "shop") renderShoppingOptions();
+}
+
+function renderUserEntryCards(container, kind, heading) {
+  syncUserEntryDates();
+  const selectedDate = currentPhotoDate();
+  const entries = loadUserEntries(kind).filter((item) => !item.date || item.date === selectedDate);
+  if (!entries.length) return;
+  const section = document.createElement("section");
+  section.className = "option-group user-saved-section";
+  section.innerHTML = `<div class="option-group-heading"><div><p>Traveler supplied</p><h3>${escapeHtml(heading)}</h3></div></div><div class="user-saved-card-list"></div>`;
+  const list = section.querySelector(".user-saved-card-list");
+  entries.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "user-saved-card";
+    card.innerHTML = `<div><span class="status-tag status-confirmed">Saved</span><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.details || "Traveler-added place")}</p><small>${escapeHtml(item.date || "Date flexible")}</small><a class="google-maps-link" href="${googleMapsSearchUrl(item.title)}" target="_blank" rel="noopener noreferrer">Open in Google Maps ↗</a></div>`;
+    list.appendChild(card);
+  });
+  container.appendChild(section);
 }
 
 function renderRecommendationCard(option, label, icon) {
@@ -1880,6 +1992,288 @@ function renderActivity(activity) {
     card.querySelector("h4").focus();
   });
   return fragment;
+}
+
+function photoStorageKey() {
+  const destination = (trip?.destination || "trip").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "trip";
+  return `x-travel-agent-photos-${destination}`;
+}
+
+function loadTripPhotos() {
+  try {
+    const photos = JSON.parse(safeStorageGet(photoStorageKey()) || "[]");
+    return Array.isArray(photos) ? photos.filter((photo) => photo?.src) : [];
+  } catch (_) { return []; }
+}
+
+function saveTripPhotos(photos) {
+  try {
+    window.localStorage.setItem(photoStorageKey(), JSON.stringify(photos));
+    return true;
+  } catch (_) {
+    setPhotoStatus("This browser is out of photo storage. Remove an image or upload a smaller file.", true);
+    return false;
+  }
+}
+
+function setPhotoStatus(message, isError = false) {
+  const status = document.querySelector("#photoManagerStatus");
+  status.textContent = message;
+  status.classList.toggle("error", isError);
+}
+
+function currentPhotoDate() {
+  return trip?.days?.[activeDay] ? toInputDate(trip.days[activeDay].date) : "";
+}
+
+async function handlePhotoUploads(event) {
+  const files = [...(event.target.files || [])].filter((file) => file.type.startsWith("image/"));
+  const requestedCaption = document.querySelector("#photoCaptionInput").value.trim();
+  event.target.value = "";
+  if (!files.length) return setPhotoStatus("Choose one or more image files.", true);
+  setPhotoStatus(`Preparing ${files.length} ${files.length === 1 ? "photo" : "photos"}…`);
+  const existing = loadTripPhotos();
+  const additions = [];
+  for (const file of files.slice(0, 12)) {
+    try {
+      const metadata = await readPhotoMetadata(file);
+      const metadataDate = itineraryDateFromMetadata(metadata.capturedDate);
+      additions.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        src: await resizePhotoFile(file),
+        caption: requestedCaption
+          ? (files.length === 1 ? requestedCaption : `${requestedCaption} · ${file.name.replace(/\.[^.]+$/, "")}`)
+          : file.name.replace(/\.[^.]+$/, ""),
+        date: metadataDate || currentPhotoDate(),
+        capturedAt: metadata.capturedAt || "",
+        latitude: metadata.latitude,
+        longitude: metadata.longitude,
+        source: "upload"
+      });
+    } catch (_) { /* Continue with the remaining valid images. */ }
+  }
+  if (!additions.length) return setPhotoStatus("Those images could not be prepared. Try JPG, PNG, or WebP files.", true);
+  if (saveTripPhotos([...existing, ...additions])) {
+    document.querySelector("#photoCaptionInput").value = "";
+    setPhotoStatus(`${additions.length} ${additions.length === 1 ? "photo" : "photos"} added to your journal.`);
+    renderPhotos();
+  }
+}
+
+function itineraryDateFromMetadata(capturedDate) {
+  if (!capturedDate) return "";
+  return trip.days.some((day) => toInputDate(day.date) === capturedDate) ? capturedDate : "";
+}
+
+async function readPhotoMetadata(file) {
+  if (!/jpe?g/i.test(file.type) && !/\.jpe?g$/i.test(file.name)) return {};
+  try { return parseJpegExif(await file.arrayBuffer()); }
+  catch (_) { return {}; }
+}
+
+function parseJpegExif(buffer) {
+  const view = new DataView(buffer);
+  if (view.byteLength < 12 || view.getUint16(0, false) !== 0xffd8) return {};
+  let offset = 2;
+  while (offset + 4 < view.byteLength) {
+    const marker = view.getUint16(offset, false);
+    offset += 2;
+    if ((marker & 0xff00) !== 0xff00 || offset + 2 > view.byteLength) break;
+    const length = view.getUint16(offset, false);
+    const dataStart = offset + 2;
+    if (marker === 0xffe1 && length >= 8 && dataStart + 6 < view.byteLength && view.getUint32(dataStart, false) === 0x45786966) {
+      return parseTiffExif(view, dataStart + 6);
+    }
+    if (length < 2) break;
+    offset += length;
+  }
+  return {};
+}
+
+function parseTiffExif(view, tiffStart) {
+  if (tiffStart + 8 > view.byteLength) return {};
+  const byteOrder = view.getUint16(tiffStart, false);
+  const little = byteOrder === 0x4949;
+  if (!little && byteOrder !== 0x4d4d) return {};
+  const u16 = (position) => view.getUint16(position, little);
+  const u32 = (position) => view.getUint32(position, little);
+  if (u16(tiffStart + 2) !== 42) return {};
+  const typeSize = { 1:1, 2:1, 3:2, 4:4, 5:8, 7:1, 9:4, 10:8 };
+  const readEntries = (relativeOffset) => {
+    if (!relativeOffset) return new Map();
+    const start = tiffStart + relativeOffset;
+    if (start < tiffStart || start + 2 > view.byteLength) return new Map();
+    const count = u16(start);
+    const entries = new Map();
+    for (let index = 0; index < count; index += 1) {
+      const entry = start + 2 + index * 12;
+      if (entry + 12 > view.byteLength) break;
+      entries.set(u16(entry), entry);
+    }
+    return entries;
+  };
+  const valuePosition = (entry) => {
+    const type = u16(entry + 2);
+    const count = u32(entry + 4);
+    const bytes = (typeSize[type] || 1) * count;
+    return { type, count, position: bytes <= 4 ? entry + 8 : tiffStart + u32(entry + 8) };
+  };
+  const ascii = (entry) => {
+    if (!entry) return "";
+    const value = valuePosition(entry);
+    if (value.position < 0 || value.position + value.count > view.byteLength) return "";
+    let text = "";
+    for (let index = 0; index < value.count; index += 1) {
+      const code = view.getUint8(value.position + index);
+      if (!code) break;
+      text += String.fromCharCode(code);
+    }
+    return text.trim();
+  };
+  const pointer = (entry) => entry ? u32(entry + 8) : 0;
+  const rationalArray = (entry) => {
+    if (!entry) return [];
+    const value = valuePosition(entry);
+    const numbers = [];
+    for (let index = 0; index < value.count && value.position + index * 8 + 8 <= view.byteLength; index += 1) {
+      const numerator = u32(value.position + index * 8);
+      const denominator = u32(value.position + index * 8 + 4);
+      numbers.push(denominator ? numerator / denominator : 0);
+    }
+    return numbers;
+  };
+  const ifd0 = readEntries(u32(tiffStart + 4));
+  const exifIfd = readEntries(pointer(ifd0.get(0x8769)));
+  const gpsIfd = readEntries(pointer(ifd0.get(0x8825)));
+  const capturedAt = ascii(exifIfd.get(0x9003)) || ascii(exifIfd.get(0x9004)) || ascii(ifd0.get(0x0132));
+  const dateMatch = capturedAt.match(/^(\d{4}):(\d{2}):(\d{2})/);
+  const latitudeParts = rationalArray(gpsIfd.get(0x0002));
+  const longitudeParts = rationalArray(gpsIfd.get(0x0004));
+  const latitudeRef = ascii(gpsIfd.get(0x0001)).toUpperCase();
+  const longitudeRef = ascii(gpsIfd.get(0x0003)).toUpperCase();
+  const decimal = (parts, reference) => {
+    if (parts.length < 3) return null;
+    const value = parts[0] + parts[1] / 60 + parts[2] / 3600;
+    return /[SW]/.test(reference) ? -value : value;
+  };
+  const latitude = decimal(latitudeParts, latitudeRef);
+  const longitude = decimal(longitudeParts, longitudeRef);
+  return {
+    capturedAt,
+    capturedDate: dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : "",
+    latitude: Number.isFinite(latitude) && Math.abs(latitude) <= 90 ? latitude : null,
+    longitude: Number.isFinite(longitude) && Math.abs(longitude) <= 180 ? longitude : null
+  };
+}
+
+function resizePhotoFile(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, 1400 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", .8));
+    };
+    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Image could not be read")); };
+    image.src = objectUrl;
+  });
+}
+
+function renderPhotos() {
+  const gallery = document.querySelector("#photoGallery");
+  const empty = document.querySelector("#photoEmptyState");
+  const bottomUpload = document.querySelector("#photoBottomUpload");
+  const selectedDate = currentPhotoDate();
+  const photos = loadTripPhotos().filter((photo) => photo.date === selectedDate);
+  const selectedDay = trip.days[activeDay];
+  document.querySelector("#photoSelectedDayTitle").textContent = `${formatDate(selectedDay.date, true)} · ${selectedDay.title}`;
+  document.querySelector("#photoSelectedDayCount").textContent = `${photos.length} ${photos.length === 1 ? "photo" : "photos"}`;
+  gallery.replaceChildren();
+  photos.forEach((photo) => {
+    const card = document.createElement("figure");
+    card.className = "photo-card";
+    const image = document.createElement("img");
+    image.src = photo.src;
+    image.alt = photo.caption || "Trip photo";
+    image.loading = "lazy";
+    image.addEventListener("error", () => card.classList.add("photo-load-error"));
+    const caption = document.createElement("figcaption");
+    const metadataLabel = photo.capturedAt ? ` · Captured ${escapeHtml(photo.capturedAt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))}` : "";
+    caption.innerHTML = `<strong>${escapeHtml(photo.caption || "Trip photo")}</strong><span>${photo.date ? escapeHtml(formatDate(parseDate(photo.date), true)) : "Trip journal"} · ${photo.source === "link" ? "Linked image" : "Uploaded image"}${metadataLabel}</span>`;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "photo-remove-button";
+    remove.setAttribute("aria-label", `Remove ${photo.caption || "photo"}`);
+    remove.textContent = "×";
+    remove.addEventListener("click", () => {
+      if (saveTripPhotos(loadTripPhotos().filter((candidate) => candidate.id !== photo.id))) {
+        setPhotoStatus("Photo removed.");
+        renderPhotos();
+      }
+    });
+    card.append(image, caption, remove);
+    if (hasPhotoCoordinates(photo)) {
+      const locate = document.createElement("button");
+      locate.type = "button";
+      locate.className = "photo-location-button";
+      locate.textContent = "📍 Show on map";
+      locate.addEventListener("click", () => { focusedPhotoId = photo.id; renderPhotoMap(photos); });
+      card.appendChild(locate);
+    }
+    gallery.appendChild(card);
+  });
+  empty.hidden = photos.length > 0;
+  bottomUpload.hidden = photos.length === 0;
+  if (!photos.length && !empty.querySelector(".photo-empty-upload")) {
+    const upload = document.createElement("label");
+    upload.className = "photo-upload-button photo-empty-upload";
+    upload.htmlFor = "photoUploadInput";
+    upload.textContent = "Upload photos";
+    empty.appendChild(upload);
+  }
+  renderPhotoMap(photos);
+}
+
+function hasPhotoCoordinates(photo) {
+  return Number.isFinite(Number(photo?.latitude)) && Number.isFinite(Number(photo?.longitude));
+}
+
+function renderPhotoMap(photos) {
+  const container = document.querySelector("#photoDayMap");
+  const geotagged = photos.filter(hasPhotoCoordinates);
+  if (!geotagged.length) {
+    container.innerHTML = `<div class="photo-day-map-head"><div><div class="photo-day-map-title">🗺️ Today’s photo trail</div><div class="photo-day-map-sub">Google Maps locations appear here when uploaded photos contain GPS metadata.</div></div><div class="photo-day-map-count">0 tagged</div></div><div class="photo-map-empty"><strong>No geotagged photos for this date</strong>Photos without GPS still remain in the selected day’s gallery.</div>`;
+    return;
+  }
+  const focused = geotagged.find((photo) => photo.id === focusedPhotoId) || geotagged[0];
+  focusedPhotoId = focused.id;
+  const latitude = Number(focused.latitude);
+  const longitude = Number(focused.longitude);
+  const coordinate = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+  const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(coordinate)}&z=14&t=m&hl=en&output=embed`;
+  const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinate)}`;
+  const groups = new Map();
+  geotagged.forEach((photo) => {
+    const key = `${Number(photo.latitude).toFixed(5)},${Number(photo.longitude).toFixed(5)}`;
+    if (!groups.has(key)) groups.set(key, { photo, count: 0 });
+    groups.get(key).count += 1;
+  });
+  container.innerHTML = `<div class="photo-day-map-head"><div><div class="photo-day-map-title">🗺️ Today’s photo trail</div><div class="photo-day-map-sub">Google Maps view plotted from the original photo geotags. Choose a location below to move the map.</div></div><div class="photo-day-map-count">${geotagged.length} tagged</div></div><div class="photo-map-frame"><iframe title="Google Map of the selected photo location" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="${mapEmbed}"></iframe><a class="photo-map-open" href="${mapLink}" target="_blank" rel="noopener">View interactive map ↗</a></div><div class="photo-map-legend"></div>`;
+  const legend = container.querySelector(".photo-map-legend");
+  [...groups.values()].forEach(({ photo, count }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "photo-map-place";
+    button.innerHTML = `<b>${count}</b><span>${escapeHtml(photo.caption || "Geotagged photo")}<br>${Number(photo.latitude).toFixed(4)}, ${Number(photo.longitude).toFixed(4)}</span>`;
+    button.addEventListener("click", () => { focusedPhotoId = photo.id; renderPhotoMap(photos); });
+    legend.appendChild(button);
+  });
 }
 
 function parseIdeas(text) {
