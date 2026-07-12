@@ -2870,38 +2870,38 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   .app-nav {
     display: flex;
     flex: 0 0 auto;
-    min-height: 72px;
-    gap: 4px;
+    min-height: 64px;
+    gap: 3px;
     justify-content: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 5px 11vw max(8px, env(safe-area-inset-bottom)) 7px;
+    padding: 4px 12vw max(7px, env(safe-area-inset-bottom)) 6px;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .app-nav::-webkit-scrollbar { display: none; }
   .app-nav-button {
-    flex: 0 0 calc((100vw - 44px) / 6);
-    width: calc((100vw - 44px) / 6);
-    min-width: 52px;
-    max-width: 64px;
-    min-height: 60px;
-    gap: 3px;
+    flex: 0 0 calc((100vw - 34px) / 6);
+    width: calc((100vw - 34px) / 6);
+    min-width: 44px;
+    max-width: 58px;
+    min-height: 54px;
+    gap: 2px;
     padding: 4px 2px;
     scroll-snap-align: start;
   }
   .app-nav-button > span {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 17px;
+    width: 31px;
+    height: 31px;
+    min-width: 31px;
+    min-height: 31px;
+    font-size: 15px;
   }
   .app-nav-button small {
-    max-width: 58px;
+    max-width: 52px;
     overflow: hidden;
-    font-size: 7.5px;
+    font-size: 7px;
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
