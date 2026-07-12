@@ -14,7 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
   <link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260709-loading-brand-1">
+  <!-- When releasing, update APP_VERSION in version.js AND the ?v= value below — they must match. -->
+  <link rel="stylesheet" href="styles.css?v=3.1.0">
 </head>
 <body>
   <main class="page-shell">
@@ -72,11 +73,12 @@
               <p>One city, a whole country, or anywhere in between.</p>
               <div class="input-wrap">
                 <span aria-hidden="true">⌖</span>
-                <input id="destination" name="destination" type="text" list="knownDestinationList" placeholder="Start typing a supported destination" autocomplete="off" aria-describedby="destinationHelp destinationError" required>
+                <input id="destination" name="destination" type="text" list="knownDestinationList" placeholder="Start typing a supported destination" autocomplete="off" aria-describedby="destinationHelp destinationModeBadge destinationError" required>
                 <button class="input-clear-button" id="clearDestinationButton" type="button" aria-label="Clear destination" hidden>×</button>
                 <datalist id="knownDestinationList"></datalist>
               </div>
               <small class="destination-help" id="destinationHelp">Choose a catalog suggestion for richer local detail, or enter any destination to create a starter plan and AI-ready research file.</small>
+              <p class="destination-mode-badge" id="destinationModeBadge" role="status" aria-live="polite" hidden></p>
               <p class="destination-error" id="destinationError" role="alert"></p>
             </div>
           </div>
@@ -110,6 +112,7 @@
             <p class="eyebrow">Popular in <span id="suggestionDestination">your destination</span></p>
             <h2 id="adventureStepTitle">Choose your own adventure</h2>
             <p id="adventureStepCopy">Start with the places you would most like to see. Every selection is prioritized once in your daily itinerary.</p>
+            <p class="starter-suggestion-note" id="starterSuggestionNote" hidden>Suggestions are limited for this destination — your selections and notes will be preserved for AI research.</p>
           </div>
           <div class="suggestion-toolbar">
             <div><strong>Not sure where to begin?</strong><span>We'll make a balanced mix for your trip length.</span></div>
@@ -354,6 +357,7 @@
     <h2 id="importDialogTitle">Import an AI-updated plan</h2>
     <p>Paste the complete TRIP-PLAN.md your AI assistant returned (or just its <code>json plantoguide-trip</code> block), or choose the file. PlanToGuide reads the Machine-Readable Trip Data section and re-renders your trip website. Legacy <code>xtravel-trip</code> files remain supported.</p>
     <textarea id="importPlanText" rows="9" placeholder="Paste the full TRIP-PLAN.md returned by Claude, ChatGPT, or another AI…" aria-label="Updated plan content"></textarea>
+    <div class="import-precheck" id="importPrecheck" role="status" aria-live="polite">No trip JSON block found yet.</div>
     <div class="import-error" id="importError" role="alert" hidden></div>
     <div class="import-actions">
       <label class="secondary-button import-file-label">Choose .md file<input id="importPlanFile" type="file" accept=".md,.markdown,.txt,.json" hidden></label>
@@ -385,10 +389,11 @@
     </article>
   </template>
 
-  <script src="export-styles.js?v=20260707-photo-controls-logo-2"></script>
-  <script src="icon-source.js?v=20260707-centered-logo-1"></script>
-  <script src="photo-store.js?v=20260711-phase2-photos-1"></script>
-  <script src="trip-schema.js?v=20260706-round-trip-1"></script>
-  <script src="app.js?v=20260707-centered-logo-1"></script>
+  <script src="version.js?v=3.1.0"></script>
+  <script src="export-styles.js?v=3.1.0"></script>
+  <script src="icon-source.js?v=3.1.0"></script>
+  <script src="photo-store.js?v=3.1.0"></script>
+  <script src="trip-schema.js?v=3.1.0"></script>
+  <script src="app.js?v=3.1.0"></script>
 </body>
 </html>

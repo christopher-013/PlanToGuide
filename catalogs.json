@@ -1,0 +1,1403 @@
+{
+  "destinationCatalogs": [
+    {
+      "matchPattern": "tokyo|japan",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1800&q=82",
+      "zones": [
+        {
+          "name": "Asakusa & Ueno",
+          "icon": "⛩️",
+          "keywords": [
+            "asakusa",
+            "ueno",
+            "taito",
+            "senso",
+            "nakamise"
+          ]
+        },
+        {
+          "name": "Shibuya & Harajuku",
+          "icon": "🌆",
+          "keywords": [
+            "shibuya",
+            "harajuku",
+            "aoyama",
+            "jingumae",
+            "omotesando",
+            "meiji"
+          ]
+        },
+        {
+          "name": "Ginza & Central Tokyo",
+          "icon": "🗼",
+          "keywords": [
+            "ginza",
+            "chuo",
+            "chūō",
+            "tsukiji",
+            "marunouchi",
+            "imperial",
+            "tokyo station"
+          ]
+        },
+        {
+          "name": "Tokyo Bay & Minato",
+          "icon": "🌉",
+          "keywords": [
+            "tokyo bay",
+            "odaiba",
+            "minato",
+            "teamlab",
+            "nishiazabu",
+            "tokyo tower",
+            "zojoji"
+          ]
+        },
+        {
+          "name": "Akihabara & East Tokyo",
+          "icon": "🎮",
+          "keywords": [
+            "akihabara",
+            "chiyoda",
+            "electronics",
+            "anime",
+            "ueno"
+          ]
+        }
+      ],
+      "attractions": [
+        {
+          "name": "Sensō-ji and Nakamise-dori",
+          "area": "Asakusa",
+          "detail": "Begin at Kaminarimon, explore the temple grounds, then browse the historic shopping street."
+        },
+        {
+          "name": "Meiji Jingu and Harajuku",
+          "area": "Shibuya",
+          "detail": "Pair the wooded shrine approach with Takeshita Street and Omotesando."
+        },
+        {
+          "name": "Shibuya Crossing and Shibuya Sky",
+          "area": "Shibuya",
+          "detail": "See the crossing at street level, then reserve a skyline time slot near sunset."
+        },
+        {
+          "name": "Tsukiji Outer Market",
+          "area": "Chūō",
+          "detail": "Go early for seafood, tamagoyaki, and compact market lanes."
+        },
+        {
+          "name": "Tokyo National Museum and Ueno Park",
+          "area": "Ueno",
+          "detail": "Allow several hours for Japanese art, history, and a park walk."
+        },
+        {
+          "name": "teamLab Planets and Odaiba waterfront",
+          "area": "Tokyo Bay",
+          "detail": "Reserve the immersive museum, then continue to the bay for evening views."
+        },
+        {
+          "name": "Imperial Palace East Gardens",
+          "area": "Marunouchi",
+          "detail": "Walk the gardens and finish around Tokyo Station’s restored red-brick frontage."
+        },
+        {
+          "name": "Tokyo Tower and Zojoji Temple",
+          "area": "Minato",
+          "detail": "Combine a classic observation landmark with the neighboring temple grounds."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Tsukiji Outer Market",
+            "area": "Chūō",
+            "detail": "A lively maze of seafood, produce, and specialty counters best visited early.",
+            "address": "4 Chome Tsukiji, Chuo City, Tokyo 104-0045",
+            "rating": "4.2",
+            "order": "Tamagoyaki, tuna donburi, grilled scallops, or seasonal sashimi"
+          },
+          {
+            "name": "Onigiri Asakusa Yadoroku",
+            "area": "Asakusa",
+            "detail": "A tiny, traditional counter devoted to carefully made rice balls.",
+            "address": "3 Chome-9-10 Asakusa, Taito City, Tokyo 111-0032",
+            "rating": "4.3",
+            "order": "Salmon, kombu, or ume onigiri with miso soup"
+          },
+          {
+            "name": "Pelican Café",
+            "area": "Asakusa",
+            "detail": "A relaxed café showcasing the neighborhood bakery’s famous bread.",
+            "address": "2 Chome-5-3 Kotobuki, Taito City, Tokyo 111-0042",
+            "rating": "4.1",
+            "order": "Charcoal toast, ham cutlet sandwich, and coffee"
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Uobei Shibuya Dogenzaka",
+            "area": "Shibuya",
+            "detail": "Fast, approachable sushi delivered directly to your seat by express lane.",
+            "address": "2 Chome-29-11 Dogenzaka, Shibuya, Tokyo 150-0043",
+            "rating": "4.3",
+            "order": "Tuna, salmon, seared nigiri, and seasonal specials"
+          },
+          {
+            "name": "Afuri Harajuku",
+            "area": "Harajuku",
+            "detail": "A modern ramen stop known for fragrant citrus-forward broth.",
+            "address": "1 Chome-1-7 Jingumae, Shibuya, Tokyo 150-0001",
+            "rating": "4.3",
+            "order": "Yuzu shio ramen or yuzu ratanmen"
+          },
+          {
+            "name": "Maisen Aoyama",
+            "area": "Aoyama",
+            "detail": "A Tokyo tonkatsu institution in a memorable converted bathhouse.",
+            "address": "4 Chome-8-5 Jingumae, Shibuya, Tokyo 150-0001",
+            "rating": "4.4",
+            "order": "Kurobuta pork loin or tenderloin tonkatsu set"
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Gonpachi Nishi-Azabu",
+            "area": "Minato",
+            "detail": "A theatrical, high-energy izakaya with a broad menu for groups.",
+            "address": "1 Chome-13-11 Nishiazabu, Minato City, Tokyo 106-0031",
+            "rating": "4.1",
+            "order": "Yakitori, handmade soba, and assorted tempura"
+          },
+          {
+            "name": "Sushi no Midori Ginza",
+            "area": "Ginza",
+            "detail": "Generous, well-known sushi sets; expect queues and check reservations.",
+            "address": "7 Chome-2 Ginza, Chuo City, Tokyo 104-0061",
+            "rating": "4.3",
+            "order": "Chef’s nigiri set, fatty tuna, and conger eel"
+          },
+          {
+            "name": "Omoide Yokocho",
+            "area": "Shinjuku",
+            "detail": "An atmospheric lane of tiny independent yakitori and noodle counters.",
+            "address": "1 Chome-2 Nishishinjuku, Shinjuku City, Tokyo 160-0023",
+            "rating": "4.1",
+            "order": "Yakitori assortment, motsuyaki, and a cold beer"
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Ginza",
+          "area": "Chūō",
+          "detail": "Tokyo’s polished retail district: begin at the Ginza 4-chome crossing, compare historic department stores, then browse stationery and basement food halls.",
+          "address": "Ginza 4-chome Crossing, Chuo City, Tokyo 104-0061",
+          "bestFor": "Luxury flagships, Japanese stationery, beauty, and gourmet gifts"
+        },
+        {
+          "name": "Shibuya and Harajuku",
+          "area": "Shibuya",
+          "detail": "A fashion circuit linking Shibuya’s vertical malls with Cat Street, Takeshita Street, and Omotesando design stores.",
+          "address": "Shibuya Station to Jingumae, Shibuya City, Tokyo",
+          "bestFor": "Youth fashion, sneakers, vintage clothing, and character goods"
+        },
+        {
+          "name": "Akihabara",
+          "area": "Chiyoda",
+          "detail": "Explore Chuo-dori and its side streets for electronics megastores, specialist hobby floors, arcades, and collectibles.",
+          "address": "Akihabara Station, Sotokanda, Chiyoda City, Tokyo 101-0021",
+          "bestFor": "Electronics, anime, games, models, and retro technology"
+        }
+      ],
+      "practical": {
+        "emergencyNumbers": "Police 110 · Fire / Ambulance 119",
+        "touristHotline": "Japan Visitor Hotline (JNTO, 24h) 050-3816-2787",
+        "nearestEmbassy": "Needs verification — depends on your nationality; ask your AI to add your embassy in Tokyo",
+        "hospitalOrClinic": "Needs verification — English-friendly clinic near your home base",
+        "transitTips": "Get a Suica or Pasmo IC card (physical or in your phone wallet) for trains, subways, buses, and convenience stores.",
+        "tipping": "Tipping is not customary in Japan and can cause confusion; excellent service is standard.",
+        "keyPhrases": [
+          "Sumimasen — excuse me / sorry",
+          "Arigatou gozaimasu — thank you",
+          "Eigo no menyuu wa arimasu ka? — do you have an English menu?"
+        ],
+        "notes": ""
+      }
+    },
+    {
+      "matchPattern": "paris|france",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1800&q=82",
+      "attractions": [
+        {
+          "name": "Eiffel Tower and Champ de Mars",
+          "area": "7th arrondissement",
+          "detail": "Reserve timed entry or enjoy the best ground-level views from Trocadéro."
+        },
+        {
+          "name": "Louvre Museum",
+          "area": "1st arrondissement",
+          "detail": "Book ahead and choose a focused collection route rather than attempting every gallery."
+        },
+        {
+          "name": "Île de la Cité and Sainte-Chapelle",
+          "area": "Central Paris",
+          "detail": "Pair stained glass with a Seine walk and views of Notre-Dame."
+        },
+        {
+          "name": "Montmartre and Sacré-Cœur",
+          "area": "18th arrondissement",
+          "detail": "Climb through village-like streets and stay for the city panorama."
+        },
+        {
+          "name": "Musée d’Orsay",
+          "area": "7th arrondissement",
+          "detail": "See Impressionist highlights inside the landmark former railway station."
+        },
+        {
+          "name": "Le Marais",
+          "area": "3rd–4th arrondissements",
+          "detail": "Mix historic lanes, Place des Vosges, galleries, and cafés."
+        },
+        {
+          "name": "Luxembourg Gardens and the Latin Quarter",
+          "area": "5th–6th arrondissements",
+          "detail": "A relaxed garden start followed by bookshops and old university streets."
+        },
+        {
+          "name": "Arc de Triomphe and Champs-Élysées",
+          "area": "8th arrondissement",
+          "detail": "Climb for a geometric city view, then walk the avenue."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Du Pain et des Idées",
+            "area": "10th arrondissement",
+            "detail": "Celebrated pastries and escargot-shaped viennoiseries."
+          },
+          {
+            "name": "Café de Flore",
+            "area": "Saint-Germain",
+            "detail": "Classic café breakfast in a storied setting."
+          },
+          {
+            "name": "Holybelly",
+            "area": "10th arrondissement",
+            "detail": "Popular modern breakfast plates and coffee."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "L’As du Fallafel",
+            "area": "Le Marais",
+            "detail": "Famous falafel pita; expect a lively queue."
+          },
+          {
+            "name": "Bouillon Chartier",
+            "area": "9th arrondissement",
+            "detail": "Historic, value-minded French classics."
+          },
+          {
+            "name": "Breizh Café",
+            "area": "Le Marais",
+            "detail": "Highly regarded Breton crêpes and galettes."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Le Relais de l’Entrecôte",
+            "area": "Saint-Germain",
+            "detail": "Known for steak-frites and its signature sauce."
+          },
+          {
+            "name": "Chez Janou",
+            "area": "Le Marais",
+            "detail": "Provençal dishes and an energetic neighborhood atmosphere."
+          },
+          {
+            "name": "Bistrot Paul Bert",
+            "area": "11th arrondissement",
+            "detail": "A classic Paris bistro experience; reserve ahead."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Galeries Lafayette Haussmann",
+          "area": "9th arrondissement",
+          "detail": "Fashion, beauty, gourmet gifts, and a celebrated glass dome."
+        },
+        {
+          "name": "Le Marais",
+          "area": "3rd–4th arrondissements",
+          "detail": "Independent boutiques, vintage shops, design, and French labels."
+        },
+        {
+          "name": "Marché aux Puces de Saint-Ouen",
+          "area": "Saint-Ouen",
+          "detail": "A vast antiques and vintage market best explored with time."
+        }
+      ]
+    },
+    {
+      "matchPattern": "london|england|united kingdom|\\buk\\b",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1800&q=82",
+      "attractions": [
+        {
+          "name": "Westminster Abbey and Big Ben",
+          "area": "Westminster",
+          "detail": "Start early, tour the abbey, and walk the Thames toward the London Eye."
+        },
+        {
+          "name": "Tower of London and Tower Bridge",
+          "area": "Tower Hill",
+          "detail": "Allow a half day for the Crown Jewels, walls, and riverside views."
+        },
+        {
+          "name": "British Museum",
+          "area": "Bloomsbury",
+          "detail": "Choose priority galleries and pair the visit with nearby literary streets."
+        },
+        {
+          "name": "Buckingham Palace and St James’s Park",
+          "area": "Westminster",
+          "detail": "Check ceremonial schedules and continue through the royal parks."
+        },
+        {
+          "name": "Tate Modern and the South Bank",
+          "area": "Bankside",
+          "detail": "Combine modern art, Millennium Bridge, and a riverside evening walk."
+        },
+        {
+          "name": "Borough Market and Southwark Cathedral",
+          "area": "London Bridge",
+          "detail": "Visit hungry, sample market traders, then explore the historic riverfront."
+        },
+        {
+          "name": "Notting Hill and Portobello Road",
+          "area": "West London",
+          "detail": "Colorful streets, antiques, independent shops, and café stops."
+        },
+        {
+          "name": "Greenwich",
+          "area": "Southeast London",
+          "detail": "Take the river route for the observatory, park views, and maritime history."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Dishoom Covent Garden",
+            "area": "Covent Garden",
+            "detail": "Popular Bombay-inspired breakfast; the bacon naan is a signature."
+          },
+          {
+            "name": "The Wolseley",
+            "area": "Mayfair",
+            "detail": "Grand European-style breakfast and polished service."
+          },
+          {
+            "name": "Regency Café",
+            "area": "Westminster",
+            "detail": "A classic no-frills English breakfast institution."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Borough Market",
+            "area": "Southwark",
+            "detail": "Choose among renowned street-food and produce traders."
+          },
+          {
+            "name": "Padella",
+            "area": "London Bridge",
+            "detail": "Popular handmade pasta; join the queue early."
+          },
+          {
+            "name": "Flat Iron",
+            "area": "Soho",
+            "detail": "Approachable steak in a central, casual setting."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Dishoom Shoreditch",
+            "area": "Shoreditch",
+            "detail": "Atmospheric Bombay café dishes made for sharing."
+          },
+          {
+            "name": "Hawksmoor Seven Dials",
+            "area": "Covent Garden",
+            "detail": "British steakhouse favorite; reserve ahead."
+          },
+          {
+            "name": "The Mayflower",
+            "area": "Rotherhithe",
+            "detail": "Historic Thames-side pub with traditional British dishes."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Oxford Street and Regent Street",
+          "area": "West End",
+          "detail": "Major flagships, department stores, and classic central London retail."
+        },
+        {
+          "name": "Covent Garden",
+          "area": "West End",
+          "detail": "Beauty, fashion, market stalls, and design-led boutiques."
+        },
+        {
+          "name": "Camden Market",
+          "area": "Camden",
+          "detail": "Alternative fashion, crafts, vintage goods, and global street food."
+        }
+      ]
+    },
+    {
+      "matchPattern": "new york|nyc|manhattan",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1522083165195-3424ed129620?auto=format&fit=crop&w=1800&q=82",
+      "attractions": [
+        {
+          "name": "Statue of Liberty and Ellis Island",
+          "area": "New York Harbor",
+          "detail": "Reserve ferry tickets and begin early to make time for both islands."
+        },
+        {
+          "name": "Central Park and The Metropolitan Museum of Art",
+          "area": "Upper East Side",
+          "detail": "Pair a scenic park route with a focused Met collection plan."
+        },
+        {
+          "name": "Times Square and a Broadway show",
+          "area": "Midtown",
+          "detail": "See the lights briefly, then make the theater performance the centerpiece."
+        },
+        {
+          "name": "High Line and Chelsea Market",
+          "area": "West Side",
+          "detail": "Walk the elevated park and stop for food before continuing toward Hudson Yards."
+        },
+        {
+          "name": "9/11 Memorial and One World Observatory",
+          "area": "Lower Manhattan",
+          "detail": "Leave reflective time at the memorial and reserve the observatory."
+        },
+        {
+          "name": "Brooklyn Bridge and DUMBO",
+          "area": "Brooklyn",
+          "detail": "Walk toward Brooklyn for skyline views, waterfront parks, and cobblestone streets."
+        },
+        {
+          "name": "Museum of Modern Art",
+          "area": "Midtown",
+          "detail": "Focus on modern-art icons, then explore Rockefeller Center nearby."
+        },
+        {
+          "name": "Greenwich Village and Washington Square",
+          "area": "Downtown",
+          "detail": "Wander brownstone streets, music history, cafés, and independent shops."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Russ & Daughters Café",
+            "area": "Lower East Side",
+            "detail": "Bagels, smoked fish, and New York appetizing traditions."
+          },
+          {
+            "name": "Daily Provisions",
+            "area": "Multiple locations",
+            "detail": "Excellent breakfast sandwiches, pastries, and crullers."
+          },
+          {
+            "name": "Clinton St. Baking Company",
+            "area": "Lower East Side",
+            "detail": "Famous pancakes and classic brunch plates."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Katz’s Delicatessen",
+            "area": "Lower East Side",
+            "detail": "Iconic pastrami sandwiches and old-school deli atmosphere."
+          },
+          {
+            "name": "Los Tacos No. 1",
+            "area": "Chelsea Market",
+            "detail": "Popular adobada and carne asada tacos."
+          },
+          {
+            "name": "Joe’s Pizza",
+            "area": "Greenwich Village",
+            "detail": "A classic quick New York slice."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Gramercy Tavern",
+            "area": "Flatiron",
+            "detail": "Celebrated seasonal American cooking; reserve ahead."
+          },
+          {
+            "name": "Keen’s Steakhouse",
+            "area": "Midtown",
+            "detail": "Historic steakhouse known for mutton chop and old New York character."
+          },
+          {
+            "name": "Via Carota",
+            "area": "West Village",
+            "detail": "Beloved Italian neighborhood cooking with frequent waits."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Fifth Avenue",
+          "area": "Midtown",
+          "detail": "Landmark flagships, luxury retail, and department stores."
+        },
+        {
+          "name": "SoHo",
+          "area": "Lower Manhattan",
+          "detail": "Fashion flagships, design shops, and cobblestone streets."
+        },
+        {
+          "name": "Chelsea Market and Artists & Fleas",
+          "area": "Chelsea",
+          "detail": "Food gifts, local makers, art, and independent vendors."
+        }
+      ]
+    },
+    {
+      "matchPattern": "rome|italy",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1800&q=82",
+      "attractions": [
+        {
+          "name": "Colosseum and Roman Forum",
+          "area": "Centro Storico",
+          "detail": "Reserve timed entry and allow a half day for the archaeological core."
+        },
+        {
+          "name": "Vatican Museums and St Peter’s Basilica",
+          "area": "Vatican City",
+          "detail": "Book the earliest practical museum slot and dress for basilica entry."
+        },
+        {
+          "name": "Pantheon and Piazza Navona",
+          "area": "Centro Storico",
+          "detail": "Connect two classics through atmospheric lanes and fountains."
+        },
+        {
+          "name": "Trevi Fountain and Spanish Steps",
+          "area": "Central Rome",
+          "detail": "Visit early or late to avoid peak crowds."
+        },
+        {
+          "name": "Trastevere",
+          "area": "West bank",
+          "detail": "Explore lanes, churches, and a long Roman dinner."
+        },
+        {
+          "name": "Borghese Gallery and Villa Borghese",
+          "area": "Pinciano",
+          "detail": "Reserve the museum’s fixed entry and follow with a park walk."
+        },
+        {
+          "name": "Appian Way and the Catacombs",
+          "area": "Southeast Rome",
+          "detail": "Rent a bicycle or take a guided route through ancient countryside."
+        },
+        {
+          "name": "Capitoline Museums",
+          "area": "Capitoline Hill",
+          "detail": "See classical sculpture and one of the best Forum viewpoints."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Sant’Eustachio Il Caffè",
+            "area": "Pantheon",
+            "detail": "Espresso and a cornetto near the historic center."
+          },
+          {
+            "name": "Roscioli Caffè",
+            "area": "Campo de’ Fiori",
+            "detail": "Pastries, coffee, and excellent savory breakfast options."
+          },
+          {
+            "name": "Pasticceria Regoli",
+            "area": "Esquilino",
+            "detail": "Traditional Roman pastries and maritozzi."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Pizzarium Bonci",
+            "area": "Vatican area",
+            "detail": "Renowned pizza al taglio with rotating toppings."
+          },
+          {
+            "name": "Forno Campo de’ Fiori",
+            "area": "Centro Storico",
+            "detail": "Roman bakery slices and simple market-area lunch."
+          },
+          {
+            "name": "Trapizzino",
+            "area": "Trastevere",
+            "detail": "Roman stews tucked into triangular pizza pockets."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Da Enzo al 29",
+            "area": "Trastevere",
+            "detail": "Popular Roman classics; arrive before opening and expect a queue."
+          },
+          {
+            "name": "Flavio al Velavevodetto",
+            "area": "Testaccio",
+            "detail": "Traditional carbonara, amatriciana, and cacio e pepe."
+          },
+          {
+            "name": "Armando al Pantheon",
+            "area": "Pantheon",
+            "detail": "Historic Roman trattoria; reservations are essential."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Via del Corso",
+          "area": "Central Rome",
+          "detail": "Accessible fashion brands along a major historic route."
+        },
+        {
+          "name": "Via dei Condotti",
+          "area": "Spanish Steps",
+          "detail": "Rome’s best-known luxury shopping street."
+        },
+        {
+          "name": "Porta Portese Market",
+          "area": "Trastevere",
+          "detail": "Large Sunday market for vintage goods, clothing, and curiosities."
+        }
+      ]
+    },
+    {
+      "matchPattern": "lisbon|portugal",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=1800&q=82",
+      "attractions": [
+        {
+          "name": "Belém Tower and Jerónimos Monastery",
+          "area": "Belém",
+          "detail": "Reserve the monastery and combine both landmarks with the riverfront."
+        },
+        {
+          "name": "Alfama and São Jorge Castle",
+          "area": "Historic center",
+          "detail": "Climb through old lanes, viewpoints, and tiled façades."
+        },
+        {
+          "name": "Praça do Comércio and Baixa",
+          "area": "Baixa",
+          "detail": "Walk the grand riverfront square, Rua Augusta, and downtown grid."
+        },
+        {
+          "name": "Sintra day trip",
+          "area": "Sintra",
+          "detail": "Book Pena Palace early and limit the day to two major sights."
+        },
+        {
+          "name": "Tram 28 route and Graça viewpoints",
+          "area": "Central hills",
+          "detail": "Ride outside peak hours and use the route to connect hilltop neighborhoods."
+        },
+        {
+          "name": "LX Factory",
+          "area": "Alcântara",
+          "detail": "Creative shops, restaurants, street art, and the famous bookshop."
+        },
+        {
+          "name": "Calouste Gulbenkian Museum",
+          "area": "Avenidas Novas",
+          "detail": "An excellent art collection surrounded by peaceful gardens."
+        },
+        {
+          "name": "Time Out Market and Cais do Sodré",
+          "area": "Mercado da Ribeira",
+          "detail": "Sample Lisbon flavors, then walk the waterfront at sunset."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Pastéis de Belém",
+            "area": "Belém",
+            "detail": "The classic custard tart near the monastery."
+          },
+          {
+            "name": "Manteigaria",
+            "area": "Chiado",
+            "detail": "Warm pastéis de nata made throughout the day."
+          },
+          {
+            "name": "Dear Breakfast",
+            "area": "Multiple locations",
+            "detail": "Popular modern brunch and coffee."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Time Out Market",
+            "area": "Cais do Sodré",
+            "detail": "Many prominent Lisbon kitchens in one convenient hall."
+          },
+          {
+            "name": "O Trevo",
+            "area": "Chiado",
+            "detail": "Famous bifana pork sandwiches."
+          },
+          {
+            "name": "Cervejaria Ramiro",
+            "area": "Intendente",
+            "detail": "Celebrated seafood; reserve or expect a wait."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Taberna da Rua das Flores",
+            "area": "Chiado",
+            "detail": "Creative Portuguese small plates with limited seating."
+          },
+          {
+            "name": "Prado",
+            "area": "Baixa",
+            "detail": "Seasonal Portuguese cooking in a stylish room."
+          },
+          {
+            "name": "A Cevicheria",
+            "area": "Príncipe Real",
+            "detail": "Popular seafood-focused menu with Portuguese-Peruvian influence."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "A Vida Portuguesa",
+          "area": "Chiado",
+          "detail": "Well-designed traditional Portuguese household goods and gifts."
+        },
+        {
+          "name": "Feira da Ladra",
+          "area": "Alfama",
+          "detail": "Lisbon’s famous flea market for antiques and curiosities."
+        },
+        {
+          "name": "Embaixada",
+          "area": "Príncipe Real",
+          "detail": "Portuguese designers and concept stores inside a landmark palace."
+        }
+      ]
+    },
+    {
+      "matchPattern": "honolulu|oahu|hawaii",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1507876466758-bc54f384809c?auto=format&fit=crop&w=1800&q=82",
+      "zones": [
+        {
+          "name": "Waikiki & Diamond Head",
+          "icon": "🌊",
+          "keywords": [
+            "waikiki",
+            "diamond head",
+            "kapahulu"
+          ]
+        },
+        {
+          "name": "Downtown Honolulu",
+          "icon": "🏛️",
+          "keywords": [
+            "downtown",
+            "iolani",
+            "chinatown",
+            "kakaako"
+          ]
+        },
+        {
+          "name": "East Oahu",
+          "icon": "🌴",
+          "keywords": [
+            "hanauma",
+            "koko",
+            "lanikai",
+            "kailua"
+          ]
+        },
+        {
+          "name": "North Shore",
+          "icon": "🏄",
+          "keywords": [
+            "haleiwa",
+            "north shore",
+            "waimea",
+            "sunset beach"
+          ]
+        }
+      ],
+      "attractions": [
+        {
+          "name": "Waikiki Beach",
+          "area": "Waikiki",
+          "detail": "Walk the beachfront, take a surf lesson, and stay for sunset near Kuhio Beach."
+        },
+        {
+          "name": "Diamond Head State Monument",
+          "area": "Diamond Head",
+          "detail": "Reserve the required entry window and hike early for cooler weather and coastal views."
+        },
+        {
+          "name": "Pearl Harbor National Memorial",
+          "area": "Pearl Harbor",
+          "detail": "Reserve the USS Arizona program and allow time for the visitor center exhibits."
+        },
+        {
+          "name": "Iolani Palace and Historic Honolulu",
+          "area": "Downtown",
+          "detail": "Tour the royal residence, then walk to the State Capitol and Kawaiahao Church."
+        },
+        {
+          "name": "Hanauma Bay Nature Preserve",
+          "area": "East Oahu",
+          "detail": "Book the required reservation and arrive early for snorkeling and reef education."
+        },
+        {
+          "name": "Manoa Falls Trail",
+          "area": "Manoa",
+          "detail": "Follow a lush valley trail to the waterfall and expect muddy conditions after rain."
+        },
+        {
+          "name": "Kakaako murals and waterfront",
+          "area": "Kakaako",
+          "detail": "Explore public art, local cafes, and the nearby waterfront parks."
+        },
+        {
+          "name": "Haleiwa and the North Shore",
+          "area": "North Shore",
+          "detail": "Plan a full-day loop for surf beaches, food trucks, and historic Haleiwa town."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Koko Head Cafe",
+            "area": "Kaimuki",
+            "detail": "Island-inspired brunch plates in a lively neighborhood setting."
+          },
+          {
+            "name": "Island Vintage Coffee",
+            "area": "Waikiki",
+            "detail": "Coffee, acai bowls, and convenient breakfast near the beach."
+          },
+          {
+            "name": "Liliha Bakery",
+            "area": "Honolulu",
+            "detail": "A local institution known for coco puffs and classic diner breakfasts."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Ono Seafood",
+            "area": "Kapahulu",
+            "detail": "A compact neighborhood stop known for fresh poke bowls."
+          },
+          {
+            "name": "Helena's Hawaiian Food",
+            "area": "Kalihi",
+            "detail": "Traditional Hawaiian dishes including pipikaula, kalua pig, and poi."
+          },
+          {
+            "name": "Rainbow Drive-In",
+            "area": "Kapahulu",
+            "detail": "A classic plate-lunch counter near Waikiki."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "The Pig and the Lady",
+            "area": "Chinatown",
+            "detail": "Modern Vietnamese-influenced cooking in Honolulu's arts district."
+          },
+          {
+            "name": "House Without a Key",
+            "area": "Waikiki",
+            "detail": "Sunset dining with Hawaiian music and ocean views."
+          },
+          {
+            "name": "Mud Hen Water",
+            "area": "Kaimuki",
+            "detail": "Creative local cooking designed for sharing."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Ala Moana Center",
+          "area": "Ala Moana",
+          "detail": "A major open-air shopping center with local brands, luxury stores, and extensive dining."
+        },
+        {
+          "name": "International Market Place",
+          "area": "Waikiki",
+          "detail": "Central Waikiki shopping with a historic banyan tree and evening dining."
+        },
+        {
+          "name": "Haleiwa town",
+          "area": "North Shore",
+          "detail": "Browse surf shops, galleries, local gifts, and small boutiques."
+        }
+      ]
+    },
+    {
+      "matchPattern": "vancouver|british columbia|\\bbc\\b",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1559511260-66a654ae982a?auto=format&fit=crop&w=1800&q=82",
+      "zones": [
+        {
+          "name": "Downtown & Stanley Park",
+          "icon": "🌲",
+          "keywords": [
+            "downtown",
+            "stanley",
+            "coal harbour",
+            "west end"
+          ]
+        },
+        {
+          "name": "Gastown & Chinatown",
+          "icon": "🕰️",
+          "keywords": [
+            "gastown",
+            "chinatown",
+            "water street"
+          ]
+        },
+        {
+          "name": "Granville Island & Kitsilano",
+          "icon": "🎨",
+          "keywords": [
+            "granville",
+            "kitsilano",
+            "false creek"
+          ]
+        },
+        {
+          "name": "North Shore",
+          "icon": "⛰️",
+          "keywords": [
+            "grouse",
+            "capilano",
+            "north vancouver",
+            "lynn canyon"
+          ]
+        }
+      ],
+      "attractions": [
+        {
+          "name": "Stanley Park Seawall",
+          "area": "West End",
+          "detail": "Walk or cycle the waterfront loop with stops at Totem Poles and Prospect Point."
+        },
+        {
+          "name": "Granville Island Public Market",
+          "area": "False Creek",
+          "detail": "Browse market stalls, artisan studios, and waterfront dining."
+        },
+        {
+          "name": "Gastown and the waterfront",
+          "area": "Gastown",
+          "detail": "Explore Water Street, heritage architecture, and the harbor edge."
+        },
+        {
+          "name": "Capilano Suspension Bridge Park",
+          "area": "North Vancouver",
+          "detail": "Cross the suspension bridge and explore elevated forest walkways; book ahead in busy periods."
+        },
+        {
+          "name": "Grouse Mountain",
+          "area": "North Vancouver",
+          "detail": "Ride the gondola for city views, seasonal trails, and mountain activities."
+        },
+        {
+          "name": "Museum of Anthropology at UBC",
+          "area": "University Endowment Lands",
+          "detail": "See Indigenous art and architecture in a striking coastal setting."
+        },
+        {
+          "name": "Queen Elizabeth Park",
+          "area": "Little Mountain",
+          "detail": "Visit landscaped gardens and one of the best elevated city viewpoints."
+        },
+        {
+          "name": "English Bay and Kitsilano Beach",
+          "area": "West Side",
+          "detail": "Link two popular waterfront areas for sunset and skyline views."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Cafe Medina",
+            "area": "Downtown",
+            "detail": "Mediterranean-inspired brunch and signature waffles."
+          },
+          {
+            "name": "Jam Cafe",
+            "area": "Downtown",
+            "detail": "Generous comfort-food breakfasts; expect a queue."
+          },
+          {
+            "name": "49th Parallel Cafe",
+            "area": "Mount Pleasant",
+            "detail": "Vancouver-roasted coffee, pastries, and breakfast sandwiches."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Granville Island Public Market",
+            "area": "False Creek",
+            "detail": "Build a casual lunch from seafood, bakery, and produce vendors."
+          },
+          {
+            "name": "Japadog",
+            "area": "Downtown",
+            "detail": "Japanese-inspired hot dogs and a quick Vancouver classic."
+          },
+          {
+            "name": "Phnom Penh",
+            "area": "Chinatown",
+            "detail": "Popular Cambodian-Vietnamese dishes including chicken wings and butter beef."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Miku",
+            "area": "Coal Harbour",
+            "detail": "Aburi sushi with waterfront views; reservations recommended."
+          },
+          {
+            "name": "Vij's",
+            "area": "Cambie Village",
+            "detail": "Celebrated Indian cooking and warm hospitality."
+          },
+          {
+            "name": "Kissa Tanto",
+            "area": "Chinatown",
+            "detail": "Italian-Japanese dishes in an atmospheric room; reserve well ahead."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Robson Street",
+          "area": "Downtown",
+          "detail": "Major brands, Canadian retailers, and easy access to central Vancouver."
+        },
+        {
+          "name": "Main Street",
+          "area": "Mount Pleasant",
+          "detail": "Independent fashion, vintage shops, records, and local design."
+        },
+        {
+          "name": "Granville Island artisan studios",
+          "area": "False Creek",
+          "detail": "Locally made art, jewelry, food gifts, and crafts."
+        }
+      ]
+    },
+    {
+      "matchPattern": "seattle|washington state|puget sound",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=1800&q=82",
+      "zones": [
+        {
+          "name": "Downtown & Pike Place",
+          "icon": "🐟",
+          "keywords": [
+            "pike",
+            "downtown",
+            "waterfront",
+            "belltown"
+          ]
+        },
+        {
+          "name": "Seattle Center & Queen Anne",
+          "icon": "🗼️",
+          "keywords": [
+            "space needle",
+            "seattle center",
+            "queen anne",
+            "chihuly"
+          ]
+        },
+        {
+          "name": "Capitol Hill & Central District",
+          "icon": "🎶",
+          "keywords": [
+            "capitol hill",
+            "central district",
+            "volunteer park"
+          ]
+        },
+        {
+          "name": "Ballard & Fremont",
+          "icon": "⛵",
+          "keywords": [
+            "ballard",
+            "fremont",
+            "locks",
+            "gas works"
+          ]
+        }
+      ],
+      "attractions": [
+        {
+          "name": "Pike Place Market",
+          "area": "Downtown",
+          "detail": "Explore produce stalls, specialty shops, crafts, and the waterfront-facing market levels."
+        },
+        {
+          "name": "Space Needle and Chihuly Garden and Glass",
+          "area": "Seattle Center",
+          "detail": "Reserve timed entry and combine both landmarks in one visit."
+        },
+        {
+          "name": "Museum of Pop Culture",
+          "area": "Seattle Center",
+          "detail": "Explore music, film, games, and Pacific Northwest creative culture."
+        },
+        {
+          "name": "Seattle Waterfront and ferry ride",
+          "area": "Elliott Bay",
+          "detail": "Walk the renovated waterfront and take a ferry for skyline views from the water."
+        },
+        {
+          "name": "Ballard Locks and fish ladder",
+          "area": "Ballard",
+          "detail": "Watch boats pass between lake and sound and check for seasonal salmon."
+        },
+        {
+          "name": "Museum of Flight",
+          "area": "Georgetown",
+          "detail": "Allow several hours for historic aircraft, space exhibits, and aviation stories."
+        },
+        {
+          "name": "Kerry Park",
+          "area": "Queen Anne",
+          "detail": "Visit near sunset for a classic skyline view with Mount Rainier on clear days."
+        },
+        {
+          "name": "Gas Works Park and Fremont",
+          "area": "Lake Union",
+          "detail": "Pair industrial park scenery with Fremont's public art and neighborhood shops."
+        }
+      ],
+      "food": {
+        "breakfast": [
+          {
+            "name": "Storyville Coffee",
+            "area": "Pike Place",
+            "detail": "Coffee and pastries overlooking the market."
+          },
+          {
+            "name": "Tilikum Place Cafe",
+            "area": "Belltown",
+            "detail": "European-style brunch known for Dutch babies."
+          },
+          {
+            "name": "Portage Bay Cafe",
+            "area": "South Lake Union",
+            "detail": "Hearty breakfast plates and a popular toppings bar."
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Pike Place Chowder",
+            "area": "Pike Place",
+            "detail": "Award-winning chowders in the market; lines move quickly."
+          },
+          {
+            "name": "Un Bien",
+            "area": "Ballard",
+            "detail": "Caribbean sandwiches with slow-roasted pork and bright sauces."
+          },
+          {
+            "name": "Marination Ma Kai",
+            "area": "West Seattle",
+            "detail": "Hawaiian-Korean plates with skyline views across Elliott Bay."
+          }
+        ],
+        "dinner": [
+          {
+            "name": "The Pink Door",
+            "area": "Pike Place",
+            "detail": "Italian-American dining hidden along Post Alley; reserve ahead."
+          },
+          {
+            "name": "Walrus and the Carpenter",
+            "area": "Ballard",
+            "detail": "Oysters and seasonal small plates in a compact space."
+          },
+          {
+            "name": "Canlis",
+            "area": "Queen Anne",
+            "detail": "A landmark fine-dining experience with views; reservations required."
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Pike Place Market craft stalls",
+          "area": "Downtown",
+          "detail": "Local makers, specialty foods, flowers, and Seattle gifts."
+        },
+        {
+          "name": "Ballard Avenue",
+          "area": "Ballard",
+          "detail": "Independent boutiques, outdoor brands, records, and home goods."
+        },
+        {
+          "name": "Capitol Hill shops",
+          "area": "Capitol Hill",
+          "detail": "Books, music, vintage fashion, and locally owned specialty stores."
+        }
+      ]
+    }
+  ],
+  "knownDestinations": [
+    {
+      "label": "Tokyo, Japan",
+      "aliases": [
+        "tokyo",
+        "tokyo japan"
+      ]
+    },
+    {
+      "label": "Japan",
+      "aliases": [
+        "japan"
+      ]
+    },
+    {
+      "label": "Paris, France",
+      "aliases": [
+        "paris",
+        "paris france"
+      ]
+    },
+    {
+      "label": "France",
+      "aliases": [
+        "france"
+      ]
+    },
+    {
+      "label": "London, United Kingdom",
+      "aliases": [
+        "london",
+        "london uk",
+        "london england",
+        "london united kingdom"
+      ]
+    },
+    {
+      "label": "United Kingdom",
+      "aliases": [
+        "uk",
+        "united kingdom",
+        "england",
+        "great britain"
+      ]
+    },
+    {
+      "label": "New York City, United States",
+      "aliases": [
+        "new york",
+        "new york city",
+        "nyc",
+        "new york usa",
+        "new york united states",
+        "manhattan"
+      ]
+    },
+    {
+      "label": "Rome, Italy",
+      "aliases": [
+        "rome",
+        "rome italy"
+      ]
+    },
+    {
+      "label": "Italy",
+      "aliases": [
+        "italy"
+      ]
+    },
+    {
+      "label": "Lisbon, Portugal",
+      "aliases": [
+        "lisbon",
+        "lisbon portugal"
+      ]
+    },
+    {
+      "label": "Portugal",
+      "aliases": [
+        "portugal"
+      ]
+    },
+    {
+      "label": "Honolulu, Hawaii",
+      "aliases": [
+        "honolulu",
+        "honolulu hawaii",
+        "waikiki"
+      ]
+    },
+    {
+      "label": "Oahu, Hawaii",
+      "aliases": [
+        "oahu",
+        "oahu hawaii"
+      ]
+    },
+    {
+      "label": "Vancouver, Canada",
+      "aliases": [
+        "vancouver",
+        "vancouver canada",
+        "vancouver british columbia",
+        "vancouver bc"
+      ]
+    },
+    {
+      "label": "Seattle, Washington",
+      "aliases": [
+        "seattle",
+        "seattle washington",
+        "seattle wa"
+      ]
+    }
+  ]
+}

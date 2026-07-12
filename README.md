@@ -22,6 +22,8 @@ See [SCHEMA.md](SCHEMA.md) for the `plantoguide-trip` v3 schema and legacy v2 im
 - `AGENT-INSTRUCTIONS.md` â€” editing rules for AI agents
 - `assets/` â€” available bundled banners and place images
 
+The hosted PlanToGuide builder also ships `catalogs.json` so detailed destination suggestions can be cached offline; direct `file://` use falls back to the embedded Tokyo/Japan starter catalog.
+
 ## Photo storage
 
 Uploaded photo metadata stays in `localStorage`; resized image data is stored in IndexedDB through `photo-store.js` so larger journals do not hit the smaller `localStorage` quota. `TRIP-PLAN.md` remains metadata-only for AI handoff, while `TRIP-DATA.json` includes local photo data when available for round-trip export.

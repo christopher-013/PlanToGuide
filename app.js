@@ -3,6 +3,7 @@ const builder = document.querySelector("#builder");
 const result = document.querySelector("#result");
 const destinationInput = document.querySelector("#destination");
 const destinationError = document.querySelector("#destinationError");
+const destinationModeBadge = document.querySelector("#destinationModeBadge");
 const knownDestinationList = document.querySelector("#knownDestinationList");
 const clearDestinationButton = document.querySelector("#clearDestinationButton");
 const startDateInput = document.querySelector("#startDate");
@@ -42,263 +43,200 @@ registerServiceWorker();
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
   try {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});
   } catch (_) {
     /* Service worker support is optional; file:// and locked-down browsers keep working without it. */
   }
 }
 
-const destinationCatalogs = [
-  {
-    match: /tokyo|japan/i,
-    banner: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1800&q=82",
-    zones: [
-      { name: "Asakusa & Ueno", icon: "⛩️", keywords: ["asakusa", "ueno", "taito", "senso", "nakamise"] },
-      { name: "Shibuya & Harajuku", icon: "🌆", keywords: ["shibuya", "harajuku", "aoyama", "jingumae", "omotesando", "meiji"] },
-      { name: "Ginza & Central Tokyo", icon: "🗼", keywords: ["ginza", "chuo", "chūō", "tsukiji", "marunouchi", "imperial", "tokyo station"] },
-      { name: "Tokyo Bay & Minato", icon: "🌉", keywords: ["tokyo bay", "odaiba", "minato", "teamlab", "nishiazabu", "tokyo tower", "zojoji"] },
-      { name: "Akihabara & East Tokyo", icon: "🎮", keywords: ["akihabara", "chiyoda", "electronics", "anime", "ueno"] }
-    ],
-    attractions: [
-      place("Sensō-ji and Nakamise-dori", "Asakusa", "Begin at Kaminarimon, explore the temple grounds, then browse the historic shopping street."),
-      place("Meiji Jingu and Harajuku", "Shibuya", "Pair the wooded shrine approach with Takeshita Street and Omotesando."),
-      place("Shibuya Crossing and Shibuya Sky", "Shibuya", "See the crossing at street level, then reserve a skyline time slot near sunset."),
-      place("Tsukiji Outer Market", "Chūō", "Go early for seafood, tamagoyaki, and compact market lanes."),
-      place("Tokyo National Museum and Ueno Park", "Ueno", "Allow several hours for Japanese art, history, and a park walk."),
-      place("teamLab Planets and Odaiba waterfront", "Tokyo Bay", "Reserve the immersive museum, then continue to the bay for evening views."),
-      place("Imperial Palace East Gardens", "Marunouchi", "Walk the gardens and finish around Tokyo Station’s restored red-brick frontage."),
-      place("Tokyo Tower and Zojoji Temple", "Minato", "Combine a classic observation landmark with the neighboring temple grounds.")
-    ],
-    food: {
-      breakfast: [
-        place("Tsukiji Outer Market", "Chūō", "A lively maze of seafood, produce, and specialty counters best visited early.", { address: "4 Chome Tsukiji, Chuo City, Tokyo 104-0045", rating: "4.2", order: "Tamagoyaki, tuna donburi, grilled scallops, or seasonal sashimi" }),
-        place("Onigiri Asakusa Yadoroku", "Asakusa", "A tiny, traditional counter devoted to carefully made rice balls.", { address: "3 Chome-9-10 Asakusa, Taito City, Tokyo 111-0032", rating: "4.3", order: "Salmon, kombu, or ume onigiri with miso soup" }),
-        place("Pelican Café", "Asakusa", "A relaxed café showcasing the neighborhood bakery’s famous bread.", { address: "2 Chome-5-3 Kotobuki, Taito City, Tokyo 111-0042", rating: "4.1", order: "Charcoal toast, ham cutlet sandwich, and coffee" })
+const EMBEDDED_CATALOG_FALLBACK = {
+  "destinationCatalogs": [
+    {
+      "matchPattern": "tokyo|japan",
+      "matchFlags": "i",
+      "banner": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1800&q=82",
+      "zones": [
+        {
+          "name": "Asakusa & Ueno",
+          "icon": "⛩️",
+          "keywords": [
+            "asakusa",
+            "ueno",
+            "taito",
+            "senso",
+            "nakamise"
+          ]
+        },
+        {
+          "name": "Shibuya & Harajuku",
+          "icon": "🌆",
+          "keywords": [
+            "shibuya",
+            "harajuku",
+            "aoyama",
+            "jingumae",
+            "omotesando",
+            "meiji"
+          ]
+        },
+        {
+          "name": "Ginza & Central Tokyo",
+          "icon": "🗼",
+          "keywords": [
+            "ginza",
+            "chuo",
+            "chūō",
+            "tsukiji",
+            "marunouchi",
+            "imperial",
+            "tokyo station"
+          ]
+        }
       ],
-      lunch: [
-        place("Uobei Shibuya Dogenzaka", "Shibuya", "Fast, approachable sushi delivered directly to your seat by express lane.", { address: "2 Chome-29-11 Dogenzaka, Shibuya, Tokyo 150-0043", rating: "4.3", order: "Tuna, salmon, seared nigiri, and seasonal specials" }),
-        place("Afuri Harajuku", "Harajuku", "A modern ramen stop known for fragrant citrus-forward broth.", { address: "1 Chome-1-7 Jingumae, Shibuya, Tokyo 150-0001", rating: "4.3", order: "Yuzu shio ramen or yuzu ratanmen" }),
-        place("Maisen Aoyama", "Aoyama", "A Tokyo tonkatsu institution in a memorable converted bathhouse.", { address: "4 Chome-8-5 Jingumae, Shibuya, Tokyo 150-0001", rating: "4.4", order: "Kurobuta pork loin or tenderloin tonkatsu set" })
+      "attractions": [
+        {
+          "name": "Sensō-ji and Nakamise-dori",
+          "area": "Asakusa",
+          "detail": "Begin at Kaminarimon, explore the temple grounds, then browse the historic shopping street."
+        },
+        {
+          "name": "Meiji Jingu and Harajuku",
+          "area": "Shibuya",
+          "detail": "Pair the wooded shrine approach with Takeshita Street and Omotesando."
+        },
+        {
+          "name": "Shibuya Crossing and Shibuya Sky",
+          "area": "Shibuya",
+          "detail": "See the crossing at street level, then reserve a skyline time slot near sunset."
+        },
+        {
+          "name": "Tsukiji Outer Market",
+          "area": "Chūō",
+          "detail": "Go early for seafood, tamagoyaki, and compact market lanes."
+        }
       ],
-      dinner: [
-        place("Gonpachi Nishi-Azabu", "Minato", "A theatrical, high-energy izakaya with a broad menu for groups.", { address: "1 Chome-13-11 Nishiazabu, Minato City, Tokyo 106-0031", rating: "4.1", order: "Yakitori, handmade soba, and assorted tempura" }),
-        place("Sushi no Midori Ginza", "Ginza", "Generous, well-known sushi sets; expect queues and check reservations.", { address: "7 Chome-2 Ginza, Chuo City, Tokyo 104-0061", rating: "4.3", order: "Chef’s nigiri set, fatty tuna, and conger eel" }),
-        place("Omoide Yokocho", "Shinjuku", "An atmospheric lane of tiny independent yakitori and noodle counters.", { address: "1 Chome-2 Nishishinjuku, Shinjuku City, Tokyo 160-0023", rating: "4.1", order: "Yakitori assortment, motsuyaki, and a cold beer" })
+      "food": {
+        "breakfast": [
+          {
+            "name": "Tsukiji Outer Market",
+            "area": "Chūō",
+            "detail": "A lively maze of seafood, produce, and specialty counters best visited early.",
+            "address": "4 Chome Tsukiji, Chuo City, Tokyo 104-0045",
+            "rating": "4.2",
+            "order": "Tamagoyaki, tuna donburi, grilled scallops, or seasonal sashimi"
+          }
+        ],
+        "lunch": [
+          {
+            "name": "Uobei Shibuya Dogenzaka",
+            "area": "Shibuya",
+            "detail": "Fast, approachable sushi delivered directly to your seat by express lane.",
+            "address": "2 Chome-29-11 Dogenzaka, Shibuya, Tokyo 150-0043",
+            "rating": "4.3",
+            "order": "Tuna, salmon, seared nigiri, and seasonal specials"
+          }
+        ],
+        "dinner": [
+          {
+            "name": "Gonpachi Nishi-Azabu",
+            "area": "Minato",
+            "detail": "A theatrical, high-energy izakaya with a broad menu for groups.",
+            "address": "1 Chome-13-11 Nishiazabu, Minato City, Tokyo 106-0031",
+            "rating": "4.1",
+            "order": "Yakitori, handmade soba, and assorted tempura"
+          }
+        ]
+      },
+      "shopping": [
+        {
+          "name": "Ginza",
+          "area": "Chūō",
+          "detail": "Tokyo’s polished retail district: begin at the Ginza 4-chome crossing, compare historic department stores, then browse stationery and basement food halls.",
+          "address": "Ginza 4-chome Crossing, Chuo City, Tokyo 104-0061",
+          "bestFor": "Luxury flagships, Japanese stationery, beauty, and gourmet gifts"
+        },
+        {
+          "name": "Shibuya and Harajuku",
+          "area": "Shibuya",
+          "detail": "A fashion circuit linking Shibuya’s vertical malls with Cat Street, Takeshita Street, and Omotesando design stores.",
+          "address": "Shibuya Station to Jingumae, Shibuya City, Tokyo",
+          "bestFor": "Youth fashion, sneakers, vintage clothing, and character goods"
+        }
+      ],
+      "practical": {
+        "emergencyNumbers": "Police 110 · Fire / Ambulance 119",
+        "touristHotline": "Japan Visitor Hotline (JNTO, 24h) 050-3816-2787",
+        "nearestEmbassy": "Needs verification — depends on your nationality; ask your AI to add your embassy in Tokyo",
+        "hospitalOrClinic": "Needs verification — English-friendly clinic near your home base",
+        "transitTips": "Get a Suica or Pasmo IC card (physical or in your phone wallet) for trains, subways, buses, and convenience stores.",
+        "tipping": "Tipping is not customary in Japan and can cause confusion; excellent service is standard.",
+        "keyPhrases": [
+          "Sumimasen — excuse me / sorry",
+          "Arigatou gozaimasu — thank you",
+          "Eigo no menyuu wa arimasu ka? — do you have an English menu?"
+        ],
+        "notes": ""
+      }
+    }
+  ],
+  "knownDestinations": [
+    {
+      "label": "Tokyo, Japan",
+      "aliases": [
+        "tokyo",
+        "tokyo japan"
       ]
     },
-    shopping: [
-      place("Ginza", "Chūō", "Tokyo’s polished retail district: begin at the Ginza 4-chome crossing, compare historic department stores, then browse stationery and basement food halls.", { address: "Ginza 4-chome Crossing, Chuo City, Tokyo 104-0061", bestFor: "Luxury flagships, Japanese stationery, beauty, and gourmet gifts" }),
-      place("Shibuya and Harajuku", "Shibuya", "A fashion circuit linking Shibuya’s vertical malls with Cat Street, Takeshita Street, and Omotesando design stores.", { address: "Shibuya Station to Jingumae, Shibuya City, Tokyo", bestFor: "Youth fashion, sneakers, vintage clothing, and character goods" }),
-      place("Akihabara", "Chiyoda", "Explore Chuo-dori and its side streets for electronics megastores, specialist hobby floors, arcades, and collectibles.", { address: "Akihabara Station, Sotokanda, Chiyoda City, Tokyo 101-0021", bestFor: "Electronics, anime, games, models, and retro technology" })
-    ],
-    practical: {
-      emergencyNumbers: "Police 110 · Fire / Ambulance 119",
-      touristHotline: "Japan Visitor Hotline (JNTO, 24h) 050-3816-2787",
-      nearestEmbassy: "Needs verification — depends on your nationality; ask your AI to add your embassy in Tokyo",
-      hospitalOrClinic: "Needs verification — English-friendly clinic near your home base",
-      transitTips: "Get a Suica or Pasmo IC card (physical or in your phone wallet) for trains, subways, buses, and convenience stores.",
-      tipping: "Tipping is not customary in Japan and can cause confusion; excellent service is standard.",
-      keyPhrases: ["Sumimasen — excuse me / sorry", "Arigatou gozaimasu — thank you", "Eigo no menyuu wa arimasu ka? — do you have an English menu?"],
-      notes: ""
+    {
+      "label": "Japan",
+      "aliases": [
+        "japan"
+      ]
     }
-  },
-  {
-    match: /paris|france/i,
-    banner: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1800&q=82",
-    attractions: [
-      place("Eiffel Tower and Champ de Mars", "7th arrondissement", "Reserve timed entry or enjoy the best ground-level views from Trocadéro."),
-      place("Louvre Museum", "1st arrondissement", "Book ahead and choose a focused collection route rather than attempting every gallery."),
-      place("Île de la Cité and Sainte-Chapelle", "Central Paris", "Pair stained glass with a Seine walk and views of Notre-Dame."),
-      place("Montmartre and Sacré-Cœur", "18th arrondissement", "Climb through village-like streets and stay for the city panorama."),
-      place("Musée d’Orsay", "7th arrondissement", "See Impressionist highlights inside the landmark former railway station."),
-      place("Le Marais", "3rd–4th arrondissements", "Mix historic lanes, Place des Vosges, galleries, and cafés."),
-      place("Luxembourg Gardens and the Latin Quarter", "5th–6th arrondissements", "A relaxed garden start followed by bookshops and old university streets."),
-      place("Arc de Triomphe and Champs-Élysées", "8th arrondissement", "Climb for a geometric city view, then walk the avenue.")
-    ],
-    food: {
-      breakfast: [place("Du Pain et des Idées", "10th arrondissement", "Celebrated pastries and escargot-shaped viennoiseries."), place("Café de Flore", "Saint-Germain", "Classic café breakfast in a storied setting."), place("Holybelly", "10th arrondissement", "Popular modern breakfast plates and coffee.")],
-      lunch: [place("L’As du Fallafel", "Le Marais", "Famous falafel pita; expect a lively queue."), place("Bouillon Chartier", "9th arrondissement", "Historic, value-minded French classics."), place("Breizh Café", "Le Marais", "Highly regarded Breton crêpes and galettes.")],
-      dinner: [place("Le Relais de l’Entrecôte", "Saint-Germain", "Known for steak-frites and its signature sauce."), place("Chez Janou", "Le Marais", "Provençal dishes and an energetic neighborhood atmosphere."), place("Bistrot Paul Bert", "11th arrondissement", "A classic Paris bistro experience; reserve ahead.")]
-    },
-    shopping: [place("Galeries Lafayette Haussmann", "9th arrondissement", "Fashion, beauty, gourmet gifts, and a celebrated glass dome."), place("Le Marais", "3rd–4th arrondissements", "Independent boutiques, vintage shops, design, and French labels."), place("Marché aux Puces de Saint-Ouen", "Saint-Ouen", "A vast antiques and vintage market best explored with time.")]
-  },
-  {
-    match: /london|england|united kingdom|\buk\b/i,
-    banner: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1800&q=82",
-    attractions: [
-      place("Westminster Abbey and Big Ben", "Westminster", "Start early, tour the abbey, and walk the Thames toward the London Eye."),
-      place("Tower of London and Tower Bridge", "Tower Hill", "Allow a half day for the Crown Jewels, walls, and riverside views."),
-      place("British Museum", "Bloomsbury", "Choose priority galleries and pair the visit with nearby literary streets."),
-      place("Buckingham Palace and St James’s Park", "Westminster", "Check ceremonial schedules and continue through the royal parks."),
-      place("Tate Modern and the South Bank", "Bankside", "Combine modern art, Millennium Bridge, and a riverside evening walk."),
-      place("Borough Market and Southwark Cathedral", "London Bridge", "Visit hungry, sample market traders, then explore the historic riverfront."),
-      place("Notting Hill and Portobello Road", "West London", "Colorful streets, antiques, independent shops, and café stops."),
-      place("Greenwich", "Southeast London", "Take the river route for the observatory, park views, and maritime history.")
-    ],
-    food: {
-      breakfast: [place("Dishoom Covent Garden", "Covent Garden", "Popular Bombay-inspired breakfast; the bacon naan is a signature."), place("The Wolseley", "Mayfair", "Grand European-style breakfast and polished service."), place("Regency Café", "Westminster", "A classic no-frills English breakfast institution.")],
-      lunch: [place("Borough Market", "Southwark", "Choose among renowned street-food and produce traders."), place("Padella", "London Bridge", "Popular handmade pasta; join the queue early."), place("Flat Iron", "Soho", "Approachable steak in a central, casual setting.")],
-      dinner: [place("Dishoom Shoreditch", "Shoreditch", "Atmospheric Bombay café dishes made for sharing."), place("Hawksmoor Seven Dials", "Covent Garden", "British steakhouse favorite; reserve ahead."), place("The Mayflower", "Rotherhithe", "Historic Thames-side pub with traditional British dishes.")]
-    },
-    shopping: [place("Oxford Street and Regent Street", "West End", "Major flagships, department stores, and classic central London retail."), place("Covent Garden", "West End", "Beauty, fashion, market stalls, and design-led boutiques."), place("Camden Market", "Camden", "Alternative fashion, crafts, vintage goods, and global street food.")]
-  },
-  {
-    match: /new york|nyc|manhattan/i,
-    banner: "https://images.unsplash.com/photo-1522083165195-3424ed129620?auto=format&fit=crop&w=1800&q=82",
-    attractions: [
-      place("Statue of Liberty and Ellis Island", "New York Harbor", "Reserve ferry tickets and begin early to make time for both islands."),
-      place("Central Park and The Metropolitan Museum of Art", "Upper East Side", "Pair a scenic park route with a focused Met collection plan."),
-      place("Times Square and a Broadway show", "Midtown", "See the lights briefly, then make the theater performance the centerpiece."),
-      place("High Line and Chelsea Market", "West Side", "Walk the elevated park and stop for food before continuing toward Hudson Yards."),
-      place("9/11 Memorial and One World Observatory", "Lower Manhattan", "Leave reflective time at the memorial and reserve the observatory."),
-      place("Brooklyn Bridge and DUMBO", "Brooklyn", "Walk toward Brooklyn for skyline views, waterfront parks, and cobblestone streets."),
-      place("Museum of Modern Art", "Midtown", "Focus on modern-art icons, then explore Rockefeller Center nearby."),
-      place("Greenwich Village and Washington Square", "Downtown", "Wander brownstone streets, music history, cafés, and independent shops.")
-    ],
-    food: {
-      breakfast: [place("Russ & Daughters Café", "Lower East Side", "Bagels, smoked fish, and New York appetizing traditions."), place("Daily Provisions", "Multiple locations", "Excellent breakfast sandwiches, pastries, and crullers."), place("Clinton St. Baking Company", "Lower East Side", "Famous pancakes and classic brunch plates.")],
-      lunch: [place("Katz’s Delicatessen", "Lower East Side", "Iconic pastrami sandwiches and old-school deli atmosphere."), place("Los Tacos No. 1", "Chelsea Market", "Popular adobada and carne asada tacos."), place("Joe’s Pizza", "Greenwich Village", "A classic quick New York slice.")],
-      dinner: [place("Gramercy Tavern", "Flatiron", "Celebrated seasonal American cooking; reserve ahead."), place("Keen’s Steakhouse", "Midtown", "Historic steakhouse known for mutton chop and old New York character."), place("Via Carota", "West Village", "Beloved Italian neighborhood cooking with frequent waits.")]
-    },
-    shopping: [place("Fifth Avenue", "Midtown", "Landmark flagships, luxury retail, and department stores."), place("SoHo", "Lower Manhattan", "Fashion flagships, design shops, and cobblestone streets."), place("Chelsea Market and Artists & Fleas", "Chelsea", "Food gifts, local makers, art, and independent vendors.")]
-  },
-  {
-    match: /rome|italy/i,
-    banner: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1800&q=82",
-    attractions: [
-      place("Colosseum and Roman Forum", "Centro Storico", "Reserve timed entry and allow a half day for the archaeological core."),
-      place("Vatican Museums and St Peter’s Basilica", "Vatican City", "Book the earliest practical museum slot and dress for basilica entry."),
-      place("Pantheon and Piazza Navona", "Centro Storico", "Connect two classics through atmospheric lanes and fountains."),
-      place("Trevi Fountain and Spanish Steps", "Central Rome", "Visit early or late to avoid peak crowds."),
-      place("Trastevere", "West bank", "Explore lanes, churches, and a long Roman dinner."),
-      place("Borghese Gallery and Villa Borghese", "Pinciano", "Reserve the museum’s fixed entry and follow with a park walk."),
-      place("Appian Way and the Catacombs", "Southeast Rome", "Rent a bicycle or take a guided route through ancient countryside."),
-      place("Capitoline Museums", "Capitoline Hill", "See classical sculpture and one of the best Forum viewpoints.")
-    ],
-    food: {
-      breakfast: [place("Sant’Eustachio Il Caffè", "Pantheon", "Espresso and a cornetto near the historic center."), place("Roscioli Caffè", "Campo de’ Fiori", "Pastries, coffee, and excellent savory breakfast options."), place("Pasticceria Regoli", "Esquilino", "Traditional Roman pastries and maritozzi.")],
-      lunch: [place("Pizzarium Bonci", "Vatican area", "Renowned pizza al taglio with rotating toppings."), place("Forno Campo de’ Fiori", "Centro Storico", "Roman bakery slices and simple market-area lunch."), place("Trapizzino", "Trastevere", "Roman stews tucked into triangular pizza pockets.")],
-      dinner: [place("Da Enzo al 29", "Trastevere", "Popular Roman classics; arrive before opening and expect a queue."), place("Flavio al Velavevodetto", "Testaccio", "Traditional carbonara, amatriciana, and cacio e pepe."), place("Armando al Pantheon", "Pantheon", "Historic Roman trattoria; reservations are essential.")]
-    },
-    shopping: [place("Via del Corso", "Central Rome", "Accessible fashion brands along a major historic route."), place("Via dei Condotti", "Spanish Steps", "Rome’s best-known luxury shopping street."), place("Porta Portese Market", "Trastevere", "Large Sunday market for vintage goods, clothing, and curiosities.")]
-  },
-  {
-    match: /lisbon|portugal/i,
-    banner: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=1800&q=82",
-    attractions: [
-      place("Belém Tower and Jerónimos Monastery", "Belém", "Reserve the monastery and combine both landmarks with the riverfront."),
-      place("Alfama and São Jorge Castle", "Historic center", "Climb through old lanes, viewpoints, and tiled façades."),
-      place("Praça do Comércio and Baixa", "Baixa", "Walk the grand riverfront square, Rua Augusta, and downtown grid."),
-      place("Sintra day trip", "Sintra", "Book Pena Palace early and limit the day to two major sights."),
-      place("Tram 28 route and Graça viewpoints", "Central hills", "Ride outside peak hours and use the route to connect hilltop neighborhoods."),
-      place("LX Factory", "Alcântara", "Creative shops, restaurants, street art, and the famous bookshop."),
-      place("Calouste Gulbenkian Museum", "Avenidas Novas", "An excellent art collection surrounded by peaceful gardens."),
-      place("Time Out Market and Cais do Sodré", "Mercado da Ribeira", "Sample Lisbon flavors, then walk the waterfront at sunset.")
-    ],
-    food: {
-      breakfast: [place("Pastéis de Belém", "Belém", "The classic custard tart near the monastery."), place("Manteigaria", "Chiado", "Warm pastéis de nata made throughout the day."), place("Dear Breakfast", "Multiple locations", "Popular modern brunch and coffee.")],
-      lunch: [place("Time Out Market", "Cais do Sodré", "Many prominent Lisbon kitchens in one convenient hall."), place("O Trevo", "Chiado", "Famous bifana pork sandwiches."), place("Cervejaria Ramiro", "Intendente", "Celebrated seafood; reserve or expect a wait.")],
-      dinner: [place("Taberna da Rua das Flores", "Chiado", "Creative Portuguese small plates with limited seating."), place("Prado", "Baixa", "Seasonal Portuguese cooking in a stylish room."), place("A Cevicheria", "Príncipe Real", "Popular seafood-focused menu with Portuguese-Peruvian influence.")]
-    },
-    shopping: [place("A Vida Portuguesa", "Chiado", "Well-designed traditional Portuguese household goods and gifts."), place("Feira da Ladra", "Alfama", "Lisbon’s famous flea market for antiques and curiosities."), place("Embaixada", "Príncipe Real", "Portuguese designers and concept stores inside a landmark palace.")]
-  },
-  {
-    match: /honolulu|oahu|hawaii/i,
-    banner: "https://images.unsplash.com/photo-1507876466758-bc54f384809c?auto=format&fit=crop&w=1800&q=82",
-    zones: [
-      { name: "Waikiki & Diamond Head", icon: "\uD83C\uDF0A", keywords: ["waikiki", "diamond head", "kapahulu"] },
-      { name: "Downtown Honolulu", icon: "\uD83C\uDFDB\uFE0F", keywords: ["downtown", "iolani", "chinatown", "kakaako"] },
-      { name: "East Oahu", icon: "\uD83C\uDF34", keywords: ["hanauma", "koko", "lanikai", "kailua"] },
-      { name: "North Shore", icon: "\uD83C\uDFC4", keywords: ["haleiwa", "north shore", "waimea", "sunset beach"] }
-    ],
-    attractions: [
-      place("Waikiki Beach", "Waikiki", "Walk the beachfront, take a surf lesson, and stay for sunset near Kuhio Beach."),
-      place("Diamond Head State Monument", "Diamond Head", "Reserve the required entry window and hike early for cooler weather and coastal views."),
-      place("Pearl Harbor National Memorial", "Pearl Harbor", "Reserve the USS Arizona program and allow time for the visitor center exhibits."),
-      place("Iolani Palace and Historic Honolulu", "Downtown", "Tour the royal residence, then walk to the State Capitol and Kawaiahao Church."),
-      place("Hanauma Bay Nature Preserve", "East Oahu", "Book the required reservation and arrive early for snorkeling and reef education."),
-      place("Manoa Falls Trail", "Manoa", "Follow a lush valley trail to the waterfall and expect muddy conditions after rain."),
-      place("Kakaako murals and waterfront", "Kakaako", "Explore public art, local cafes, and the nearby waterfront parks."),
-      place("Haleiwa and the North Shore", "North Shore", "Plan a full-day loop for surf beaches, food trucks, and historic Haleiwa town.")
-    ],
-    food: {
-      breakfast: [place("Koko Head Cafe", "Kaimuki", "Island-inspired brunch plates in a lively neighborhood setting."), place("Island Vintage Coffee", "Waikiki", "Coffee, acai bowls, and convenient breakfast near the beach."), place("Liliha Bakery", "Honolulu", "A local institution known for coco puffs and classic diner breakfasts.")],
-      lunch: [place("Ono Seafood", "Kapahulu", "A compact neighborhood stop known for fresh poke bowls."), place("Helena's Hawaiian Food", "Kalihi", "Traditional Hawaiian dishes including pipikaula, kalua pig, and poi."), place("Rainbow Drive-In", "Kapahulu", "A classic plate-lunch counter near Waikiki.")],
-      dinner: [place("The Pig and the Lady", "Chinatown", "Modern Vietnamese-influenced cooking in Honolulu's arts district."), place("House Without a Key", "Waikiki", "Sunset dining with Hawaiian music and ocean views."), place("Mud Hen Water", "Kaimuki", "Creative local cooking designed for sharing.")]
-    },
-    shopping: [place("Ala Moana Center", "Ala Moana", "A major open-air shopping center with local brands, luxury stores, and extensive dining."), place("International Market Place", "Waikiki", "Central Waikiki shopping with a historic banyan tree and evening dining."), place("Haleiwa town", "North Shore", "Browse surf shops, galleries, local gifts, and small boutiques.")]
-  },
-  {
-    match: /vancouver|british columbia|\bbc\b/i,
-    banner: "https://images.unsplash.com/photo-1559511260-66a654ae982a?auto=format&fit=crop&w=1800&q=82",
-    zones: [
-      { name: "Downtown & Stanley Park", icon: "\uD83C\uDF32", keywords: ["downtown", "stanley", "coal harbour", "west end"] },
-      { name: "Gastown & Chinatown", icon: "\uD83D\uDD70\uFE0F", keywords: ["gastown", "chinatown", "water street"] },
-      { name: "Granville Island & Kitsilano", icon: "\uD83C\uDFA8", keywords: ["granville", "kitsilano", "false creek"] },
-      { name: "North Shore", icon: "\u26F0\uFE0F", keywords: ["grouse", "capilano", "north vancouver", "lynn canyon"] }
-    ],
-    attractions: [
-      place("Stanley Park Seawall", "West End", "Walk or cycle the waterfront loop with stops at Totem Poles and Prospect Point."),
-      place("Granville Island Public Market", "False Creek", "Browse market stalls, artisan studios, and waterfront dining."),
-      place("Gastown and the waterfront", "Gastown", "Explore Water Street, heritage architecture, and the harbor edge."),
-      place("Capilano Suspension Bridge Park", "North Vancouver", "Cross the suspension bridge and explore elevated forest walkways; book ahead in busy periods."),
-      place("Grouse Mountain", "North Vancouver", "Ride the gondola for city views, seasonal trails, and mountain activities."),
-      place("Museum of Anthropology at UBC", "University Endowment Lands", "See Indigenous art and architecture in a striking coastal setting."),
-      place("Queen Elizabeth Park", "Little Mountain", "Visit landscaped gardens and one of the best elevated city viewpoints."),
-      place("English Bay and Kitsilano Beach", "West Side", "Link two popular waterfront areas for sunset and skyline views.")
-    ],
-    food: {
-      breakfast: [place("Cafe Medina", "Downtown", "Mediterranean-inspired brunch and signature waffles."), place("Jam Cafe", "Downtown", "Generous comfort-food breakfasts; expect a queue."), place("49th Parallel Cafe", "Mount Pleasant", "Vancouver-roasted coffee, pastries, and breakfast sandwiches.")],
-      lunch: [place("Granville Island Public Market", "False Creek", "Build a casual lunch from seafood, bakery, and produce vendors."), place("Japadog", "Downtown", "Japanese-inspired hot dogs and a quick Vancouver classic."), place("Phnom Penh", "Chinatown", "Popular Cambodian-Vietnamese dishes including chicken wings and butter beef.")],
-      dinner: [place("Miku", "Coal Harbour", "Aburi sushi with waterfront views; reservations recommended."), place("Vij's", "Cambie Village", "Celebrated Indian cooking and warm hospitality."), place("Kissa Tanto", "Chinatown", "Italian-Japanese dishes in an atmospheric room; reserve well ahead.")]
-    },
-    shopping: [place("Robson Street", "Downtown", "Major brands, Canadian retailers, and easy access to central Vancouver."), place("Main Street", "Mount Pleasant", "Independent fashion, vintage shops, records, and local design."), place("Granville Island artisan studios", "False Creek", "Locally made art, jewelry, food gifts, and crafts.")]
-  },
-  {
-    match: /seattle|washington state|puget sound/i,
-    banner: "https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=1800&q=82",
-    zones: [
-      { name: "Downtown & Pike Place", icon: "\uD83D\uDC1F", keywords: ["pike", "downtown", "waterfront", "belltown"] },
-      { name: "Seattle Center & Queen Anne", icon: "\uD83D\uDDFC\uFE0F", keywords: ["space needle", "seattle center", "queen anne", "chihuly"] },
-      { name: "Capitol Hill & Central District", icon: "\uD83C\uDFB6", keywords: ["capitol hill", "central district", "volunteer park"] },
-      { name: "Ballard & Fremont", icon: "\u26F5", keywords: ["ballard", "fremont", "locks", "gas works"] }
-    ],
-    attractions: [
-      place("Pike Place Market", "Downtown", "Explore produce stalls, specialty shops, crafts, and the waterfront-facing market levels."),
-      place("Space Needle and Chihuly Garden and Glass", "Seattle Center", "Reserve timed entry and combine both landmarks in one visit."),
-      place("Museum of Pop Culture", "Seattle Center", "Explore music, film, games, and Pacific Northwest creative culture."),
-      place("Seattle Waterfront and ferry ride", "Elliott Bay", "Walk the renovated waterfront and take a ferry for skyline views from the water."),
-      place("Ballard Locks and fish ladder", "Ballard", "Watch boats pass between lake and sound and check for seasonal salmon."),
-      place("Museum of Flight", "Georgetown", "Allow several hours for historic aircraft, space exhibits, and aviation stories."),
-      place("Kerry Park", "Queen Anne", "Visit near sunset for a classic skyline view with Mount Rainier on clear days."),
-      place("Gas Works Park and Fremont", "Lake Union", "Pair industrial park scenery with Fremont's public art and neighborhood shops.")
-    ],
-    food: {
-      breakfast: [place("Storyville Coffee", "Pike Place", "Coffee and pastries overlooking the market."), place("Tilikum Place Cafe", "Belltown", "European-style brunch known for Dutch babies."), place("Portage Bay Cafe", "South Lake Union", "Hearty breakfast plates and a popular toppings bar.")],
-      lunch: [place("Pike Place Chowder", "Pike Place", "Award-winning chowders in the market; lines move quickly."), place("Un Bien", "Ballard", "Caribbean sandwiches with slow-roasted pork and bright sauces."), place("Marination Ma Kai", "West Seattle", "Hawaiian-Korean plates with skyline views across Elliott Bay.")],
-      dinner: [place("The Pink Door", "Pike Place", "Italian-American dining hidden along Post Alley; reserve ahead."), place("Walrus and the Carpenter", "Ballard", "Oysters and seasonal small plates in a compact space."), place("Canlis", "Queen Anne", "A landmark fine-dining experience with views; reservations required.")]
-    },
-    shopping: [place("Pike Place Market craft stalls", "Downtown", "Local makers, specialty foods, flowers, and Seattle gifts."), place("Ballard Avenue", "Ballard", "Independent boutiques, outdoor brands, records, and home goods."), place("Capitol Hill shops", "Capitol Hill", "Books, music, vintage fashion, and locally owned specialty stores.")]
-  }
-];
+  ]
+};
+let destinationCatalogs = hydrateDestinationCatalogs(EMBEDDED_CATALOG_FALLBACK.destinationCatalogs);
+let knownDestinations = [...EMBEDDED_CATALOG_FALLBACK.knownDestinations];
+let catalogsReady = false;
+const catalogReadyPromise = loadDestinationCatalogs();
 
-const knownDestinations = [
-  { label: "Tokyo, Japan", aliases: ["tokyo", "tokyo japan"] },
-  { label: "Japan", aliases: ["japan"] },
-  { label: "Paris, France", aliases: ["paris", "paris france"] },
-  { label: "France", aliases: ["france"] },
-  { label: "London, United Kingdom", aliases: ["london", "london uk", "london england", "london united kingdom"] },
-  { label: "United Kingdom", aliases: ["uk", "united kingdom", "england", "great britain"] },
-  { label: "New York City, United States", aliases: ["new york", "new york city", "nyc", "new york usa", "new york united states", "manhattan"] },
-  { label: "Rome, Italy", aliases: ["rome", "rome italy"] },
-  { label: "Italy", aliases: ["italy"] },
-  { label: "Lisbon, Portugal", aliases: ["lisbon", "lisbon portugal"] },
-  { label: "Portugal", aliases: ["portugal"] },
-  { label: "Honolulu, Hawaii", aliases: ["honolulu", "honolulu hawaii", "waikiki"] },
-  { label: "Oahu, Hawaii", aliases: ["oahu", "oahu hawaii"] },
-  { label: "Vancouver, Canada", aliases: ["vancouver", "vancouver canada", "vancouver british columbia", "vancouver bc"] },
-  { label: "Seattle, Washington", aliases: ["seattle", "seattle washington", "seattle wa"] }
-];
+function hydrateDestinationCatalogs(catalogs = []) {
+  return catalogs.map((catalog) => {
+    const matchPattern = catalog.matchPattern || catalog.match || "$^";
+    const matchFlags = catalog.matchFlags || "i";
+    return { ...catalog, match: catalog.match instanceof RegExp ? catalog.match : new RegExp(matchPattern, matchFlags) };
+  });
+}
+
+function applyCatalogData(data = {}) {
+  destinationCatalogs = hydrateDestinationCatalogs(data.destinationCatalogs || EMBEDDED_CATALOG_FALLBACK.destinationCatalogs);
+  knownDestinations = [...(data.knownDestinations || EMBEDDED_CATALOG_FALLBACK.knownDestinations)];
+  renderKnownDestinationOptions();
+  updateDestinationModeBadge();
+}
+
+async function loadDestinationCatalogs() {
+  if (!location.protocol.startsWith("http")) {
+    catalogsReady = true;
+    renderKnownDestinationOptions();
+    return;
+  }
+  try {
+    const version = encodeURIComponent(window.PLANTOGUIDE_VERSION || "3.1.0");
+    const response = await fetch("catalogs.json?v=" + version, { cache: "no-cache" });
+    if (!response.ok) throw new Error("Catalog request failed: " + response.status);
+    applyCatalogData(await response.json());
+  } catch (_) {
+    applyCatalogData(EMBEDDED_CATALOG_FALLBACK);
+  } finally {
+    catalogsReady = true;
+  }
+}
+
+function renderKnownDestinationOptions() {
+  if (!knownDestinationList) return;
+  knownDestinationList.innerHTML = knownDestinations.map((destination) => `<option value="${destination.label}"></option>`).join("");
+}
 
 let trip = null;
 let activeDay = 0;
@@ -323,7 +261,7 @@ const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 13);
 startDateInput.value = toInputDate(defaultStart);
 endDateInput.value = toInputDate(defaultEnd);
 
-knownDestinationList.innerHTML = knownDestinations.map((destination) => `<option value="${destination.label}"></option>`).join("");
+renderKnownDestinationOptions();
 document.querySelectorAll(".form-progress [data-go-step]").forEach((stage) => {
   const openStage = () => navigateToWizardStep(Number(stage.dataset.goStep));
   stage.addEventListener("click", openStage);
@@ -337,19 +275,23 @@ document.querySelectorAll(".form-progress [data-go-step]").forEach((stage) => {
 destinationInput.addEventListener("input", () => {
   destinationInput.setCustomValidity("");
   destinationError.textContent = "";
+  updateDestinationModeBadge();
   updateDestinationClearButton();
 });
 destinationInput.addEventListener("change", normalizeSelectedDestination);
 destinationInput.addEventListener("blur", () => {
+  normalizeSelectedDestination();
   if (destinationInput.value.trim() && !resolveKnownDestination(destinationInput.value)) {
-    destinationError.textContent = "This destination is not in the detailed browser catalog yet. We can still create an AI-ready planning file and starter website.";
+    destinationError.textContent = "Starter mode is available for this destination: PlanToGuide will create an AI-ready research plan and starter website you can refine in ChatGPT or Claude.";
   }
+  updateDestinationModeBadge();
   updateDestinationClearButton();
 });
 clearDestinationButton?.addEventListener("click", () => {
   destinationInput.value = "";
   destinationInput.setCustomValidity("");
   destinationError.textContent = "";
+  updateDestinationModeBadge();
   selectedSuggestions.clear();
   suggestionDestination = "";
   updateDestinationClearButton();
@@ -379,14 +321,35 @@ function resolveKnownDestination(value) {
 
 function normalizeSelectedDestination() {
   const match = resolveKnownDestination(destinationInput.value);
-  if (!match) return false;
+  if (!match) {
+    updateDestinationModeBadge();
+    return false;
+  }
   destinationInput.value = match.label;
   destinationInput.setCustomValidity("");
   destinationError.textContent = "";
+  updateDestinationModeBadge();
   return true;
 }
 
-function goToPreferencesStep() {
+function updateDestinationModeBadge() {
+  if (!destinationModeBadge) return;
+  const value = destinationInput.value.trim();
+  if (!value) {
+    destinationModeBadge.hidden = true;
+    destinationModeBadge.textContent = "";
+    destinationModeBadge.className = "destination-mode-badge";
+    return;
+  }
+  const hasCatalog = Boolean(resolveKnownDestination(value));
+  destinationModeBadge.hidden = false;
+  destinationModeBadge.className = `destination-mode-badge ${hasCatalog ? "catalog" : "starter"}`;
+  destinationModeBadge.textContent = hasCatalog
+    ? "✓ Detailed local catalog available"
+    : "○ Starter mode: you'll get an AI-ready research plan — pair it with ChatGPT or Claude for local detail";
+}
+
+async function goToPreferencesStep() {
   if (!destinationInput.value.trim()) {
     destinationInput.reportValidity();
     return;
@@ -396,9 +359,10 @@ function goToPreferencesStep() {
     destinationInput.value = knownDestination.label;
     destinationError.textContent = "";
   } else {
-    destinationError.textContent = "This destination is not in the detailed browser catalog yet. We can still create an AI-ready planning file and starter website.";
+    destinationError.textContent = "Starter mode is available for this destination: PlanToGuide will create an AI-ready research plan and starter website you can refine in ChatGPT or Claude.";
   }
   destinationInput.setCustomValidity("");
+  updateDestinationModeBadge();
   if (!startDateInput.value || !endDateInput.value) {
     (startDateInput.value ? endDateInput : startDateInput).reportValidity();
     return;
@@ -418,11 +382,12 @@ function goToPreferencesStep() {
     wishListInput.value = "";
     preferenceError.textContent = "";
   }
+  await catalogReadyPromise;
   activeSuggestionCategory = 0;
   renderSuggestionPicker(nextDestination);
   showFormStep(2);
 }
-document.querySelector("#nextStepButton").addEventListener("click", goToPreferencesStep);
+document.querySelector("#nextStepButton").addEventListener("click", () => { goToPreferencesStep(); });
 
 document.querySelector("#backStepButton").addEventListener("click", () => {
   if (activeSuggestionCategory > 0) {
@@ -535,6 +500,7 @@ document.querySelector("#newTripButton").addEventListener("click", () => {
   suggestionDestination = "";
   startDateInput.value = toInputDate(defaultStart);
   endDateInput.value = toInputDate(defaultEnd);
+  updateDestinationModeBadge();
   showBuilder();
   destinationInput.focus();
 });
@@ -678,7 +644,7 @@ Open \`index.html\` locally, drag the folder to Netlify Drop, or upload it to an
     else dialog.setAttribute("open", "");
   } catch (error) {
     console.error("Export failed", error);
-    window.alert(error?.message || "The website export could not be completed. Please reload and try again.");
+    showToast(error?.message || "The website export could not be completed. Please reload and try again.", { kind: "error", duration: 6000 });
   } finally {
     activeDay = savedDay;
     activeTab = savedTab;
@@ -925,16 +891,84 @@ function downloadTripMarkdown() {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 function aiPrompt(platform) { return `Continue planning this trip in ${platform}. Treat the Markdown below as the source of truth. Preserve confirmed bookings, optimize geographically, research and verify live facts (hours, prices, closures, reservations, emergency and practical info), and ask before changing locked items.\n\nIMPORTANT — return format: reply with the COMPLETE updated TRIP-PLAN.md file, keeping every heading, and update the fenced \`\`\`json plantoguide-trip block at the end so it exactly matches your revised plan (same schema and field names, dates as YYYY-MM-DD). I will import that JSON block back into PlanToGuide to re-render my trip website, so it must be complete and valid.\n\n${createTripMarkdown()}`; }
-async function copyText(text, confirmation = "Copied") { try { await navigator.clipboard.writeText(text); window.alert(confirmation); } catch (_) { window.prompt("Copy this text:", text); } }
+
+const TOAST_LIMIT = 3;
+function toastContainer() {
+  let container = document.querySelector("#toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container";
+    container.setAttribute("role", "status");
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
+  }
+  return container;
+}
+function trimToastQueue(container) {
+  while (container.children.length >= TOAST_LIMIT) container.firstElementChild?.remove();
+}
+function dismissToast(toast, delay = 180) {
+  toast.classList.add("leaving");
+  setTimeout(() => toast.remove(), delay);
+}
+function showToast(message, { kind = "success", duration = 2600 } = {}) {
+  const container = toastContainer();
+  trimToastQueue(container);
+  const toast = document.createElement("div");
+  toast.className = `toast ${kind === "error" ? "toast-error" : "toast-success"}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("visible"));
+  if (duration > 0) setTimeout(() => dismissToast(toast), duration);
+  return toast;
+}
+function showManualCopyToast(text) {
+  const container = toastContainer();
+  trimToastQueue(container);
+  const toast = document.createElement("div");
+  toast.className = "toast toast-error toast-manual-copy";
+  const title = document.createElement("strong");
+  title.textContent = "Copy manually";
+  const hint = document.createElement("span");
+  hint.textContent = "Clipboard access was blocked. Select the text below and copy it.";
+  const textarea = document.createElement("textarea");
+  textarea.readOnly = true;
+  textarea.value = text;
+  textarea.setAttribute("aria-label", "Copy manually");
+  textarea.addEventListener("focus", () => textarea.select());
+  toast.append(title, hint, textarea);
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.add("visible");
+    textarea.focus();
+    textarea.select();
+  });
+  setTimeout(() => dismissToast(toast), 12000);
+}
+async function copyText(text, confirmation = "Copied") {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(confirmation);
+  } catch (_) {
+    showManualCopyToast(text);
+  }
+}
 function copyAiPrompt(platform) { if (trip) copyText(aiPrompt(platform), `${platform} prompt copied`); }
 function previewExportWebsite() {
-  if (!lastStandaloneHtml) return window.alert("Export the website once before previewing it.");
+  if (!lastStandaloneHtml) {
+    showToast("Export the website once before previewing it.", { kind: "error", duration: 4200 });
+    return;
+  }
   const url = URL.createObjectURL(new Blob([lastStandaloneHtml], { type: "text/html" }));
   window.open(url, "_blank", "noopener");
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 function downloadStandaloneHtml() {
-  if (!lastStandaloneHtml) return window.alert("Use Export once to prepare the complete website, then download the standalone HTML.");
+  if (!lastStandaloneHtml) {
+    showToast("Use Export once to prepare the complete website, then download the standalone HTML.", { kind: "error", duration: 5200 });
+    return;
+  }
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([lastStandaloneHtml], { type: "text/html;charset=utf-8" }));
   link.download = `${trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "trip"}-travel-website.html`;
@@ -1012,14 +1046,14 @@ function forceWizardTop() {
   requestAnimationFrame(() => { reset(); requestAnimationFrame(reset); });
 }
 
-function navigateToWizardStep(stepNumber) {
+async function navigateToWizardStep(stepNumber) {
   if (!Number.isInteger(stepNumber) || stepNumber < 1 || stepNumber > 5) return;
   if (stepNumber === currentFormStep) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
   }
   if (stepNumber > 1 && currentFormStep === 1) {
-    goToPreferencesStep();
+    await goToPreferencesStep();
     if (currentFormStep !== 2) return;
   }
   showFormStep(stepNumber);
@@ -1079,6 +1113,8 @@ function renderSuggestionPicker(destination) {
   if (suggestionDestination && suggestionDestination !== normalizedDestination) selectedSuggestions.clear();
   suggestionDestination = normalizedDestination;
   document.querySelector("#suggestionDestination").textContent = destination;
+  const starterSuggestionNote = document.querySelector("#starterSuggestionNote");
+  if (starterSuggestionNote) starterSuggestionNote.hidden = Boolean(resolveKnownDestination(destination));
   suggestionGroups = createSuggestionGroups(destination);
   suggestionLookup = new Map(suggestionGroups.flatMap((group) => group.items.map((suggestion) => [suggestion.key, suggestion])));
   suggestionBoard.innerHTML = "";
@@ -1088,7 +1124,7 @@ function renderSuggestionPicker(destination) {
     section.className = "suggestion-group";
     section.dataset.suggestionCategory = groupIndex;
     section.hidden = groupIndex !== activeSuggestionCategory;
-    section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${group.icon}</span><h3>${group.label}</h3><small>${group.items.length} ideas</small></div>`;
+    section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${displayIcon(group.icon)}</span><h3>${escapeHtml(group.label)}</h3><small>${group.items.length} ideas</small></div>`;
     const bubbles = document.createElement("div");
     bubbles.className = "suggestion-bubbles suggestion-card-list";
     group.items.forEach((suggestion) => {
@@ -1531,7 +1567,7 @@ function renderTrip() {
     button.type = "button";
     button.className = `day-button${index === activeDay ? " active" : ""}`;
     button.setAttribute("aria-label", `${formatDate(day.date, false)} — ${day.title}`);
-    button.innerHTML = `<span class="day-nav-icon" aria-hidden="true">${getDayIcon(day, index)}</span><span class="day-nav-copy"><span class="day-nav-date">${formatDate(day.date, false)}</span><span class="day-nav-title">${escapeHtml(shortDayTitle(day.title))}</span></span>`;
+    button.innerHTML = `<span class="day-nav-icon" aria-hidden="true">${displayIcon(getDayIcon(day, index))}</span><span class="day-nav-copy"><span class="day-nav-date">${formatDate(day.date, false)}</span><span class="day-nav-title">${escapeHtml(shortDayTitle(day.title))}</span></span>`;
     button.addEventListener("click", () => {
       activeDay = index;
       renderTrip();
@@ -1605,7 +1641,7 @@ function renderHomePanel() {
       <div><span>Start here · ${formatDate(firstDay.date, false)}</span><h4>${escapeHtml(firstDay.title)}</h4></div>
       <button type="button" data-card-itinerary>Open day →</button>
     </div>
-    <div class="today-stops">${firstDay.activities.slice(0, 3).map((activity) => `<div class="today-stop"><time>${escapeHtml(activity.time)}</time><strong><span aria-hidden="true">${activity.icon}</span> ${escapeHtml(activity.title)}</strong></div>`).join("")}</div>`;
+    <div class="today-stops">${firstDay.activities.slice(0, 3).map((activity) => `<div class="today-stop"><time>${escapeHtml(activity.time)}</time><strong><span aria-hidden="true">${displayIcon(activity.icon)}</span> ${escapeHtml(activity.title)}</strong></div>`).join("")}</div>`;
   todayCard.querySelector("[data-card-itinerary]").addEventListener("click", () => switchAppTab("itinerary"));
 
   const list = document.querySelector("#homeDayList");
@@ -1614,8 +1650,8 @@ function renderHomePanel() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "home-day-item";
-    const iconTrail = day.activities.slice(0, 5).map((activity) => activity.icon).join(" ");
-    button.innerHTML = `<span class="home-day-date">${formatDate(day.date, false)}</span><div><strong>${getDayIcon(day, index)} ${escapeHtml(day.title)}</strong><small><span class="home-icon-trail" aria-hidden="true">${iconTrail}</span> ${day.activities.length} planned stops</small></div><i>›</i>`;
+    const iconTrail = day.activities.slice(0, 5).map((activity) => displayIcon(activity.icon)).join(" ");
+    button.innerHTML = `<span class="home-day-date">${formatDate(day.date, false)}</span><div><strong>${displayIcon(getDayIcon(day, index))} ${escapeHtml(day.title)}</strong><small><span class="home-icon-trail" aria-hidden="true">${iconTrail}</span> ${day.activities.length} planned stops</small></div><i>›</i>`;
     button.addEventListener("click", () => { activeDay = index; renderTrip(); switchAppTab("itinerary"); });
     list.appendChild(button);
   });
@@ -1633,7 +1669,7 @@ function renderDuringTripTools() {
     ["🧳", "Luggage note", activeDay === 0 || activeDay === trip.days.length - 1 ? "Confirm hotel storage before arrival/departure." : "Leave bags at your home base."],
     ["🌧️", "Rainy-day backup", `Use ${backup?.title || "a nearby indoor stop"} as the flexible alternative.`],
     ...createPracticalToolEntries()
-  ].map(([icon, title, copy]) => `<article><span>${icon}</span><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div></article>`).join("");
+  ].map(([icon, title, copy]) => `<article><span>${displayIcon(icon)}</span><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div></article>`).join("");
 }
 
 function createPracticalToolEntries() {
@@ -1895,9 +1931,14 @@ function createSeasonalWeather(destination, date) {
 }
 
 function getDayIcon(day, index) {
-  if (day.zone && day.zone.icon) return day.zone.icon;
+  if (day.zone && day.zone.icon) return displayIcon(day.zone.icon);
   const palette = ["🛫", "🏯", "🌆", "🎨", "🍜", "🎐", "🌳", "📸", "🗼", "🎭", "🚆", "🌙", "🎡", "🧭"];
   return palette[index % palette.length];
+}
+
+function displayIcon(value) {
+  if (typeof sanitizeIcon === "function") return sanitizeIcon(value);
+  return String(value || "📍").trim().replace(/[<>&"'`]/g, "").slice(0, 8) || "📍";
 }
 
 function assignDistinctActivityIcons(activities, dayIndex) {
@@ -1948,7 +1989,7 @@ function renderRouteFlow(day) {
     row.className = "route-flow-stop";
     const next = stops[index + 1];
     const travel = next ? estimateTravel(stop, next) : null;
-    row.innerHTML = `<div class="route-stop-marker">${stop.icon}</div><div><time>${escapeHtml(stop.time)}</time><strong>${escapeHtml(cleanActivityTitle(stop.title))}</strong>${travel ? `<small>${travel.icon} ${travel.minutes} min to next stop · ${travel.mode}</small>` : `<small>🏁 End of today’s route</small>`}</div>`;
+    row.innerHTML = `<div class="route-stop-marker">${displayIcon(stop.icon)}</div><div><time>${escapeHtml(stop.time)}</time><strong>${escapeHtml(cleanActivityTitle(stop.title))}</strong>${travel ? `<small>${displayIcon(travel.icon)} ${travel.minutes} min to next stop · ${escapeHtml(travel.mode)}</small>` : `<small>🏁 End of today’s route</small>`}</div>`;
     list.appendChild(row);
   });
 }
@@ -1965,7 +2006,7 @@ function renderRouteMapPreview(day) {
   const namedStops = day.activities.map((item) => cleanActivityTitle(item.title)).filter(Boolean);
   const routeUrl = googleMapsDirectionsUrl(namedStops);
   const embedUrl = googleMapsEmbedRouteUrl(namedStops);
-  container.innerHTML = `<section class="route-map-widget"><div class="widget-title"><span>🧭</span><div><p>${escapeHtml(formatDate(day.date, false))}</p><h3>Google Route Map</h3></div><a class="google-maps-link" href="${routeUrl}" target="_blank" rel="noopener noreferrer">Open full Google route ↗</a></div><div class="route-map-grid"><iframe class="google-route-frame" src="${embedUrl}" title="Google map of the ${escapeHtml(formatDate(day.date, false))} itinerary in ${escapeHtml(trip.destination)}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe><ol>${namedStops.map((name, index) => `<li><span>${day.activities[index].icon}</span><a href="${googleMapsSearchUrl(name)}" target="_blank" rel="noopener noreferrer"><b>${index + 1}.</b> ${escapeHtml(name)}</a></li>`).join("")}</ol></div><p class="map-estimate-note">The embedded Google map uses today’s ordered itinerary places. Open the full route for live traffic, transit schedules, and detailed turn-by-turn directions.</p></section>`;
+  container.innerHTML = `<section class="route-map-widget"><div class="widget-title"><span>🧭</span><div><p>${escapeHtml(formatDate(day.date, false))}</p><h3>Google Route Map</h3></div><a class="google-maps-link" href="${routeUrl}" target="_blank" rel="noopener noreferrer">Open full Google route ↗</a></div><div class="route-map-grid"><iframe class="google-route-frame" src="${embedUrl}" title="Google map of the ${escapeHtml(formatDate(day.date, false))} itinerary in ${escapeHtml(trip.destination)}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe><ol>${namedStops.map((name, index) => `<li><span>${displayIcon(day.activities[index].icon)}</span><a href="${googleMapsSearchUrl(name)}" target="_blank" rel="noopener noreferrer"><b>${index + 1}.</b> ${escapeHtml(name)}</a></li>`).join("")}</ol></div><p class="map-estimate-note">The embedded Google map uses today’s ordered itinerary places. Open the full route for live traffic, transit schedules, and detailed turn-by-turn directions.</p></section>`;
 }
 
 function googleMapsEmbedRouteUrl(stops) {
@@ -1997,7 +2038,7 @@ function renderFoodOptions() {
   ].forEach((group) => {
     const section = document.createElement("section");
     section.className = "option-group";
-    section.innerHTML = `<div class="option-group-heading"><span>${group.icon}</span><div><p>Three popular options</p><h3>${group.label}</h3></div></div>`;
+    section.innerHTML = `<div class="option-group-heading"><span>${displayIcon(group.icon)}</span><div><p>Three popular options</p><h3>${escapeHtml(group.label)}</h3></div></div>`;
     const grid = document.createElement("div");
     grid.className = "option-card-grid";
     rankForZone(group.options, activeZone).slice(0, 3).forEach((option, index) => grid.appendChild(renderRecommendationCard(option, `${group.label} option ${index + 1}`, group.icon)));
@@ -2115,7 +2156,7 @@ function renderRecommendationCard(option, label, icon) {
   const rating = option.rating ? `<span class="place-fact"><b>⭐ Google rating</b>${escapeHtml(option.rating)} / 5 <em>· verify live</em></span>` : "";
   const address = option.address ? `<span class="place-fact"><b>📍 Address</b>${escapeHtml(option.address)}</span>` : `<span class="place-fact"><b>📍 Area</b>${escapeHtml(option.area || trip.destination)}</span>`;
   const specialty = option.order ? `<span class="place-fact"><b>🥢 What to order</b>${escapeHtml(option.order)}</span>` : option.bestFor ? `<span class="place-fact"><b>🛍️ Best for</b>${escapeHtml(option.bestFor)}</span>` : "";
-  article.innerHTML = `<img class="recommendation-photo" src="${escapeHtml(option.image || suggestionImagePlaceholder({ name: option.name, category }))}" alt="${escapeHtml(`${option.name} in ${trip.destination}`)}" loading="lazy"><span class="recommendation-icon" aria-hidden="true">${icon}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div><a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
+  article.innerHTML = `<img class="recommendation-photo" src="${escapeHtml(option.image || suggestionImagePlaceholder({ name: option.name, category }))}" alt="${escapeHtml(`${option.name} in ${trip.destination}`)}" loading="lazy"><span class="recommendation-icon" aria-hidden="true">${displayIcon(icon)}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div><a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
   hydrateSuggestionImage(article.querySelector(".recommendation-photo"), { name: option.name, category, image: option.image || "" }, trip.destination);
   return article;
 }
@@ -2604,6 +2645,7 @@ function restoreSavedTrip() {
 
   destinationInput.value = saved.destination || "";
   suggestionDestination = (saved.destination || "").trim().toLowerCase();
+  updateDestinationModeBadge();
   startDateInput.value = saved.start || startDateInput.value;
   endDateInput.value = saved.end || endDateInput.value;
   wishListInput.value = saved.wishes || "";
@@ -2629,4 +2671,4 @@ function restoreSavedTrip() {
   switchAppTab("home");
 }
 
-restoreSavedTrip();
+catalogReadyPromise.finally(restoreSavedTrip);

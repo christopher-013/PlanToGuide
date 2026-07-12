@@ -27,7 +27,7 @@ function serializeTripData(activeTrip = trip) {
   const hasPhotoStorage = typeof loadStoredTripPhotos === "function";
   const storedPhotos = hasPhotoStorage ? loadStoredTripPhotos() : [];
   const photos = (hasPhotoStorage ? storedPhotos : (activeTrip.photos || [])).map(photoMetadataOnly).filter((photo) => photo.id);
-  return {
+  return sanitizeTripDataIcons({
     schema: TRIP_SCHEMA_NAME,
     version: TRIP_SCHEMA_VERSION,
     destination: activeTrip.destination,
@@ -62,7 +62,7 @@ function serializeTripData(activeTrip = trip) {
         description: item.description || ""
       }))
     }))
-  };
+  });
 }
 
 function serializeTripJson(activeTrip = trip, options = {}) {
@@ -101,6 +101,20 @@ function photoMetadataOnly(photo) {
   return metadata;
 }
 
+function sanitizeTripDataIcons(data) {
+  if (!data || typeof data !== "object") return data;
+  data.days = (Array.isArray(data.days) ? data.days : []).map((day) => ({
+    ...day,
+    icon: sanitizeIcon(day.icon || day.zone?.icon),
+    zone: day.zone ? { ...day.zone, icon: sanitizeIcon(day.zone.icon) } : day.zone,
+    activities: (Array.isArray(day.activities) ? day.activities : []).map((item) => ({
+      ...item,
+      icon: sanitizeIcon(item.icon)
+    }))
+  }));
+  return data;
+}
+
 function createEmptyPracticalInfo(destination = "") {
   return {
     emergencyNumbers: "Needs verification — local police / fire / ambulance numbers",
@@ -116,18 +130,79 @@ function createEmptyPracticalInfo(destination = "") {
 
 /* ------------------------------------------------------------------ extract */
 
+const TRIP_TRUNCATION_MESSAGE = "The plan looks truncated — the JSON block starts but never ends. Ask your AI to resend the complete file, or ask for just the json plantoguide-trip block if the full file is too long.";
+
+function sanitizeIcon(value) {
+  const cleaned = String(value || "")
+    .trim()
+    .replace(/[<>&"'`]/g, "")
+    .slice(0, 8)
+    .trim();
+  return cleaned || "📍";
+}
+
+function braceBalanceState(raw) {
+  const source = String(raw || "");
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") depth += 1;
+    else if (char === "}") depth -= 1;
+  }
+  return { depth, inString };
+}
+
+function isLikelyTruncatedJson(raw) {
+  const state = braceBalanceState(raw);
+  return state.inString || state.depth > 0;
+}
+
+function findTaggedTripFence(source) {
+  for (const schema of TRIP_SCHEMA_ALIASES) {
+    const tagged = source.indexOf(`\`\`\`json ${schema}`);
+    if (tagged !== -1) {
+      const start = source.indexOf("\n", tagged);
+      const close = start === -1 ? -1 : source.indexOf("```", start + 1);
+      return { schema, tagged, start, close };
+    }
+  }
+  return null;
+}
+
+function inspectTripJsonInput(text) {
+  if (!text) return { status: "missing", message: "No trip JSON block found yet." };
+  const source = String(text);
+  const tagged = findTaggedTripFence(source);
+  if (tagged) {
+    if (tagged.start === -1 || tagged.close === -1) return { status: "truncated", message: TRIP_TRUNCATION_MESSAGE };
+    const raw = source.slice(tagged.start + 1, tagged.close);
+    if (isLikelyTruncatedJson(raw)) return { status: "truncated", message: TRIP_TRUNCATION_MESSAGE, raw };
+    return { status: "detected", message: `✓ ${tagged.schema} block detected`, raw };
+  }
+  const raw = extractTripJsonBlock(text);
+  if (!raw) return { status: "missing", message: "No trip JSON block found yet." };
+  if (isLikelyTruncatedJson(raw)) return { status: "truncated", message: TRIP_TRUNCATION_MESSAGE, raw };
+  return { status: "detected", message: "✓ trip JSON block detected", raw };
+}
+
 function extractTripJsonBlock(text) {
   if (!text) return null;
   const source = String(text);
 
   // Preferred: fenced block tagged for the current or legacy schema.
-  for (const schema of TRIP_SCHEMA_ALIASES) {
-    const tagged = source.indexOf(`\`\`\`json ${schema}`);
-    if (tagged !== -1) {
-      const start = source.indexOf("\n", tagged);
-      const close = source.indexOf("```", start + 1);
-      if (start !== -1 && close !== -1) return source.slice(start + 1, close);
-    }
+  const tagged = findTaggedTripFence(source);
+  if (tagged) {
+    if (tagged.start !== -1 && tagged.close !== -1) return source.slice(tagged.start + 1, tagged.close);
+    return null;
   }
 
   // Any fenced json block containing the schema name.
@@ -153,6 +228,19 @@ function tolerantJsonParse(raw) {
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
     .replace(/,\s*([}\]])/g, "$1");
   return JSON.parse(cleaned);
+}
+
+function parseErrorDetails(error, raw) {
+  const message = error?.message || "Unknown parse error";
+  const match = message.match(/position\s+(\d+)/i);
+  if (!match) return message;
+  const position = Number(match[1]);
+  if (!Number.isFinite(position)) return message;
+  const before = String(raw).slice(0, position);
+  const line = before.split(/\r\n|\r|\n/).length;
+  const lastLineBreak = Math.max(before.lastIndexOf("\n"), before.lastIndexOf("\r"));
+  const column = before.length - lastLineBreak;
+  return `${message} Near line ${line}, character ${column}.`;
 }
 
 /* ----------------------------------------------------------------- validate */
@@ -204,6 +292,7 @@ function buildTripFromData(data) {
   })).filter((item) => item.name);
   const days = data.days.map((day, index) => {
     const zone = day.zone && day.zone.name ? { name: day.zone.name, icon: day.zone.icon || "📍", keywords: [] } : { name: data.destination, icon: "📍", keywords: [] };
+    zone.icon = sanitizeIcon(zone.icon);
     const activities = day.activities.map((item) => ({
       time: String(item.time || "Flexible"),
       title: String(item.title || "Untitled stop"),
@@ -211,10 +300,11 @@ function buildTripFromData(data) {
       icon: String(item.icon || "📍"),
       status: String(item.status || "Recommended"),
       description: String(item.description || "")
-    })).sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    })).map((activity) => ({ ...activity, icon: sanitizeIcon(activity.icon) })).sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
     return {
       date: parseDate(day.date),
       zone,
+      icon: sanitizeIcon(day.icon || zone.icon),
       title: day.title || `${zone.name} · Day ${index + 1}`,
       activities
     };
@@ -263,13 +353,16 @@ function mergeImportedTripSideData(importedTrip) {
 }
 
 function importTripFromText(text) {
-  const raw = extractTripJsonBlock(text);
+  const inspection = inspectTripJsonInput(text);
+  if (inspection.status === "truncated") return { ok: false, errors: [inspection.message] };
+  const raw = inspection.raw || extractTripJsonBlock(text);
   if (!raw) return { ok: false, errors: ["No plantoguide-trip JSON block found. Paste the complete TRIP-PLAN.md returned by your AI (legacy xtravel-trip blocks are also supported) or the JSON block itself."] };
+  if (isLikelyTruncatedJson(raw)) return { ok: false, errors: [TRIP_TRUNCATION_MESSAGE] };
   let data;
   try {
     data = tolerantJsonParse(raw);
   } catch (error) {
-    return { ok: false, errors: [`The JSON block could not be parsed: ${error.message}`] };
+    return { ok: false, errors: [`The JSON block could not be parsed: ${parseErrorDetails(error, raw)}`] };
   }
   const errors = validateTripData(data);
   if (errors.length) return { ok: false, errors };
@@ -354,6 +447,7 @@ function showImportDialog() {
   const dialog = document.querySelector("#importDialog");
   document.querySelector("#importError").hidden = true;
   document.querySelector("#importError").textContent = "";
+  updateImportPrecheck();
   if (typeof dialog.showModal === "function") dialog.showModal();
   else dialog.setAttribute("open", "");
 }
@@ -373,8 +467,20 @@ function runImportFromDialog(text) {
     return;
   }
   errorBox.hidden = false;
-  errorBox.innerHTML = `<strong>Import problems:</strong><ul>${outcome.errors.map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>`;
+  const visibleErrors = outcome.errors.slice(0, 8);
+  const remaining = outcome.errors.length - visibleErrors.length;
+  errorBox.innerHTML = `<strong>Import problems:</strong><ul>${visibleErrors.map((message) => `<li>${escapeHtml(message)}</li>`).join("")}${remaining > 0 ? `<li>${escapeHtml(`…and ${remaining} more`)}</li>` : ""}</ul>`;
 }
+
+function updateImportPrecheck() {
+  const status = document.querySelector("#importPrecheck");
+  if (!status) return;
+  const inspection = inspectTripJsonInput(document.querySelector("#importPlanText").value);
+  status.textContent = inspection.message;
+  status.className = `import-precheck ${inspection.status}`;
+}
+
+let importPrecheckTimer = null;
 
 document.querySelectorAll("[data-open-import]").forEach((button) => button.addEventListener("click", showImportDialog));
 document.querySelector("#importDialogClose").addEventListener("click", closeImportDialog);
@@ -382,12 +488,17 @@ document.querySelector("#importDialogCancel").addEventListener("click", closeImp
 document.querySelector("#importPlanButton").addEventListener("click", () => {
   runImportFromDialog(document.querySelector("#importPlanText").value);
 });
+document.querySelector("#importPlanText").addEventListener("input", () => {
+  clearTimeout(importPrecheckTimer);
+  importPrecheckTimer = setTimeout(updateImportPrecheck, 400);
+});
 document.querySelector("#importPlanFile").addEventListener("change", (event) => {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
     document.querySelector("#importPlanText").value = String(reader.result || "");
+    updateImportPrecheck();
     runImportFromDialog(String(reader.result || ""));
   };
   reader.readAsText(file);

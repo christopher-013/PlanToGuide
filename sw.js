@@ -1,8 +1,11 @@
-const APP_VERSION = "3.0.0-phase1";
-const CACHE_NAME = `plantoguide-${APP_VERSION}`;
+importScripts("./version.js");
+
+const CACHE_NAME = `plantoguide-${self.PLANTOGUIDE_VERSION || "dev"}`;
 const PRECACHE_URLS = [
   "./",
   "index.html",
+  "version.js",
+  "catalogs.json",
   "styles.css",
   "app.js",
   "trip-schema.js",

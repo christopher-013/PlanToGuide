@@ -1,0 +1,2 @@
+const APP_VERSION = "3.1.0";
+globalThis.PLANTOGUIDE_VERSION = APP_VERSION;
