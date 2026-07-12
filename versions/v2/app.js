@@ -1,4 +1,4 @@
-﻿const form = document.querySelector("#tripForm");
+const form = document.querySelector("#tripForm");
 const builder = document.querySelector("#builder");
 const result = document.querySelector("#result");
 const destinationInput = document.querySelector("#destination");
@@ -37,16 +37,6 @@ function hydrateBrandIcons() {
 }
 
 hydrateBrandIcons();
-registerServiceWorker();
-
-function registerServiceWorker() {
-  if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
-  try {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
-  } catch (_) {
-    /* Service worker support is optional; file:// and locked-down browsers keep working without it. */
-  }
-}
 
 const destinationCatalogs = [
   {
@@ -611,60 +601,18 @@ async function exportTripPackage() {
     const runtime = createExportRuntime();
     const inlineIcon = `data:image/svg+xml;base64,${window.PLANTOGUIDE_ICON_BASE64 || ""}`;
     lastStandaloneHtml = websiteHtml.replaceAll("plan-x-guide-centered-compass-morph-clean-x.svg", inlineIcon).replace('<link rel="stylesheet" href="styles.css">', `<style>${websiteCss}</style>`).replace('<script src="app.js"><\/script>', `<script>${runtime}<\/script>`);
-    const readme = `# ${trip.destination} PlanToGuide Website
-
-This package contains the complete visual trip website and a round-trip AI planning workflow.
-
-## Files
-
-- \`index.html\` — complete visual itinerary website
-- \`styles.css\` — website presentation
-- \`app.js\` — exported navigation runtime
-- \`manifest.webmanifest\` — install metadata for the guide
-- \`sw.js\` — offline cache for hosted guides
-- \`icons/\` — installable home-screen icons
-- \`plan-x-guide-centered-compass-morph-clean-x.svg\` — animated PlanToGuide logo
-- \`assets/\` — bundled banners and place graphics, when available
-- \`TRIP-PLAN.md\` — lightweight human-readable plan plus photo metadata
-- \`TRIP-DATA.json\` — complete machine-readable trip, including local photo data
-- \`AGENT-INSTRUCTIONS.md\` — rules for continued AI planning
-- \`README.md\` — this publishing guide
-
-## Offline and install support
-
-Once this guide is hosted over HTTPS and opened once, it works offline and can be installed to your home screen. Google Maps embeds and any non-bundled remote images still require an internet connection and will fall back gracefully.
-
-## Keep planning
-
-1. Give \`TRIP-PLAN.md\` to ChatGPT, Claude, or another AI assistant.
-2. Ask it to return the complete updated file, including the \`json plantoguide-trip\` block.
-3. In PlanToGuide, choose **Import updated plan** to re-render the website.
-4. Export a fresh package.
-
-## Publishing
-
-Open \`index.html\` locally, drag the folder to Netlify Drop, or upload it to any static host such as GitHub Pages. Google Maps and remote images require an internet connection.
-`;
-    const exportManifest = createExportManifest(trip);
-    const photosWithData = typeof loadTripPhotosWithData === "function" ? await loadTripPhotosWithData() : [];
-    const icon192 = await rasterizeBrandIconPng(192);
-    const icon512 = await rasterizeBrandIconPng(512);
-    const zipFiles = [
+    const readme = `# ${trip.destination} PlanToGuide Website\n\nThis package contains the complete visual trip website and a round-trip AI planning workflow.\n\n## Files\n\n- \`index.html\` — complete visual itinerary website\n- \`styles.css\` — website presentation\n- \`app.js\` — exported navigation runtime\n- \`plan-x-guide-centered-compass-morph-clean-x.svg\` — animated PlanToGuide logo\n- \`assets/\` — bundled banners and place graphics, when available\n- \`TRIP-PLAN.md\` — lightweight human-readable plan plus photo metadata\n- \`TRIP-DATA.json\` — complete machine-readable trip, including local photo data\n- \`AGENT-INSTRUCTIONS.md\` — rules for continued AI planning\n- \`README.md\` — this publishing guide\n\n## Keep planning\n\n1. Give \`TRIP-PLAN.md\` to ChatGPT, Claude, or another AI assistant.\n2. Ask it to return the complete updated file, including the \`json plantoguide-trip\` block.\n3. In PlanToGuide, choose **Import updated plan** to re-render the website.\n4. Export a fresh package.\n\n## Publishing\n\nOpen \`index.html\` locally, drag the folder to Netlify Drop, or upload it to any static host such as GitHub Pages. Google Maps and remote images require an internet connection.\n`;
+    const zip = createZip([
       { name: "index.html", content: websiteHtml },
       { name: "styles.css", content: websiteCss },
       { name: "app.js", content: runtime },
-      { name: "manifest.webmanifest", content: exportManifest },
       { name: "TRIP-PLAN.md", content: markdown },
-      { name: "TRIP-DATA.json", content: serializeTripJson(trip, { includePhotoData: true, photosWithData }) },
+      { name: "TRIP-DATA.json", content: serializeTripJson(trip, { includePhotoData: true }) },
       { name: "AGENT-INSTRUCTIONS.md", content: createAgentInstructions(trip) },
       { name: "README.md", content: readme },
       { name: "plan-x-guide-centered-compass-morph-clean-x.svg", content: base64ToBytes(window.PLANTOGUIDE_ICON_BASE64 || "") },
-      { name: "icons/icon-192.png", content: icon192 },
-      { name: "icons/icon-512.png", content: icon512 },
       ...bundled.files
-    ];
-    zipFiles.push({ name: "sw.js", content: createExportServiceWorker(zipFiles.map((file) => file.name).concat("sw.js")) });
-    const zip = createZip(zipFiles);
+    ]);
     const url = URL.createObjectURL(zip);
     const link = document.createElement("a");
     link.href = url;
@@ -691,7 +639,7 @@ Open \`index.html\` locally, drag the folder to Netlify Drop, or upload it to an
 
 function createCapturedExportWebsite(capturedViews) {
   const templates = capturedViews.map((view, index) => `<template data-export-template="${index}">${view}</template>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101412"><title>${escapeHtml(trip.destination)} · PlanToGuide</title><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head><body class="trip-mode"><main class="page-shell"><section class="result">${capturedViews[0] || ""}</section></main>${templates}<script src="app.js"><\/script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101412"><title>${escapeHtml(trip.destination)} · PlanToGuide</title><link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head><body class="trip-mode"><main class="page-shell"><section class="result">${capturedViews[0] || ""}</section></main>${templates}<script src="app.js"><\/script></body></html>`;
 }
 
 function waitForHydratedImages(root, timeout = 1800) {
@@ -746,80 +694,6 @@ async function decompressBase64Gzip(value) {
 
 function base64ToBytes(value) { return Uint8Array.from(atob(value), (character) => character.charCodeAt(0)); }
 
-function createExportManifest(currentTrip) {
-  const destination = currentTrip.destination || "Trip";
-  return JSON.stringify({
-    name: `${destination} Guide`,
-    short_name: `${destination}`.slice(0, 24) || "Trip Guide",
-    start_url: "./",
-    scope: "./",
-    display: "standalone",
-    background_color: "#f5f1e8",
-    theme_color: "#f5f1e8",
-    icons: [
-      {
-        src: "plan-x-guide-centered-compass-morph-clean-x.svg",
-        sizes: "512x512",
-        type: "image/svg+xml",
-        purpose: "any"
-      },
-      {
-        src: "icons/icon-192.png",
-        sizes: "192x192",
-        type: "image/png",
-        purpose: "any maskable"
-      },
-      {
-        src: "icons/icon-512.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "any maskable"
-      }
-    ]
-  }, null, 2);
-}
-
-function rasterizeBrandIconPng(size) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    const source = brandIconSource();
-    const cleanup = () => {
-      if (image.src.startsWith("blob:")) URL.revokeObjectURL(image.src);
-    };
-    image.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const context = canvas.getContext("2d");
-        context.clearRect(0, 0, size, size);
-        context.drawImage(image, 0, 0, size, size);
-        canvas.toBlob((blob) => {
-          cleanup();
-          if (!blob) {
-            reject(new Error("Could not create install icon"));
-            return;
-          }
-          blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer))).catch(reject);
-        }, "image/png");
-      } catch (error) {
-        cleanup();
-        reject(error);
-      }
-    };
-    image.onerror = () => {
-      cleanup();
-      reject(new Error("Could not load PlanToGuide icon"));
-    };
-    image.src = source;
-  });
-}
-
-function createExportServiceWorker(fileNames) {
-  const precache = [...new Set(fileNames)].map((name) => `./${name.replace(/^\.\//, "")}`);
-  return `const CACHE_NAME="plantoguide-export-${Date.now()}";\nconst PRECACHE_URLS=${JSON.stringify(precache, null, 2)};\nconst NETWORK_ONLY_HOSTS=new Set(["api.open-meteo.com","geocoding-api.open-meteo.com","en.wikipedia.org","www.google.com","maps.google.com"]);\nself.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(PRECACHE_URLS)).then(()=>self.skipWaiting()))});\nself.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});\nself.addEventListener("fetch",event=>{const{request}=event;if(request.method!=="GET")return;const url=new URL(request.url);if(NETWORK_ONLY_HOSTS.has(url.hostname))return;if(request.mode==="navigate"){event.respondWith(networkFirst(request,"index.html"));return}if(url.origin===self.location.origin)event.respondWith(cacheFirst(request))});\nasync function cacheFirst(request){const cached=await caches.match(request);if(cached)return cached;const response=await fetch(request);if(response&&response.ok){const cache=await caches.open(CACHE_NAME);cache.put(request,response.clone())}return response}\nasync function networkFirst(request,fallbackUrl){try{const response=await fetch(request);if(response&&response.ok){const cache=await caches.open(CACHE_NAME);cache.put(request,response.clone())}return response}catch(_){const cached=await caches.match(request);return cached||caches.match(fallbackUrl)}}\n`;
-}
-
 function readLocalTextAsset(url) {
   return new Promise((resolve, reject) => {
     const frame = document.createElement("iframe");
@@ -844,7 +718,7 @@ function readLocalTextAsset(url) {
 }
 
 function createExportRuntime() {
-  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function registerGuideServiceWorker(){if(!("serviceWorker"in navigator)||!location.protocol.startsWith("http"))return;try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(_){}}function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});registerGuideServiceWorker();showTab('home');`;
+  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});showTab('home');`;
 }
 
 async function bundleExportImages(html) {
@@ -2205,9 +2079,6 @@ function legacyPhotoStorageKey() {
   return `x-travel-agent-photos-${tripStorageSlug()}`;
 }
 
-const photoDataCache = new Map();
-let photoStoreWriteQueue = Promise.resolve(true);
-
 function loadStoredTripPhotos() {
   try {
     const photos = JSON.parse(readMigratedArray(photoStorageKey(), legacyPhotoStorageKey()));
@@ -2219,83 +2090,13 @@ function loadTripPhotos() {
   return loadStoredTripPhotos().filter((photo) => photo?.src);
 }
 
-function canUsePhotoStore() {
-  return window.photoStoreAvailable !== false && typeof window.photoStorePut === "function" && typeof window.photoStoreGetAll === "function";
-}
-
-function waitForPhotoStoreWrites() {
-  return photoStoreWriteQueue.catch(() => false);
-}
-
-function photoMetadataForStorage(photo) {
-  const metadata = {
-    id: String(photo?.id || ""),
-    date: String(photo?.date || ""),
-    caption: String(photo?.caption || ""),
-    capturedAt: String(photo?.capturedAt || ""),
-    source: String(photo?.source || "")
-  };
-  if (Number.isFinite(Number(photo?.latitude))) metadata.latitude = Number(photo.latitude);
-  if (Number.isFinite(Number(photo?.longitude))) metadata.longitude = Number(photo.longitude);
-  if (!canUsePhotoStore() && photo?.src) metadata.src = photo.src;
-  return metadata;
-}
-
-async function loadTripPhotosWithData() {
-  const metadata = loadStoredTripPhotos();
-  if (!canUsePhotoStore()) return metadata.filter((photo) => photo?.src);
-  await waitForPhotoStoreWrites();
-  const stored = await window.photoStoreGetAll(photoStorageKey());
-  const byId = new Map(stored.map((record) => [record.id, record.src]));
-  return metadata.map((photo) => ({ ...photo, src: byId.get(photo.id) || photoDataCache.get(photo.id) || photo.src || "" }));
-}
-
 function saveTripPhotos(photos) {
-  const key = photoStorageKey();
-  const normalized = (Array.isArray(photos) ? photos : []).filter((photo) => photo?.id);
   try {
-    if (canUsePhotoStore()) {
-      window.localStorage.setItem(key, JSON.stringify(normalized.map(photoMetadataForStorage)));
-      const writes = normalized.filter((photo) => photo.src).map((photo) => {
-        photoDataCache.set(photo.id, photo.src);
-        return window.photoStorePut({ id: photo.id, tripKey: key, src: photo.src }).catch(() => {
-          window.photoStoreAvailable = false;
-          return null;
-        });
-      });
-      photoStoreWriteQueue = Promise.all(writes).then(() => true, () => false);
-    } else {
-      photoStoreWriteQueue = Promise.resolve(true);
-      window.localStorage.setItem(key, JSON.stringify(normalized));
-    }
+    window.localStorage.setItem(photoStorageKey(), JSON.stringify(photos));
     return true;
   } catch (_) {
-    photoStoreWriteQueue = Promise.resolve(false);
     setPhotoStatus("This browser is out of photo storage. Remove an image or upload a smaller file.", true);
     return false;
-  }
-}
-
-async function migrateStoredPhotoData() {
-  if (!canUsePhotoStore()) return;
-  const photos = loadStoredTripPhotos();
-  const embedded = photos.filter((photo) => photo?.src);
-  if (!embedded.length) return;
-  try {
-    await Promise.all(embedded.map((photo) => window.photoStorePut({ id: photo.id, tripKey: photoStorageKey(), src: photo.src })));
-    window.localStorage.setItem(photoStorageKey(), JSON.stringify(photos.map(photoMetadataForStorage)));
-  } catch (_) {
-    window.photoStoreAvailable = false;
-  }
-}
-
-async function removeTripPhoto(photoId) {
-  const next = loadStoredTripPhotos().filter((candidate) => candidate.id !== photoId);
-  if (saveTripPhotos(next)) {
-    photoDataCache.delete(photoId);
-    if (typeof window.photoStoreDelete === "function") await window.photoStoreDelete(photoId);
-    setPhotoStatus("Photo removed.");
-    renderPhotos();
   }
 }
 
@@ -2337,7 +2138,6 @@ async function handlePhotoUploads(event) {
   }
   if (!additions.length) return setPhotoStatus("Those images could not be prepared. Try JPG, PNG, or WebP files.", true);
   if (saveTripPhotos([...existing, ...additions])) {
-    await waitForPhotoStoreWrites();
     document.querySelector("#photoCaptionInput").value = "";
     setPhotoStatus(`${additions.length} ${additions.length === 1 ? "photo" : "photos"} added to your journal.`);
     renderPhotos();
@@ -2455,7 +2255,7 @@ function resizePhotoFile(file) {
     const objectUrl = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => {
-      const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+      const scale = Math.min(1, 1400 / Math.max(image.naturalWidth, image.naturalHeight));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -2469,12 +2269,12 @@ function resizePhotoFile(file) {
   });
 }
 
-async function renderPhotos() {
+function renderPhotos() {
   const gallery = document.querySelector("#photoGallery");
   const empty = document.querySelector("#photoEmptyState");
   const bottomUpload = document.querySelector("#photoBottomUpload");
   const selectedDate = currentPhotoDate();
-  const photos = (await loadTripPhotosWithData()).filter((photo) => photo.date === selectedDate);
+  const photos = loadTripPhotos().filter((photo) => photo.date === selectedDate);
   const selectedDay = trip.days[activeDay];
   document.querySelector("#photoSelectedDayTitle").textContent = `${formatDate(selectedDay.date, true)} · ${selectedDay.title}`;
   document.querySelector("#photoSelectedDayCount").textContent = `${photos.length} ${photos.length === 1 ? "photo" : "photos"}`;
@@ -2482,18 +2282,11 @@ async function renderPhotos() {
   photos.forEach((photo) => {
     const card = document.createElement("figure");
     card.className = "photo-card";
-    let media;
-    if (photo.src) {
-      media = document.createElement("img");
-      media.src = photo.src;
-      media.alt = photo.caption || "Trip photo";
-      media.loading = "lazy";
-      media.addEventListener("error", () => card.classList.add("photo-load-error"));
-    } else {
-      media = document.createElement("div");
-      media.className = "photo-missing-image";
-      media.textContent = "Photo image unavailable";
-    }
+    const image = document.createElement("img");
+    image.src = photo.src;
+    image.alt = photo.caption || "Trip photo";
+    image.loading = "lazy";
+    image.addEventListener("error", () => card.classList.add("photo-load-error"));
     const caption = document.createElement("figcaption");
     const metadataLabel = photo.capturedAt ? ` · Captured ${escapeHtml(photo.capturedAt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))}` : "";
     caption.innerHTML = `<strong>${escapeHtml(photo.caption || "Trip photo")}</strong><span>${photo.date ? escapeHtml(formatDate(parseDate(photo.date), true)) : "Trip journal"} · ${photo.source === "link" ? "Linked image" : "Uploaded image"}${metadataLabel}</span>`;
@@ -2502,8 +2295,13 @@ async function renderPhotos() {
     remove.className = "photo-remove-button";
     remove.setAttribute("aria-label", `Remove ${photo.caption || "photo"}`);
     remove.textContent = "×";
-    remove.addEventListener("click", () => { removeTripPhoto(photo.id); });
-    card.append(media, caption, remove);
+    remove.addEventListener("click", () => {
+      if (saveTripPhotos(loadStoredTripPhotos().filter((candidate) => candidate.id !== photo.id))) {
+        setPhotoStatus("Photo removed.");
+        renderPhotos();
+      }
+    });
+    card.append(image, caption, remove);
     if (hasPhotoCoordinates(photo)) {
       const locate = document.createElement("button");
       locate.type = "button";
@@ -2625,7 +2423,6 @@ function restoreSavedTrip() {
   result.hidden = false;
   document.body.classList.add("trip-mode");
   renderTrip();
-  migrateStoredPhotoData().then(() => renderPhotos());
   switchAppTab("home");
 }
 

@@ -1,15 +1,7 @@
 $root = (Resolve-Path -LiteralPath $PSScriptRoot).Path
 $server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 8767)
 try { $server.Start() } catch { Write-Error "Preview server could not start: $($_.Exception.Message)"; exit 1 }
-$types = @{
-  '.html'='text/html; charset=utf-8'
-  '.css'='text/css; charset=utf-8'
-  '.js'='text/javascript; charset=utf-8'
-  '.md'='text/plain; charset=utf-8'
-  '.webmanifest'='application/manifest+json; charset=utf-8'
-  '.svg'='image/svg+xml'
-  '.png'='image/png'
-}
+$types = @{ '.html'='text/html; charset=utf-8'; '.css'='text/css; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.md'='text/plain; charset=utf-8' }
 
 while ($true) {
   $client = $server.AcceptTcpClient()

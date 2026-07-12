@@ -68,13 +68,9 @@ function serializeTripData(activeTrip = trip) {
 function serializeTripJson(activeTrip = trip, options = {}) {
   const data = serializeTripData(activeTrip);
   if (data && options.includePhotoData) {
-    if (Array.isArray(options.photosWithData)) {
-      data.photos = options.photosWithData.map((photo) => ({ ...photo }));
-    } else {
-      const hasPhotoStorage = typeof loadStoredTripPhotos === "function";
-      const storedPhotos = hasPhotoStorage ? loadStoredTripPhotos() : [];
-      data.photos = (hasPhotoStorage ? storedPhotos : (activeTrip.photos || [])).map((photo) => ({ ...photo }));
-    }
+    const hasPhotoStorage = typeof loadStoredTripPhotos === "function";
+    const storedPhotos = hasPhotoStorage ? loadStoredTripPhotos() : [];
+    data.photos = (hasPhotoStorage ? storedPhotos : (activeTrip.photos || [])).map((photo) => ({ ...photo }));
   }
   return data ? JSON.stringify(data, null, 2) : "";
 }

@@ -8,8 +8,6 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://en.wikipedia.org; frame-src 'self' https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>PlanToGuide — Turn your trip plan into a mobile travel guide</title>
   <meta name="description" content="Create a shareable trip website, mobile travel guide, and AI-ready planning file.">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
@@ -163,7 +161,7 @@
         </section>
         <section class="form-step" data-form-step="5" hidden>
           <div class="suggestion-intro"><p class="eyebrow">Choose the finished experience</p><h2>Everything your adventure creates</h2><p>Press Create my trip adventure to generate every output below—no template decision required.</p></div>
-          <div class="template-picker output-created-list" aria-label="Outputs created">
+          <div class="template-picker output-created-list">
             <article><strong>📱 Mobile Trip App</strong><span>Tokyo gold-standard format for use during the trip</span></article>
             <article><strong>📄 Printable Executive Guide</strong><span>A clear planning and sharing view</span></article>
             <article><strong>🌐 Shareable Website</strong><span>A polished overview for friends and family</span></article>
@@ -342,7 +340,7 @@
     <p class="eyebrow">Export complete</p>
     <h2 id="exportDialogTitle">Website and Markdown files are ready</h2>
     <p>Your ZIP includes the complete interactive report, every date and section, available bundled graphics, and a detailed AI planning handoff.</p>
-    <ul><li><strong>index.html</strong> — complete visual itinerary website</li><li><strong>styles.css + app.js</strong> — report styling and navigation</li><li><strong>manifest.webmanifest + sw.js</strong> — installable/offline guide support after hosting</li><li><strong>plan-x-guide-centered-compass-morph-clean-x.svg</strong> — animated PlanToGuide logo</li><li><strong>assets/</strong> — bundled banners and place graphics</li><li><strong>TRIP-PLAN.md + TRIP-DATA.json</strong> — human- and machine-readable source of truth</li><li><strong>AGENT-INSTRUCTIONS.md</strong> — rules for continued AI planning</li><li><strong>README.md</strong> — publishing instructions</li><li><strong>Offline note</strong> — once hosted over HTTPS and opened once, the guide works offline and can be installed to your home screen.</li></ul>
+    <ul><li><strong>index.html</strong> — complete visual itinerary website</li><li><strong>styles.css + app.js</strong> — report styling and navigation</li><li><strong>plan-x-guide-centered-compass-morph-clean-x.svg</strong> — animated PlanToGuide logo</li><li><strong>assets/</strong> — bundled banners and place graphics</li><li><strong>TRIP-PLAN.md + TRIP-DATA.json</strong> — human- and machine-readable source of truth</li><li><strong>AGENT-INSTRUCTIONS.md</strong> — rules for continued AI planning</li><li><strong>README.md</strong> — publishing instructions</li></ul>
     <div class="export-action-grid"><button id="exportDownloadZip" type="button">Download Website ZIP</button><button id="exportDownloadHtml" type="button">Download HTML</button><button id="exportDownloadMarkdown" type="button">Download Markdown</button><button id="exportCopyChatGpt" type="button">Copy ChatGPT Prompt</button><button id="exportCopyClaude" type="button">Copy Claude Prompt</button><button id="exportPreviewWebsite" type="button">Preview Website</button><a href="https://docs.github.com/pages/getting-started-with-github-pages/creating-a-github-pages-site" target="_blank" rel="noopener">Publish to GitHub Pages Guide</a></div>
     <button class="primary-button" id="exportDialogDone" type="button">Done</button>
   </dialog>
@@ -387,7 +385,6 @@
 
   <script src="export-styles.js?v=20260707-photo-controls-logo-2"></script>
   <script src="icon-source.js?v=20260707-centered-logo-1"></script>
-  <script src="photo-store.js?v=20260711-phase2-photos-1"></script>
   <script src="trip-schema.js?v=20260706-round-trip-1"></script>
   <script src="app.js?v=20260707-centered-logo-1"></script>
 </body>

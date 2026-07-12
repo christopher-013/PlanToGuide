@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --ink: #20312e;
   --muted: #6f7772;
   --paper: #f5f1e8;
@@ -2189,7 +2189,6 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
 .photo-map-empty strong { display:block; margin-bottom:5px; color:var(--ink); font-size:14px; }
 .photo-card { position:relative; overflow:hidden; min-height:280px; border-radius:16px; background:#dfe7e3; box-shadow:var(--shadow); }
 .photo-card img { display:block; width:100%; height:100%; min-height:280px; object-fit:cover; }
-.photo-missing-image { display:grid; min-height:280px; place-items:center; padding:24px; color:#fff; background:linear-gradient(135deg,#52655e,#17221f); font-size:12px; font-weight:800; text-align:center; }
 .photo-card figcaption { position:absolute; right:0; bottom:0; left:0; display:grid; gap:3px; padding:36px 14px 14px; color:#fff; background:linear-gradient(transparent,rgba(8,20,17,.88)); }
 .photo-card figcaption strong { font-size:13px; }
 .photo-card figcaption span { color:rgba(255,255,255,.78); font-size:9px; }
@@ -2199,7 +2198,7 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
 .photo-location-button:hover { background:var(--gold-deep); }
 .photo-card.photo-load-error::after { content:"Image link could not be displayed"; position:absolute; inset:0; display:grid; place-items:center; padding:24px; color:#fff; background:#52655e; font-size:11px; font-weight:700; text-align:center; }
 .photo-gallery:not(:empty) + .empty-section { display:none; }
-@media(max-width:760px){.photo-manager{grid-template-columns:1fr}.photo-manager-actions{grid-template-columns:1fr}.photo-card,.photo-card img,.photo-missing-image{min-height:230px}.photo-map-frame,.photo-map-frame iframe{min-height:260px;height:260px}.photo-day-map-head{padding:14px}.photo-day-heading{align-items:start}.photo-day-heading h3{font-size:18px}}
+@media(max-width:760px){.photo-manager{grid-template-columns:1fr}.photo-manager-actions{grid-template-columns:1fr}.photo-card,.photo-card img{min-height:230px}.photo-map-frame,.photo-map-frame iframe{min-height:260px;height:260px}.photo-day-map-head{padding:14px}.photo-day-heading{align-items:start}.photo-day-heading h3{font-size:18px}}
 @media(max-width:760px){.user-entry-manager{grid-template-columns:1fr}.user-entry-form{grid-template-columns:1fr}.user-entry-form textarea,.user-entry-form button{grid-column:1}.user-entry-form button{width:100%;justify-self:stretch}}
 
 /* Prominent generated-trip home banner */

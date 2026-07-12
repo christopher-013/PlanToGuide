@@ -20,9 +20,3 @@ V3 begins from the polished PlanToGuide V2 app, including:
 - Plan × Guide / PlanToGuide branding and animated compass logo.
 
 Use this workspace for new V3 experiments and larger product changes.
-
-## Phase 1 started
-
-- Added builder PWA metadata (`manifest.webmanifest`), service worker (`sw.js`), and install icons (`icons/`).
-- Added exported-guide PWA files to Website ZIP generation.
-- Updated the GitHub Pages workflow and standalone docs to ship the new static files.
