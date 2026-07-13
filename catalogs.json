@@ -471,14 +471,34 @@
           "detail": "Reserve ferry tickets and begin early to make time for both islands."
         },
         {
-          "name": "Central Park and The Metropolitan Museum of Art",
+          "name": "Central Park",
+          "area": "Upper Manhattan",
+          "detail": "Walk a focused route through Bethesda Terrace, Bow Bridge, The Mall, Sheep Meadow, or Belvedere Castle."
+        },
+        {
+          "name": "The Metropolitan Museum of Art",
           "area": "Upper East Side",
-          "detail": "Pair a scenic park route with a focused Met collection plan."
+          "detail": "Choose a focused collection plan and pair it with Central Park rather than trying to see everything."
         },
         {
           "name": "Times Square and a Broadway show",
           "area": "Midtown",
           "detail": "See the lights briefly, then make the theater performance the centerpiece."
+        },
+        {
+          "name": "Empire State Building",
+          "area": "Midtown",
+          "detail": "Classic New York observation deck; book timed tickets and consider evening skyline views."
+        },
+        {
+          "name": "Rockefeller Center and Top of the Rock",
+          "area": "Midtown",
+          "detail": "Pair the plaza, St. Patrick's Cathedral, Fifth Avenue, and skyline views from Top of the Rock."
+        },
+        {
+          "name": "Grand Central Terminal",
+          "area": "Midtown East",
+          "detail": "See the Main Concourse, Whispering Gallery, and nearby Chrysler Building or Summit One Vanderbilt."
         },
         {
           "name": "High Line and Chelsea Market",
@@ -496,14 +516,39 @@
           "detail": "Walk toward Brooklyn for skyline views, waterfront parks, and cobblestone streets."
         },
         {
+          "name": "American Museum of Natural History",
+          "area": "Upper West Side",
+          "detail": "A strong family-friendly museum anchor near Central Park West; reserve timed entry when needed."
+        },
+        {
           "name": "Museum of Modern Art",
           "area": "Midtown",
           "detail": "Focus on modern-art icons, then explore Rockefeller Center nearby."
         },
         {
+          "name": "The Vessel and Hudson Yards",
+          "area": "Hudson Yards",
+          "detail": "Useful as a short add-on after the High Line, with shops, public spaces, and west-side skyline views."
+        },
+        {
+          "name": "Chinatown and Little Italy",
+          "area": "Lower Manhattan",
+          "detail": "Build a food-and-walking loop through historic streets, bakeries, dumplings, and neighborhood landmarks."
+        },
+        {
+          "name": "Bryant Park and New York Public Library",
+          "area": "Midtown",
+          "detail": "A compact Midtown pause with landmark architecture, seasonal events, and easy transit connections."
+        },
+        {
           "name": "Greenwich Village and Washington Square",
           "area": "Downtown",
           "detail": "Wander brownstone streets, music history, cafés, and independent shops."
+        },
+        {
+          "name": "Coney Island",
+          "area": "Brooklyn",
+          "detail": "Classic boardwalk, beach, amusement rides, and a very different New York feel; best in warm weather."
         }
       ],
       "food": {

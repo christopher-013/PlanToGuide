@@ -454,7 +454,7 @@ document.querySelector("#nextStepButton").addEventListener("click", () => { goTo
 async function ensureDynamicCatalog(destination) {
   if (!destination || resolveKnownDestination(destination) || typeof buildDynamicCatalog !== "function") return null;
   const existing = destinationCatalogs.find((catalog) => catalog.dynamic && catalog.match.test(destination));
-  if (existing) return existing;
+  if (existing && (typeof catalogHasSeededAnchors !== "function" || catalogHasSeededAnchors(existing, destination))) return existing;
   let geocode = destinationResearchState.geocode && sameResearchQuery(destination) ? destinationResearchState.geocode : null;
   if (!geocode && typeof geocodeDestination === "function") {
     try {
@@ -472,7 +472,9 @@ async function ensureDynamicCatalog(destination) {
       return null;
     }
     if (!(catalog.match instanceof RegExp)) catalog.match = new RegExp(catalog.matchPattern || destination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), catalog.matchFlags || "i");
-    if (!destinationCatalogs.some((candidate) => candidate.dynamic && candidate.label === catalog.label)) destinationCatalogs.push(catalog);
+    const existingIndex = destinationCatalogs.findIndex((candidate) => candidate.dynamic && candidate.label === catalog.label);
+    if (existingIndex >= 0) destinationCatalogs.splice(existingIndex, 1, catalog);
+    else destinationCatalogs.push(catalog);
     updateDestinationModeBadge();
     return catalog;
   } catch (_) {
@@ -520,22 +522,18 @@ document.querySelector("#clearSelectionsButton").addEventListener("click", () =>
   });
   updateSelectionCount();
 });
+function chooseForMeCountFromPace() {
+  const paceField = document.querySelector("#tripPace");
+  const selectedText = paceField?.selectedOptions?.[0]?.textContent || paceField?.value || "";
+  const count = Number((selectedText.match(/\b(\d{1,2})\b/) || [])[1]);
+  return Number.isFinite(count) && count > 0 ? count : 10;
+}
 document.querySelector("#surpriseMeButton").addEventListener("click", () => {
-  const start = parseDate(startDateInput.value);
-  const end = parseDate(endDateInput.value);
-  const tripDays = Math.min(Math.max(daysBetween(start, end) + 1, 1), 14);
-  const selectionTargets = {
-    see: Math.min(Math.max(tripDays, 3), 6),
-    eat: Math.min(Math.max(Math.ceil(tripDays * .75), 3), 6),
-    shop: Math.min(Math.max(Math.ceil(tripDays / 2), 2), 4)
-  };
+  const countPerCategory = chooseForMeCountFromPace();
+  const selectionTargets = { see: countPerCategory, eat: countPerCategory, shop: countPerCategory };
   selectedSuggestions.clear();
   Object.entries(selectionTargets).forEach(([category, count]) => {
     const choices = [...suggestionLookup.values()].filter((item) => item.category === category);
-    for (let index = choices.length - 1; index > 0; index -= 1) {
-      const randomIndex = Math.floor(Math.random() * (index + 1));
-      [choices[index], choices[randomIndex]] = [choices[randomIndex], choices[index]];
-    }
     choices.slice(0, count).forEach((item) => selectedSuggestions.set(item.key, item));
   });
   suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((button) => {
@@ -545,7 +543,7 @@ document.querySelector("#surpriseMeButton").addEventListener("click", () => {
   });
   preferenceError.textContent = "";
   updateSelectionCount();
-  selectionCount.textContent = `${selectedSuggestions.size} selected for you`;
+  selectionCount.textContent = `${selectedSuggestions.size} top-ranked suggestions selected for you · ${countPerCategory} per category`;
   showFormStep(3);
 });
 

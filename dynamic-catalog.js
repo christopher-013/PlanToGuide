@@ -8,6 +8,7 @@
   const WIKIVOYAGE_API = "https://en.wikivoyage.org/w/api.php";
   const WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php";
   const OPEN_METEO_GEOCODE = "https://geocoding-api.open-meteo.com/v1/search";
+  const OVERPASS_API = "https://overpass-api.de/api/interpreter";
 
   function slugify(value = "") {
     return String(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "destination";
@@ -71,6 +72,11 @@
       clearTimeout(timer);
       signal?.removeEventListener?.("abort", abort);
     }
+  }
+
+  async function fetchOverpass(query, signal) {
+    const url = makeUrl(OVERPASS_API, { data: query });
+    return fetchJson(url, signal);
   }
 
   function scoreGeocodeResult(result, query) {
@@ -144,7 +150,11 @@
     let previous = "";
     while (previous !== text) {
       previous = text;
-      text = text.replace(/\{\{[^{}]*\}\}/g, " ");
+      text = text.replace(/\{\{([^{}]*)\}\}/g, (_, inner) => {
+        const parts = splitTopLevel(inner).map((part) => part.trim()).filter(Boolean);
+        if (parts.length <= 1) return " ";
+        return parts[parts.length - 1];
+      });
     }
     text = text.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1");
     text = text.replace(/\[https?:\/\/[^\s\]]+\s+([^\]]+)\]/g, "$1").replace(/\[https?:\/\/[^\]]+\]/g, " ");
@@ -258,6 +268,345 @@
     }));
   }
 
+  async function fetchWikipediaCategoryPlaces(destination, geocode, signal) {
+    const city = geocode?.name || destination;
+    const admin = geocode?.admin1 || "";
+    const categoryNames = [
+      `Tourist attractions in ${city}`,
+      `Landmarks in ${city}`,
+      `Museums in ${city}`,
+      `Parks in ${city}`,
+      `Beaches of ${city}`,
+      `Shopping malls in ${city}`,
+      admin ? `Tourist attractions in ${city}, ${admin}` : "",
+      admin ? `Museums in ${city}, ${admin}` : "",
+      admin ? `Parks in ${city}, ${admin}` : ""
+    ].filter(Boolean);
+    const pageIds = new Set();
+    for (const category of categoryNames) {
+      try {
+        const data = await fetchJson(makeUrl(WIKIPEDIA_API, {
+          action: "query", list: "categorymembers", cmtitle: `Category:${category}`, cmnamespace: "0",
+          cmlimit: "18", format: "json", origin: "*"
+        }), signal);
+        (data?.query?.categorymembers || []).forEach((item) => {
+          if (item.pageid && !/list of|timeline of|history of/i.test(item.title || "")) pageIds.add(item.pageid);
+        });
+      } catch (_) {
+        // Many destinations do not have every category. Keep going with the categories that exist.
+      }
+      if (pageIds.size >= 45) break;
+    }
+    const ids = [...pageIds].slice(0, 45);
+    if (!ids.length) return [];
+    const pages = await fetchJson(makeUrl(WIKIPEDIA_API, {
+      action: "query", pageids: ids.join("|"), prop: "pageimages|extracts|info", exintro: "1", explaintext: "1",
+      piprop: "thumbnail", pithumbsize: "640", inprop: "url", format: "json", origin: "*"
+    }), signal);
+    return Object.values(pages?.query?.pages || {}).map((page) => ({
+      name: page.title,
+      type: /market|mall|shopping|rodeo drive|grove/i.test(page.title || "") ? "buy" : "see",
+      area: city,
+      detail: String(page.extract || "A Wikipedia-listed attraction worth researching and verifying before visiting.").split(/\n/)[0].slice(0, 240),
+      image: page.thumbnail?.source || "",
+      sourceLabel: "Wikipedia category",
+      sourceUrl: page.fullurl || `https://en.wikipedia.org/wiki/${encodeURIComponent(String(page.title || "").replace(/\s+/g, "_"))}`
+    }));
+  }
+
+  function osmElementLatLon(element) {
+    return {
+      lat: Number(element.lat || element.center?.lat) || null,
+      lon: Number(element.lon || element.center?.lon) || null
+    };
+  }
+
+  function cuisineLabel(tags = {}) {
+    if (tags.cuisine) return String(tags.cuisine).split(";").slice(0, 3).map((part) => titleCaseWords(part.replace(/_/g, " "))).join(", ");
+    if (tags.amenity === "cafe") return "Cafe";
+    if (tags.amenity === "bakery" || tags.shop === "bakery") return "Bakery";
+    if (tags.amenity === "restaurant") return "Restaurant";
+    if (tags.amenity === "food_court") return "Food court";
+    return "Local food";
+  }
+
+  function shopLabel(tags = {}) {
+    const value = tags.shop || tags.amenity || tags.tourism || "";
+    const labels = {
+      mall: "Shopping mall and major retail",
+      department_store: "Department store and shopping",
+      marketplace: "Market, food goods, and local browsing",
+      clothes: "Fashion and apparel",
+      boutique: "Boutiques and local fashion",
+      books: "Books, stationery, and gifts",
+      gift: "Souvenirs and gifts",
+      art: "Art, design, and local makers",
+      antiques: "Antiques and vintage browsing",
+      jewelry: "Jewelry and accessories",
+      supermarket: "Groceries and practical supplies"
+    };
+    return labels[value] || titleCaseWords(String(value || "Shopping").replace(/_/g, " "));
+  }
+
+  function titleCaseWords(value = "") {
+    return String(value).replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+  }
+
+  function osmPopularityScore(tags = {}) {
+    let score = 0;
+    if (tags.wikipedia || tags.wikidata) score += 34;
+    if (tags.website || tags["contact:website"]) score += 10;
+    if (tags.brand || tags.operator) score += 6;
+    if (tags.tourism === "attraction") score += 8;
+    if (tags.amenity === "restaurant") score += 16;
+    if (tags.amenity === "cafe") score += 14;
+    if (tags.amenity === "food_court") score += 13;
+    if (tags.shop === "bakery") score += 12;
+    if (tags.shop === "mall" || tags.shop === "department_store") score += 18;
+    if (tags.amenity === "marketplace") score += 16;
+    if (/boutique|clothes|gift|books|art|antiques|jewelry/.test(tags.shop || "")) score += 12;
+    return score;
+  }
+
+  function osmToDynamicItem(element, destination, geocode) {
+    const tags = element.tags || {};
+    const name = tags.name || tags["name:en"] || tags.brand || "";
+    if (!name || /^(restaurant|cafe|shop|market)$/i.test(name)) return null;
+    const { lat, lon } = osmElementLatLon(element);
+    const isFood = Boolean(tags.amenity && /^(restaurant|cafe|fast_food|food_court|bar|pub)$/i.test(tags.amenity)) || tags.shop === "bakery";
+    const isShop = Boolean(tags.shop) || tags.amenity === "marketplace";
+    if (!isFood && !isShop) return null;
+    const area = [tags["addr:neighbourhood"], tags["addr:suburb"], geocode?.name].filter(Boolean)[0] || geocode?.name || destination;
+    const address = [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"]].filter(Boolean).join(" ");
+    if (isFood) {
+      const cuisine = cuisineLabel(tags);
+      return {
+        name,
+        type: "eat",
+        area,
+        address,
+        lat,
+        lon,
+        cuisine,
+        order: cuisine === "Cafe" ? "Check coffee, pastries, and breakfast options." : "Check current menu favorites and signature dishes.",
+        detail: `${name} is an OpenStreetMap-listed ${cuisine.toLowerCase()} option in ${area}. Verify current hours, popularity, reservations, and menu before locking it into the plan.`,
+        sourceLabel: "OpenStreetMap",
+        sourceUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
+        osmScore: osmPopularityScore(tags)
+      };
+    }
+    const bestFor = shopLabel(tags);
+    return {
+      name,
+      type: "buy",
+      area,
+      address,
+      lat,
+      lon,
+      bestFor,
+      detail: `${name} is an OpenStreetMap-listed shopping option in ${area}, useful for ${bestFor.toLowerCase()}. Verify current stores, hours, and fit before travel.`,
+      sourceLabel: "OpenStreetMap",
+      sourceUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
+      osmScore: osmPopularityScore(tags)
+    };
+  }
+
+  async function fetchOpenStreetMapRecommendations(destination, geocode, signal) {
+    if (!geocode?.latitude || !geocode?.longitude) return [];
+    const lat = Number(geocode.latitude);
+    const lon = Number(geocode.longitude);
+    const radius = Number(geocode.population || 0) > 2000000 ? 26000 : Number(geocode.population || 0) > 500000 ? 18000 : 12000;
+    const query = `[out:json][timeout:8];
+(
+  nwr(around:${radius},${lat},${lon})["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|marketplace)$"]["name"];
+  nwr(around:${radius},${lat},${lon})["shop"~"^(bakery|mall|department_store|boutique|clothes|gift|books|art|antiques|jewelry|supermarket)$"]["name"];
+);
+out center tags 80;`;
+    const data = await fetchOverpass(query, signal);
+    return dedupeItems((data?.elements || []).map((element) => osmToDynamicItem(element, destination, geocode)).filter(Boolean))
+      .sort((a, b) => (Number(b.osmScore || 0) + tourismScore(b, destination)) - (Number(a.osmScore || 0) + tourismScore(a, destination)))
+      .slice(0, 40);
+  }
+
+  const TOURISM_KEYWORD_WEIGHTS = new Map([
+    ["zoo", 34], ["beach", 32], ["park", 30], ["balboa", 30], ["griffith", 30],
+    ["observatory", 30], ["getty", 30], ["universal studios", 30], ["hollywood", 28],
+    ["seaworld", 30], ["sea world", 30], ["museum", 26], ["aquarium", 25], ["monument", 24],
+    ["historic", 22], ["old town", 22], ["waterfront", 20], ["pier", 20], ["cove", 20],
+    ["view", 18], ["garden", 18], ["market", 16], ["village", 14],
+    ["mall", 12], ["shopping", 12], ["district", 10], ["studio", 10]
+  ]);
+
+  const SEEDED_DESTINATION_CATALOGS = [
+    {
+      match: /\b(san\s*diego|san-diego)\b/i,
+      label: "San Diego, California, United States",
+      banner: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1800&q=82",
+      items: [
+        { name: "San Diego Zoo", type: "see", area: "Balboa Park", detail: "World-famous zoo in Balboa Park, known for expansive habitats, pandas, koalas, and a full-day family-friendly layout.", image: "https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=1200&q=80", seedRank: 100 },
+        { name: "Balboa Park", type: "see", area: "Central San Diego", detail: "San Diego’s signature cultural park, with Spanish Colonial Revival architecture, gardens, museums, walking paths, and the San Diego Zoo.", image: "https://images.unsplash.com/photo-1581965528726-f7299a8a6d5a?auto=format&fit=crop&w=1200&q=80", seedRank: 98 },
+        { name: "La Jolla Cove", type: "see", area: "La Jolla", detail: "Scenic coastal cove famous for sea caves, seals and sea lions, sunset views, snorkeling, and walkable village restaurants.", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80", seedRank: 96 },
+        { name: "SeaWorld San Diego", type: "see", area: "Mission Bay", detail: "Large marine theme park with shows, rides, aquariums, and family attractions near Mission Bay.", image: "https://images.unsplash.com/photo-1560275619-4662e36fa65c?auto=format&fit=crop&w=1200&q=80", seedRank: 94 },
+        { name: "USS Midway Museum", type: "see", area: "Embarcadero", detail: "Historic aircraft carrier museum on the waterfront, with flight deck views, restored aircraft, and immersive naval history exhibits.", image: "https://images.unsplash.com/photo-1494412519320-aa613dfb7738?auto=format&fit=crop&w=1200&q=80", seedRank: 92 },
+        { name: "Coronado Beach", type: "see", area: "Coronado", detail: "Wide, classic Southern California beach known for golden sand, views near Hotel del Coronado, and an easy island-town day trip.", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80", seedRank: 90 },
+        { name: "Torrey Pines State Natural Reserve", type: "see", area: "La Jolla / Del Mar", detail: "Clifftop hiking reserve with ocean views, rare Torrey pine trees, and trails that work especially well for a scenic morning.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80", seedRank: 88 },
+        { name: "Old Town San Diego State Historic Park", type: "see", area: "Old Town", detail: "Historic district with preserved buildings, museums, plazas, Mexican restaurants, and an easy introduction to early California history.", image: "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80", seedRank: 86 },
+        { name: "Cabrillo National Monument", type: "see", area: "Point Loma", detail: "National monument with bay and ocean views, tide pools, lighthouse history, and one of the best panoramas of San Diego.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80", seedRank: 84 },
+        { name: "Mission Beach and Belmont Park", type: "see", area: "Mission Beach", detail: "Beach boardwalk, oceanfront food stops, bike paths, and the vintage Giant Dipper coaster at Belmont Park.", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80", seedRank: 82 },
+        { name: "Little Italy Mercato Farmers' Market", type: "buy", area: "Little Italy", detail: "Popular open-air market for local produce, flowers, snacks, artisan foods, and casual browsing.", bestFor: "Food gifts, flowers, local makers, and snacks", seedRank: 76 },
+        { name: "Seaport Village", type: "buy", area: "Embarcadero", detail: "Waterfront shopping and dining village with souvenir shops, bay views, and an easy stroll near downtown attractions.", bestFor: "Souvenirs, casual dining, and waterfront browsing", seedRank: 74 },
+        { name: "Liberty Public Market", type: "buy", area: "Liberty Station", detail: "Indoor public market with food vendors, local goods, and a relaxed stop that pairs well with Point Loma or airport-area plans.", bestFor: "Local food vendors, gifts, and casual meals", seedRank: 72 },
+        { name: "Fashion Valley", type: "buy", area: "Mission Valley", detail: "Major open-air shopping center with designer, department, and mainstream retail options.", bestFor: "Large-format retail, fashion, and department stores", seedRank: 70 },
+        { name: "Morning Glory", type: "eat", area: "Little Italy", detail: "Popular brunch spot known for playful design, pancakes, soufflé dishes, and a lively Little Italy location.", cuisine: "Brunch / American", order: "Pancakes, breakfast carbonara, or a seasonal brunch special.", seedRank: 80 },
+        { name: "The Taco Stand", type: "eat", area: "La Jolla / Downtown", detail: "Casual taco favorite with Baja-style tacos, carne asada, al pastor, and quick-service energy.", cuisine: "Mexican / Baja tacos", order: "Al pastor tacos, carne asada tacos, or fresh guacamole.", seedRank: 78 },
+        { name: "Las Cuatro Milpas", type: "eat", area: "Barrio Logan", detail: "Long-running cash-style Mexican institution known for handmade tortillas, simple plates, and local character.", cuisine: "Mexican", order: "Rolled tacos, rice and beans, or chorizo con huevo.", seedRank: 76 },
+        { name: "Ironside Fish & Oyster", type: "eat", area: "Little Italy", detail: "Seafood-focused restaurant in Little Italy with oysters, lobster rolls, and a strong coastal San Diego feel.", cuisine: "Seafood", order: "Oysters, lobster roll, or catch-of-the-day specials.", seedRank: 74 },
+        { name: "Hodad's", type: "eat", area: "Ocean Beach", detail: "Iconic San Diego burger stop with surf-town personality and oversized burgers.", cuisine: "Burgers / casual American", order: "Classic bacon cheeseburger and onion rings.", seedRank: 72 }
+      ]
+    },
+    {
+      match: /\b(los\s*angeles|la,\s*california|l\.a\.|hollywood)\b/i,
+      label: "Los Angeles, California, United States",
+      banner: "https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?auto=format&fit=crop&w=1800&q=82",
+      items: [
+        { name: "Griffith Observatory", type: "see", area: "Griffith Park / Los Feliz", detail: "Classic Los Angeles viewpoint with skyline views, astronomy exhibits, hiking nearby, and one of the city’s best sunset angles.", image: "https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?auto=format&fit=crop&w=1200&q=80", seedRank: 100 },
+        { name: "Santa Monica Pier", type: "see", area: "Santa Monica", detail: "Iconic oceanfront pier with Pacific Park, beach views, casual food, and an easy connection to the beach path.", image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80", seedRank: 98 },
+        { name: "The Getty Center", type: "see", area: "Brentwood", detail: "Major art museum campus known for architecture, gardens, city views, and a high-impact half-day cultural visit.", image: "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=1200&q=80", seedRank: 96 },
+        { name: "Universal Studios Hollywood", type: "see", area: "Universal City", detail: "Film-studio theme park with rides, shows, and the Studio Tour; best planned as a dedicated half or full day.", image: "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=1200&q=80", seedRank: 94 },
+        { name: "Hollywood Walk of Fame", type: "see", area: "Hollywood", detail: "Famous Hollywood Boulevard walk near TCL Chinese Theatre and Dolby Theatre; best as a short stop paired with nearby viewpoints or museums.", image: "https://images.unsplash.com/photo-1527903519906-d25a833d7d76?auto=format&fit=crop&w=1200&q=80", seedRank: 92 },
+        { name: "Venice Beach Boardwalk", type: "see", area: "Venice", detail: "Lively beach walk known for murals, skate culture, street performers, Muscle Beach, and access to Venice canals.", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80", seedRank: 90 },
+        { name: "The Broad", type: "see", area: "Downtown LA", detail: "Contemporary art museum in Downtown LA, popular for its architecture, collection, and timed-entry planning.", image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80", seedRank: 88 },
+        { name: "Los Angeles County Museum of Art", type: "see", area: "Museum Row / Miracle Mile", detail: "Large art museum known for Urban Light, broad collections, and easy pairing with the Academy Museum or La Brea Tar Pits.", image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80", seedRank: 86 },
+        { name: "Grand Central Market", type: "eat", area: "Downtown LA", detail: "Historic food hall with a dense mix of casual vendors, ideal for flexible lunches and group trips with different tastes.", cuisine: "Food hall / multi-cuisine", order: "Choose tacos, egg sandwiches, pupusas, ramen, or a vendor crawl.", seedRank: 84 },
+        { name: "Original Farmers Market", type: "eat", area: "Fairfax", detail: "Long-running market with casual food stalls and easy pairing with The Grove, CBS Television City, or Museum Row.", cuisine: "Market / casual dining", order: "Try a classic market counter meal, pastries, or a snack crawl.", seedRank: 82 },
+        { name: "République", type: "eat", area: "Mid-Wilshire", detail: "Popular bakery, brunch, and dinner spot in a dramatic historic building, useful near Museum Row or Hollywood-adjacent plans.", cuisine: "French-Californian / bakery", order: "Pastries, shakshuka, kimchi fried rice, or a dinner entrée.", seedRank: 81 },
+        { name: "Porto's Bakery and Cafe", type: "eat", area: "Glendale / Burbank / West Covina", detail: "Beloved Cuban bakery and café known for pastries, savory snacks, cakes, and easy group-friendly ordering.", cuisine: "Cuban bakery / cafe", order: "Cheese rolls, potato balls, guava pastries, or medianoche sandwich.", seedRank: 80 },
+        { name: "Philippe The Original", type: "eat", area: "Chinatown / Downtown LA", detail: "Historic Los Angeles institution associated with French dip sandwiches and old-school counter service.", cuisine: "Classic LA / sandwiches", order: "French dip sandwich with mustard and a side.", seedRank: 78 },
+        { name: "Guisados", type: "eat", area: "Boyle Heights / Downtown LA", detail: "Casual taco favorite known for braised fillings and sampler-style taco plates.", cuisine: "Mexican / tacos", order: "Taco sampler or cochinita pibil taco.", seedRank: 76 },
+        { name: "Langer's Delicatessen", type: "eat", area: "Westlake / MacArthur Park", detail: "Classic Jewish deli especially known for pastrami sandwiches and an old-school Los Angeles lunch stop.", cuisine: "Deli / classic LA", order: "Pastrami sandwich, especially the #19.", seedRank: 75 },
+        { name: "Kogi BBQ", type: "eat", area: "Los Angeles food trucks", detail: "Influential Korean-Mexican food truck concept; check current truck location before planning around it.", cuisine: "Korean-Mexican", order: "Short rib tacos, kimchi quesadilla, or sliders.", seedRank: 74 },
+        { name: "Din Tai Fung", type: "eat", area: "Glendale / Century City / Arcadia", detail: "Reliable group-friendly dumpling restaurant with locations that pair well with shopping or museum days.", cuisine: "Taiwanese / dumplings", order: "Xiao long bao, spicy wontons, and fried rice.", seedRank: 73 },
+        { name: "The Grove", type: "buy", area: "Fairfax", detail: "Outdoor shopping and dining district next to the Original Farmers Market, useful for mainstream retail and easy browsing.", bestFor: "Fashion, gifts, casual dining, and market pairing", seedRank: 80 },
+        { name: "Rodeo Drive", type: "buy", area: "Beverly Hills", detail: "Luxury shopping street known for designer storefronts, polished streetscapes, and Beverly Hills sightseeing.", bestFor: "Luxury window shopping, designer brands, and photos", seedRank: 78 },
+        { name: "Abbot Kinney Boulevard", type: "buy", area: "Venice", detail: "Walkable boutique street with design shops, coffee, restaurants, and independent fashion near Venice Beach.", bestFor: "Boutiques, design, coffee, and independent finds", seedRank: 76 },
+        { name: "Melrose Avenue", type: "buy", area: "West Hollywood / Fairfax", detail: "Shopping corridor known for streetwear, vintage, murals, fashion boutiques, and casual browsing.", bestFor: "Streetwear, vintage, murals, and trend shopping", seedRank: 74 }
+      ]
+    },
+    {
+      match: /\b(new\s*york|new\s*york\s*city|nyc|manhattan)\b/i,
+      label: "New York City, New York, United States",
+      banner: "https://images.unsplash.com/photo-1522083165195-3424ed129620?auto=format&fit=crop&w=1800&q=82",
+      items: [
+        { name: "Statue of Liberty and Ellis Island", type: "see", area: "New York Harbor", detail: "Reserve ferry tickets early and allow enough time for both islands, security, and harbor views.", image: "https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?auto=format&fit=crop&w=1200&q=80", seedRank: 100 },
+        { name: "Central Park", type: "see", area: "Upper Manhattan", detail: "Classic New York green space with Bethesda Terrace, Bow Bridge, The Mall, Sheep Meadow, and museum pairings.", image: "https://images.unsplash.com/photo-1534270804882-6b5048b1c1fc?auto=format&fit=crop&w=1200&q=80", seedRank: 98 },
+        { name: "The Metropolitan Museum of Art", type: "see", area: "Upper East Side", detail: "Major art museum best handled with a focused collection plan and time in nearby Central Park.", image: "https://images.unsplash.com/photo-1569977274213-65dd2f00c3ac?auto=format&fit=crop&w=1200&q=80", seedRank: 96 },
+        { name: "Times Square and Broadway", type: "see", area: "Midtown", detail: "See the lights briefly, then make a Broadway show, theater-area dinner, or night walk the real anchor.", image: "https://images.unsplash.com/photo-1543716091-a840c05249ec?auto=format&fit=crop&w=1200&q=80", seedRank: 94 },
+        { name: "Empire State Building", type: "see", area: "Midtown", detail: "Classic observation deck with timed-entry planning and strong evening skyline appeal.", image: "https://images.unsplash.com/photo-1522083165195-3424ed129620?auto=format&fit=crop&w=1200&q=80", seedRank: 92 },
+        { name: "Rockefeller Center and Top of the Rock", type: "see", area: "Midtown", detail: "Pair the plaza, St. Patrick's Cathedral, Fifth Avenue, and skyline views from Top of the Rock.", image: "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?auto=format&fit=crop&w=1200&q=80", seedRank: 90 },
+        { name: "Brooklyn Bridge and DUMBO", type: "see", area: "Brooklyn", detail: "Walk toward Brooklyn for skyline views, waterfront parks, cobblestone streets, and photo stops.", image: "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=1200&q=80", seedRank: 88 },
+        { name: "9/11 Memorial and One World Observatory", type: "see", area: "Lower Manhattan", detail: "Leave reflective time at the memorial and reserve the observatory if skyline views are a priority.", image: "https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=1200&q=80", seedRank: 86 },
+        { name: "Grand Central Terminal", type: "see", area: "Midtown East", detail: "See the Main Concourse, Whispering Gallery, and nearby Chrysler Building or Summit One Vanderbilt.", image: "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=1200&q=80", seedRank: 84 },
+        { name: "High Line and Chelsea Market", type: "see", area: "Chelsea", detail: "Walk the elevated park, stop for food, and continue toward Hudson Yards or the Meatpacking District.", image: "https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=1200&q=80", seedRank: 82 },
+        { name: "Russ & Daughters Cafe", type: "eat", area: "Lower East Side", detail: "Classic New York appetizing tradition for bagels, smoked fish, eggs, and brunch-style plates.", cuisine: "Jewish appetizing / brunch", order: "Bagels with smoked fish, latkes, or egg dishes.", seedRank: 82 },
+        { name: "Katz's Delicatessen", type: "eat", area: "Lower East Side", detail: "Iconic deli stop known for pastrami sandwiches and old-school New York energy.", cuisine: "Deli", order: "Pastrami on rye, matzo ball soup, or a classic deli plate.", seedRank: 80 },
+        { name: "Los Tacos No. 1", type: "eat", area: "Chelsea Market / Times Square", detail: "Fast, popular taco stop with useful locations near major sightseeing routes.", cuisine: "Mexican / tacos", order: "Adobada, carne asada, or nopal tacos.", seedRank: 78 },
+        { name: "Joe's Pizza", type: "eat", area: "Greenwich Village", detail: "Classic New York slice shop useful as a quick lunch or late-night snack.", cuisine: "Pizza", order: "Plain cheese slice or pepperoni slice.", seedRank: 76 },
+        { name: "Daily Provisions", type: "eat", area: "Multiple locations", detail: "Good breakfast, coffee, sandwiches, and crullers with several convenient locations.", cuisine: "Bakery / cafe", order: "Crullers, breakfast sandwich, or coffee.", seedRank: 74 },
+        { name: "Fifth Avenue", type: "buy", area: "Midtown", detail: "Landmark flagships, luxury retail, department stores, and an easy add-on to Rockefeller Center.", bestFor: "Flagships, luxury retail, and department stores", seedRank: 80 },
+        { name: "SoHo", type: "buy", area: "Lower Manhattan", detail: "Fashion flagships, design shops, cobblestone streets, and strong browsing between downtown neighborhoods.", bestFor: "Fashion, design, and flagship retail", seedRank: 78 },
+        { name: "Chelsea Market and Artists & Fleas", type: "buy", area: "Chelsea", detail: "Food gifts, local makers, art, and independent vendors near the High Line.", bestFor: "Food gifts, local makers, and independent vendors", seedRank: 76 },
+        { name: "Brooklyn Flea", type: "buy", area: "Brooklyn", detail: "Seasonal market for vintage, crafts, design, and local food; check current location and schedule.", bestFor: "Vintage, crafts, design, and local food", seedRank: 74 }
+      ]
+    }
+  ];
+
+  function seededDestinationItems(destination, geocode) {
+    const haystack = [destination, geocode?.name, geocode?.admin1, geocode?.country].filter(Boolean).join(" ");
+    const seed = SEEDED_DESTINATION_CATALOGS.find((entry) => entry.match.test(haystack));
+    if (!seed) return { items: [], label: "", banner: "" };
+    return {
+      label: seed.label,
+      banner: seed.banner,
+      items: seed.items.map((item) => ({
+        ...item,
+        sourceLabel: "PlanToGuide starter catalog",
+        sourceUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.name} ${seed.label}`)}`,
+        seeded: true
+      }))
+    };
+  }
+
+  function hasSeededDestinationCatalog(destination, geocode) {
+    const haystack = [destination, geocode?.name, geocode?.admin1, geocode?.country].filter(Boolean).join(" ");
+    return SEEDED_DESTINATION_CATALOGS.some((entry) => entry.match.test(haystack));
+  }
+
+  function catalogHasSeededAnchors(catalog, destination, geocode) {
+    const seed = seededDestinationItems(destination, geocode);
+    if (!seed.items.length) return true;
+    const anchors = seed.items.filter((item) => item.type === "see").slice(0, 4).map((item) => slugify(item.name));
+    const existing = new Set((catalog?.attractions || []).map((item) => slugify(item.name)));
+    return anchors.every((anchor) => existing.has(anchor));
+  }
+
+  function tourismScore(item, destination = "") {
+    const text = [item.name, item.area, item.detail, item.bestFor, item.cuisine, destination].filter(Boolean).join(" ").toLowerCase();
+    let score = Number(item.seedRank || 0);
+    TOURISM_KEYWORD_WEIGHTS.forEach((weight, keyword) => {
+      if (text.includes(keyword)) score += weight;
+    });
+    if (item.seeded) score += 60;
+    if (item.image) score += 8;
+    if (/wikipedia|wikivoyage/i.test(item.sourceLabel || "")) score += 4;
+    return score;
+  }
+
+  function rankDynamicItems(items = [], destination = "") {
+    return [...items].sort((a, b) => tourismScore(b, destination) - tourismScore(a, destination));
+  }
+
+  function distributeFoodItems(eatItems = [], destination, fallbackArea) {
+    const food = { breakfast: [], lunch: [], dinner: [] };
+    const assigned = new Set();
+    const pushUnique = (bucket, item) => {
+      const key = slugify(item?.name || "");
+      if (!item || !key || assigned.has(key)) return false;
+      food[bucket].push(item);
+      assigned.add(key);
+      return true;
+    };
+    eatItems.forEach((item) => {
+      const text = `${item.name} ${item.cuisine || ""} ${item.detail || ""}`.toLowerCase();
+      if (/cafe|coffee|bakery|brunch|breakfast|pastry|donut|bagel/.test(text)) pushUnique("breakfast", item);
+      else if (/market|food hall|food court|fast food|taco|sandwich|burger|noodle|ramen|pizza/.test(text)) pushUnique("lunch", item);
+      else pushUnique("dinner", item);
+    });
+    eatItems.forEach((item, index) => pushUnique(["breakfast", "lunch", "dinner"][index % 3], item));
+    const filler = {
+      breakfast: [
+        { name: `${destination} neighborhood café`, area: fallbackArea, detail: "Use live Maps research to choose a highly rated breakfast spot near the day’s route.", cuisine: "Café and local breakfast", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} bakery breakfast stop`, area: fallbackArea, detail: "Look for a popular bakery or coffee shop near the morning neighborhood and verify current hours.", cuisine: "Bakery and coffee", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} brunch option`, area: fallbackArea, detail: "Research a well-reviewed brunch spot that fits your group size and morning timing.", cuisine: "Brunch", sourceLabel: "PlanToGuide", sourceUrl: "" }
+      ],
+      lunch: [
+        { name: `${destination} local lunch favorite`, area: fallbackArea, detail: "Choose a well-reviewed lunch stop near the day’s sights and verify current hours.", cuisine: "Regional cuisine", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} market lunch stop`, area: fallbackArea, detail: "Find a food hall, public market, or casual counter-service option that works for flexible groups.", cuisine: "Market and casual dining", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} casual neighborhood meal`, area: fallbackArea, detail: "Pick a practical lunch with short travel time and a current menu that fits dietary needs.", cuisine: "Casual local food", sourceLabel: "PlanToGuide", sourceUrl: "" }
+      ],
+      dinner: [
+        { name: `${destination} dinner reservation option`, area: fallbackArea, detail: "Research a dinner spot that matches your budget, dietary needs, and route.", cuisine: "Local dinner", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} special dinner pick`, area: fallbackArea, detail: "Look for a memorable dinner option near the evening plan and confirm reservations.", cuisine: "Dinner", sourceLabel: "PlanToGuide", sourceUrl: "" },
+        { name: `${destination} relaxed evening restaurant`, area: fallbackArea, detail: "Choose a lower-stress dinner close to the final stop or home base.", cuisine: "Relaxed dinner", sourceLabel: "PlanToGuide", sourceUrl: "" }
+      ]
+    };
+    Object.keys(food).forEach((bucket) => {
+      let index = 0;
+      while (food[bucket].length < 3) pushUnique(bucket, filler[bucket][index++ % filler[bucket].length]);
+      food[bucket] = food[bucket].slice(0, 6);
+    });
+    return food;
+  }
+
   function dedupeItems(items = []) {
     const seen = new Set();
     return items.filter((item) => {
@@ -280,20 +629,17 @@
     };
   }
 
-  function assembleDynamicCatalog(destination, geocode, sourceData) {
-    const fallbackArea = [geocode?.name, geocode?.admin1, geocode?.country].filter(Boolean).join(", ") || destination;
-    const items = dedupeItems([...(sourceData.wikivoyageItems || []), ...(sourceData.wikipediaItems || [])]);
+  function assembleDynamicCatalog(destination, geocode, sourceData = {}) {
+    const seeded = seededDestinationItems(destination, geocode);
+    const fallbackArea = seeded.label || [geocode?.name, geocode?.admin1, geocode?.country].filter(Boolean).join(", ") || destination;
+    const items = rankDynamicItems(dedupeItems([...(seeded.items || []), ...(sourceData.wikivoyageItems || []), ...(sourceData.wikipediaItems || []), ...(sourceData.osmItems || [])]), destination);
     const see = items.filter((item) => item.type === "see").slice(0, 24).map((item) => toPlace(item, fallbackArea));
-    const eatItems = items.filter((item) => item.type === "eat").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), cuisine: "Local cuisine", order: "Check the current menu and signature dishes." }));
-    const buy = items.filter((item) => item.type === "buy").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), bestFor: "Local shopping, gifts, and browsing" }));
+    const eatItems = items.filter((item) => item.type === "eat").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), cuisine: item.cuisine || "Local cuisine", order: item.order || "Check the current menu and signature dishes." }));
+    const buy = items.filter((item) => item.type === "buy").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), bestFor: item.bestFor || "Local shopping, gifts, and browsing" }));
     const enoughSignal = see.length >= 4 || eatItems.length >= 3 || buy.length >= 2;
     if (!enoughSignal) return null;
-    const fillerImage = [...see, ...eatItems, ...buy].find((item) => item.image)?.image || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=82";
-    const food = { breakfast: [], lunch: [], dinner: [] };
-    eatItems.forEach((item, index) => food[["breakfast", "lunch", "dinner"][index % 3]].push(item));
-    while (food.breakfast.length < 3) food.breakfast.push({ name: `${destination} neighborhood café`, area: fallbackArea, detail: "Use live Maps research to choose a highly rated breakfast spot near the day’s route.", cuisine: "Café and local breakfast", sourceLabel: "PlanToGuide", sourceUrl: "" });
-    while (food.lunch.length < 3) food.lunch.push({ name: `${destination} local lunch favorite`, area: fallbackArea, detail: "Choose a well-reviewed lunch stop near the day’s sights and verify current hours.", cuisine: "Regional cuisine", sourceLabel: "PlanToGuide", sourceUrl: "" });
-    while (food.dinner.length < 3) food.dinner.push({ name: `${destination} dinner reservation option`, area: fallbackArea, detail: "Research a dinner spot that matches your budget, dietary needs, and route.", cuisine: "Local dinner", sourceLabel: "PlanToGuide", sourceUrl: "" });
+    const fillerImage = seeded.banner || [...see, ...eatItems, ...buy].find((item) => item.image)?.image || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=82";
+    const food = distributeFoodItems(eatItems, destination, fallbackArea);
     const zones = see.slice(0, 8).map((item, index) => ({
       name: item.area || item.name,
       icon: ["🏛️", "🌿", "🌆", "🎨", "🧭", "📸", "🛍️", "🌉"][index % 8],
@@ -315,8 +661,10 @@
       ],
       practical: {},
       sources: [
+        ...(seeded.items?.length ? [{ label: "PlanToGuide starter catalog", url: "https://www.google.com/maps" }] : []),
         { label: "Wikivoyage", url: sourceData.wikivoyageTitle ? `https://en.wikivoyage.org/wiki/${encodeURIComponent(sourceData.wikivoyageTitle.replace(/\s+/g, "_"))}` : "https://en.wikivoyage.org" },
-        { label: "Wikipedia", url: "https://en.wikipedia.org" }
+        { label: "Wikipedia", url: "https://en.wikipedia.org" },
+        ...(sourceData.osmItems?.length ? [{ label: "OpenStreetMap", url: "https://www.openstreetmap.org" }] : [])
       ]
     };
   }
@@ -330,12 +678,14 @@
       if (!geocode) return null;
       const slug = slugify([geocode.name, geocode.admin1, geocode.country].filter(Boolean).join(" "));
       const cached = dynamicCatalogCache.get(slug);
-      if (cached) return { ...cached, match: new RegExp(cached.matchPattern || escapeRegExp(destination), cached.matchFlags || "i") };
-      const [voyage, wiki] = await Promise.all([
+      if (cached && catalogHasSeededAnchors(cached, destination, geocode)) return { ...cached, match: new RegExp(cached.matchPattern || escapeRegExp(destination), cached.matchFlags || "i") };
+      const [voyage, wikiGeo, wikiCategory, osm] = await Promise.all([
         fetchWikivoyageListings([geocode.name, geocode.country].filter(Boolean).join(" "), controller.signal).catch(() => ({ title: "", items: [] })),
-        fetchWikipediaGeoPlaces(geocode, controller.signal).catch(() => [])
+        fetchWikipediaGeoPlaces(geocode, controller.signal).catch(() => []),
+        fetchWikipediaCategoryPlaces(destination, geocode, controller.signal).catch(() => []),
+        fetchOpenStreetMapRecommendations(destination, geocode, controller.signal).catch(() => [])
       ]);
-      const catalog = assembleDynamicCatalog(destination, geocode, { wikivoyageTitle: voyage.title, wikivoyageItems: voyage.items, wikipediaItems: wiki });
+      const catalog = assembleDynamicCatalog(destination, geocode, { wikivoyageTitle: voyage.title, wikivoyageItems: voyage.items, wikipediaItems: [...wikiGeo, ...wikiCategory], osmItems: osm });
       if (!catalog) return null;
       const cacheable = { ...catalog, match: undefined, matchPattern: [destination, geocode.name, geocode.country].filter(Boolean).map(escapeRegExp).join("|"), matchFlags: "i" };
       dynamicCatalogCache.set(slug, cacheable);
@@ -347,7 +697,7 @@
     }
   }
 
-  const api = { geocodeDestination, parseWikivoyageListings, stripWikitext, buildDynamicCatalog, dynamicCatalogCache, assembleDynamicCatalog };
+  const api = { geocodeDestination, parseWikivoyageListings, stripWikitext, buildDynamicCatalog, dynamicCatalogCache, assembleDynamicCatalog, hasSeededDestinationCatalog, catalogHasSeededAnchors, fetchWikipediaCategoryPlaces, fetchOpenStreetMapRecommendations };
   Object.assign(global, api);
   if (typeof module !== "undefined") module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);
