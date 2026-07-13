@@ -24,6 +24,16 @@ See [SCHEMA.md](SCHEMA.md) for the `plantoguide-trip` v3 schema and legacy v2 im
 
 The hosted PlanToGuide builder also ships `catalogs.json` so detailed destination suggestions can be cached offline; direct `file://` use falls back to the embedded Tokyo/Japan starter catalog.
 
+## Dynamic destination catalogs
+
+Recommendation tiers are intentionally layered:
+
+1. Curated browser catalogs from `catalogs.json`.
+2. Keyless live research catalogs for unsupported destinations using Open-Meteo geocoding plus Wikivoyage/Wikipedia public APIs.
+3. Starter mode with placeholder cards, research checklists, and AI-ready prompts when live research does not return enough usable signal.
+
+Live research catalog items are planning starters and are labeled for verification. They do not provide current live facts such as hours, closures, prices, ratings, ticket availability, or reservations.
+
 ## Photo storage
 
 Uploaded photo metadata stays in `localStorage`; resized image data is stored in IndexedDB through `photo-store.js` so larger journals do not hit the smaller `localStorage` quota. `TRIP-PLAN.md` remains metadata-only for AI handoff, while `TRIP-DATA.json` includes local photo data when available for round-trip export.
@@ -42,4 +52,4 @@ powershell -ExecutionPolicy Bypass -File .\dev-server.ps1
 
 Then visit `http://127.0.0.1:8767`.
 
-The browser edition requires no account or API key. Optional live weather uses keyless Open-Meteo endpoints.
+The browser edition requires no account or API key. Optional live weather and dynamic destination research use keyless public endpoints.

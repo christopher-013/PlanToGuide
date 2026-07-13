@@ -2,11 +2,14 @@
 
 The standalone edition is a static browser application. It does not use OpenAI, ChatGPT, an API key, Node.js, a database, or a backend server. It optionally reads current conditions from Open-Meteo's keyless public weather and geocoding endpoints; the bundled seasonal estimate remains available if that request fails.
 
+For unsupported destinations, hosted/http deployments can also build a keyless live research catalog from Open-Meteo geocoding plus Wikivoyage/Wikipedia public APIs. If those requests fail, are blocked, or return too little useful data, the app remains functional in starter mode.
+
 ## Application files
 
 - `index.html` â€” questionnaire and report structure
 - `version.js` — shared release version used by the app and service worker cache
 - `catalogs.json` — detailed destination suggestions loaded by hosted/http deployments
+- `dynamic-catalog.js` — keyless live destination research for unsupported places
 - `styles.css` â€” full-screen responsive presentation
 - `app.js` â€” destination catalog, itinerary generation, navigation, weather estimates, and browser storage
 - `trip-schema.js` â€” versioned export/import schema and AI handoff

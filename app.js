@@ -251,6 +251,9 @@ let dayBannerRenderVersion = 0;
 let suggestionGroups = [];
 let activeSuggestionCategory = 0;
 let currentFormStep = 1;
+let destinationResearchTimer = 0;
+let destinationResearchController = null;
+let destinationResearchState = { query: "", geocode: null, status: "idle" };
 let lastExportHtml = "";
 let lastStandaloneHtml = "";
 let focusedPhotoId = "";
@@ -276,12 +279,13 @@ destinationInput.addEventListener("input", () => {
   destinationInput.setCustomValidity("");
   destinationError.textContent = "";
   updateDestinationModeBadge();
+  scheduleDestinationResearch();
   updateDestinationClearButton();
 });
 destinationInput.addEventListener("change", normalizeSelectedDestination);
 destinationInput.addEventListener("blur", () => {
   normalizeSelectedDestination();
-  if (destinationInput.value.trim() && !resolveKnownDestination(destinationInput.value)) {
+  if (destinationInput.value.trim() && !hasLiveOrCuratedCatalog(destinationInput.value) && !(destinationResearchState.geocode && sameResearchQuery(destinationInput.value))) {
     destinationError.textContent = "Starter mode is available for this destination: PlanToGuide will create an AI-ready research plan and starter website you can refine in ChatGPT or Claude.";
   }
   updateDestinationModeBadge();
@@ -292,6 +296,8 @@ clearDestinationButton?.addEventListener("click", () => {
   destinationInput.setCustomValidity("");
   destinationError.textContent = "";
   updateDestinationModeBadge();
+  destinationResearchState = { query: "", geocode: null, status: "idle" };
+  if (destinationResearchController) destinationResearchController.abort();
   selectedSuggestions.clear();
   suggestionDestination = "";
   updateDestinationClearButton();
@@ -332,6 +338,46 @@ function normalizeSelectedDestination() {
   return true;
 }
 
+function sameResearchQuery(value) {
+  return normalizeDestinationName(value) === normalizeDestinationName(destinationResearchState.query || "");
+}
+
+function hasLiveOrCuratedCatalog(destination) {
+  return Boolean(resolveKnownDestination(destination) || destinationCatalogs.some((catalog) => catalog.dynamic && catalog.match.test(destination)));
+}
+
+function getLiveOrCuratedCatalog(destination) {
+  return destinationCatalogs.find((catalog) => catalog.match.test(destination)) || null;
+}
+
+function setLiveResearchState(query, geocode, status = "geocoded") {
+  destinationResearchState = { query, geocode, status };
+  updateDestinationModeBadge();
+}
+
+function scheduleDestinationResearch() {
+  const value = destinationInput.value.trim();
+  clearTimeout(destinationResearchTimer);
+  if (destinationResearchController) destinationResearchController.abort();
+  if (!value || resolveKnownDestination(value) || typeof geocodeDestination !== "function") {
+    destinationResearchState = { query: value, geocode: null, status: "idle" };
+    return;
+  }
+  destinationResearchState = { query: value, geocode: null, status: "checking" };
+  destinationResearchTimer = setTimeout(async () => {
+    const query = destinationInput.value.trim();
+    if (!query || resolveKnownDestination(query) || !sameResearchQuery(query)) return;
+    destinationResearchController = new AbortController();
+    try {
+      const geocode = await geocodeDestination(query, { signal: destinationResearchController.signal });
+      if (destinationInput.value.trim() === query && geocode) setLiveResearchState(query, geocode, "geocoded");
+      else if (destinationInput.value.trim() === query) setLiveResearchState(query, null, "starter");
+    } catch (_) {
+      if (destinationInput.value.trim() === query) setLiveResearchState(query, null, "starter");
+    }
+  }, 500);
+}
+
 function updateDestinationModeBadge() {
   if (!destinationModeBadge) return;
   const value = destinationInput.value.trim();
@@ -342,11 +388,22 @@ function updateDestinationModeBadge() {
     return;
   }
   const hasCatalog = Boolean(resolveKnownDestination(value));
+  const hasDynamicCatalog = destinationCatalogs.some((catalog) => catalog.dynamic && catalog.match.test(value));
+  const hasLiveGeocode = Boolean(destinationResearchState.geocode && sameResearchQuery(value));
   destinationModeBadge.hidden = false;
-  destinationModeBadge.className = `destination-mode-badge ${hasCatalog ? "catalog" : "starter"}`;
-  destinationModeBadge.textContent = hasCatalog
-    ? "✓ Detailed local catalog available"
-    : "○ Starter mode: you'll get an AI-ready research plan — pair it with ChatGPT or Claude for local detail";
+  if (hasCatalog) {
+    destinationModeBadge.className = "destination-mode-badge catalog";
+    destinationModeBadge.textContent = "✓ Detailed local catalog";
+  } else if (hasDynamicCatalog || hasLiveGeocode) {
+    destinationModeBadge.className = "destination-mode-badge dynamic";
+    destinationModeBadge.textContent = "◐ Live research catalog — real places, verify details";
+  } else if (destinationResearchState.status === "checking" && sameResearchQuery(value)) {
+    destinationModeBadge.className = "destination-mode-badge dynamic";
+    destinationModeBadge.textContent = "◌ Checking live destination sources…";
+  } else {
+    destinationModeBadge.className = "destination-mode-badge starter";
+    destinationModeBadge.textContent = "○ Starter mode: AI-ready research plan and website shell";
+  }
 }
 
 async function goToPreferencesStep() {
@@ -354,12 +411,18 @@ async function goToPreferencesStep() {
     destinationInput.reportValidity();
     return;
   }
+  await catalogReadyPromise;
   const knownDestination = resolveKnownDestination(destinationInput.value);
   if (knownDestination) {
     destinationInput.value = knownDestination.label;
     destinationError.textContent = "";
   } else {
-    destinationError.textContent = "Starter mode is available for this destination: PlanToGuide will create an AI-ready research plan and starter website you can refine in ChatGPT or Claude.";
+    const dynamicCatalog = await ensureDynamicCatalog(destinationInput.value.trim());
+    if (dynamicCatalog) {
+      destinationError.textContent = "Live research catalog created from keyless public sources. Verify hours, closures, ratings, tickets, and availability before travel.";
+    } else {
+      destinationError.textContent = "Starter mode is available for this destination: PlanToGuide will create an AI-ready research plan and starter website you can refine in ChatGPT or Claude.";
+    }
   }
   destinationInput.setCustomValidity("");
   updateDestinationModeBadge();
@@ -382,12 +445,41 @@ async function goToPreferencesStep() {
     wishListInput.value = "";
     preferenceError.textContent = "";
   }
-  await catalogReadyPromise;
   activeSuggestionCategory = 0;
   renderSuggestionPicker(nextDestination);
   showFormStep(2);
 }
 document.querySelector("#nextStepButton").addEventListener("click", () => { goToPreferencesStep(); });
+
+async function ensureDynamicCatalog(destination) {
+  if (!destination || resolveKnownDestination(destination) || typeof buildDynamicCatalog !== "function") return null;
+  const existing = destinationCatalogs.find((catalog) => catalog.dynamic && catalog.match.test(destination));
+  if (existing) return existing;
+  let geocode = destinationResearchState.geocode && sameResearchQuery(destination) ? destinationResearchState.geocode : null;
+  if (!geocode && typeof geocodeDestination === "function") {
+    try {
+      geocode = await geocodeDestination(destination);
+      if (geocode) setLiveResearchState(destination, geocode, "geocoded");
+    } catch (_) {
+      geocode = null;
+    }
+  }
+  if (!geocode) return null;
+  try {
+    const catalog = await buildDynamicCatalog(destination, { geocode });
+    if (!catalog) {
+      console.warn("PlanToGuide dynamic catalog fallback: no usable public-source listings for", destination);
+      return null;
+    }
+    if (!(catalog.match instanceof RegExp)) catalog.match = new RegExp(catalog.matchPattern || destination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), catalog.matchFlags || "i");
+    if (!destinationCatalogs.some((candidate) => candidate.dynamic && candidate.label === catalog.label)) destinationCatalogs.push(catalog);
+    updateDestinationModeBadge();
+    return catalog;
+  } catch (_) {
+    console.warn("PlanToGuide dynamic catalog fallback: public-source research failed for", destination);
+    return null;
+  }
+}
 
 document.querySelector("#backStepButton").addEventListener("click", () => {
   if (activeSuggestionCategory > 0) {
@@ -1114,7 +1206,7 @@ function renderSuggestionPicker(destination) {
   suggestionDestination = normalizedDestination;
   document.querySelector("#suggestionDestination").textContent = destination;
   const starterSuggestionNote = document.querySelector("#starterSuggestionNote");
-  if (starterSuggestionNote) starterSuggestionNote.hidden = Boolean(resolveKnownDestination(destination));
+  if (starterSuggestionNote) starterSuggestionNote.hidden = hasLiveOrCuratedCatalog(destination);
   suggestionGroups = createSuggestionGroups(destination);
   suggestionLookup = new Map(suggestionGroups.flatMap((group) => group.items.map((suggestion) => [suggestion.key, suggestion])));
   suggestionBoard.innerHTML = "";
@@ -1136,7 +1228,7 @@ function renderSuggestionPicker(destination) {
         : suggestion.category === "shop"
           ? [suggestion.area, suggestion.bestFor || "Popular local shopping"]
           : [suggestion.area, "Popular place to see"];
-      button.innerHTML = `<img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="${escapeHtml(`${suggestion.name} in ${destination}`)}" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span><a class="suggestion-map-link" href="${googleMapsSearchUrl(`${suggestion.name} ${destination}`)}" target="_blank" rel="noopener noreferrer">Live data unavailable in browser-only mode · verify on Google Maps ↗</a></span>`;
+      button.innerHTML = `<img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="${escapeHtml(`${suggestion.name} in ${destination}`)}" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span>${sourceCreditHtml(suggestion)}<a class="suggestion-map-link" href="${googleMapsSearchUrl(`${suggestion.name} ${destination}`)}" target="_blank" rel="noopener noreferrer">Live data unavailable in browser-only mode · verify on Google Maps ↗</a></span>`;
       hydrateSuggestionImage(button.querySelector(".suggestion-card-image"), suggestion, destination);
       button.dataset.suggestionKey = suggestion.key;
       button.setAttribute("aria-pressed", selectedSuggestions.has(suggestion.key) ? "true" : "false");
@@ -1157,6 +1249,19 @@ function renderSuggestionPicker(destination) {
   });
   renderSuggestionCategory();
   updateSelectionCount();
+}
+
+function sourceCreditHtml(item = {}) {
+  if (!item.sourceLabel || !item.sourceUrl) return "";
+  const label = escapeHtml(item.sourceLabel);
+  const url = escapeHtml(item.sourceUrl);
+  return `<a class="source-credit" href="${url}" target="_blank" rel="noopener noreferrer">Source: ${label} ↗</a>`;
+}
+
+function sourceCreditElement(item = {}) {
+  const wrapper = document.createElement("span");
+  wrapper.innerHTML = sourceCreditHtml(item);
+  return wrapper.firstElementChild || document.createTextNode("");
 }
 
 function renderSuggestionCategory() {
@@ -1201,7 +1306,9 @@ function createSuggestionGroups(destination) {
     order: item.order || "",
     bestFor: item.bestFor || "",
     address: item.address || "",
-    image: item.image || ""
+    image: item.image || "",
+    sourceLabel: item.sourceLabel || "",
+    sourceUrl: item.sourceUrl || ""
   });
   const unique = (items, category) => items.map((item) => toSuggestion(item, category)).filter((item) => {
     const nameKey = item.name.toLowerCase();
@@ -1357,6 +1464,7 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
     guide,
     practical: guide.practical || null,
     researchMode: Boolean(guide.researchMode),
+    dynamicCatalog: Boolean(guide.dynamic),
     days: itineraryDays
   };
 }
@@ -1503,7 +1611,7 @@ function suggestionToActivity(suggestion, index) {
     suggestion.rating ? `Google rating: ${suggestion.rating}.` : "", suggestion.cuisine ? `Cuisine: ${suggestion.cuisine}.` : "",
     suggestion.order ? `What to order: ${suggestion.order}.` : "", suggestion.bestFor ? `Known for: ${suggestion.bestFor}.` : "",
     suggestion.address ? `Address: ${suggestion.address}.` : "", "Prioritized from your survey selection."].filter(Boolean).join(" ");
-  return activity(type, icon, time, suggestion.name, selectedDetail);
+  return { ...activity(type, icon, time, suggestion.name, selectedDetail), sourceLabel: suggestion.sourceLabel || "", sourceUrl: suggestion.sourceUrl || "" };
 }
 
 function timeToMinutes(value) {
@@ -1553,6 +1661,20 @@ function renderTrip() {
   ].map((text) => `<span class="trip-stat">${escapeHtml(text)}</span>`).join("");
   const researchModeNotice = document.querySelector("#researchModeNotice");
   researchModeNotice.hidden = !trip.researchMode;
+  if (!researchModeNotice.hidden) {
+    const eyebrow = researchModeNotice.querySelector(".eyebrow");
+    const heading = researchModeNotice.querySelector("h3");
+    const copy = researchModeNotice.querySelector("p:not(.eyebrow)");
+    if (trip.dynamicCatalog) {
+      if (eyebrow) eyebrow.textContent = "Live research catalog";
+      if (heading) heading.textContent = "Real places found — verify live details";
+      if (copy) copy.textContent = "PlanToGuide built this guide from keyless public sources such as Wikivoyage and Wikipedia. Treat names and descriptions as useful research starters, then verify current hours, closures, tickets, routes, ratings, and reservations.";
+    } else {
+      if (eyebrow) eyebrow.textContent = "Starter research mode";
+      if (heading) heading.textContent = "Local details need research";
+      if (copy) copy.textContent = "This destination is not in the detailed browser catalog yet. Your site preserves your must-dos and bookings while providing an AI-ready planning structure.";
+    }
+  }
 
   const dayBar = document.querySelector(".report-day-bar");
   dayBar.style.setProperty("--destination-banner", `url("${trip.guide.banner}")`);
@@ -2156,7 +2278,7 @@ function renderRecommendationCard(option, label, icon) {
   const rating = option.rating ? `<span class="place-fact"><b>⭐ Google rating</b>${escapeHtml(option.rating)} / 5 <em>· verify live</em></span>` : "";
   const address = option.address ? `<span class="place-fact"><b>📍 Address</b>${escapeHtml(option.address)}</span>` : `<span class="place-fact"><b>📍 Area</b>${escapeHtml(option.area || trip.destination)}</span>`;
   const specialty = option.order ? `<span class="place-fact"><b>🥢 What to order</b>${escapeHtml(option.order)}</span>` : option.bestFor ? `<span class="place-fact"><b>🛍️ Best for</b>${escapeHtml(option.bestFor)}</span>` : "";
-  article.innerHTML = `<img class="recommendation-photo" src="${escapeHtml(option.image || suggestionImagePlaceholder({ name: option.name, category }))}" alt="${escapeHtml(`${option.name} in ${trip.destination}`)}" loading="lazy"><span class="recommendation-icon" aria-hidden="true">${displayIcon(icon)}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div><a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
+  article.innerHTML = `<img class="recommendation-photo" src="${escapeHtml(option.image || suggestionImagePlaceholder({ name: option.name, category }))}" alt="${escapeHtml(`${option.name} in ${trip.destination}`)}" loading="lazy"><span class="recommendation-icon" aria-hidden="true">${displayIcon(icon)}</span><div><span class="recommendation-label">${escapeHtml(label)}</span><h4>${escapeHtml(option.name)}</h4><p>${escapeHtml(option.detail)}</p><div class="place-facts">${rating}${address}${specialty}</div>${sourceCreditHtml(option)}<a class="google-maps-link" href="${googleMapsSearchUrl(option.name, option.address || option.area)}" target="_blank" rel="noopener noreferrer" aria-label="Find ${escapeHtml(option.name)} on Google Maps">Live details on Google Maps ↗</a></div>`;
   hydrateSuggestionImage(article.querySelector(".recommendation-photo"), { name: option.name, category, image: option.image || "" }, trip.destination);
   return article;
 }
@@ -2184,6 +2306,7 @@ function renderCollection(selector, types, emptyText, includeMapLinks = false) {
     fragment.querySelector(".collection-day").textContent = `${formatDate(day.date, false)} · ${activity.time}`;
     fragment.querySelector("h3").textContent = activity.title;
     fragment.querySelector("p").textContent = activity.description;
+    if (activity.sourceLabel && activity.sourceUrl) fragment.querySelector("p").after(sourceCreditElement(activity));
     if (includeMapLinks) {
       const mapLink = document.createElement("a");
       mapLink.className = "google-maps-link";
@@ -2192,7 +2315,7 @@ function renderCollection(selector, types, emptyText, includeMapLinks = false) {
       mapLink.rel = "noopener noreferrer";
       mapLink.textContent = "Open this stop in Google Maps ↗";
       mapLink.addEventListener("click", (event) => event.stopPropagation());
-      fragment.querySelector("p").after(mapLink);
+      (fragment.querySelector(".source-credit") || fragment.querySelector("p")).after(mapLink);
     }
     card.addEventListener("click", () => { activeDay = dayIndex; renderTrip(); switchAppTab("itinerary"); });
     container.appendChild(fragment);
@@ -2223,13 +2346,14 @@ function renderActivity(activity) {
   activityImage.alt = `${activityName} in ${trip.destination}`;
   hydrateSuggestionImage(activityImage, { name: activityName, category: activity.type === "Eat" ? "eat" : activity.type === "Shop" ? "shop" : "see", image: "" }, trip.destination);
   fragment.querySelector(".activity-copy p").textContent = activity.description;
+  if (activity.sourceLabel && activity.sourceUrl) fragment.querySelector(".activity-copy p").after(sourceCreditElement(activity));
   const mapLink = document.createElement("a");
   mapLink.className = "google-maps-link";
   mapLink.href = googleMapsSearchUrl(cleanActivityTitle(activity.title), "");
   mapLink.target = "_blank";
   mapLink.rel = "noopener noreferrer";
   mapLink.textContent = "Google Maps details ↗";
-  fragment.querySelector(".activity-copy p").after(mapLink);
+  (fragment.querySelector(".activity-copy .source-credit") || fragment.querySelector(".activity-copy p")).after(mapLink);
   fragment.querySelector(".activity-menu").addEventListener("click", (event) => {
     const card = event.currentTarget.closest(".activity-card");
     card.querySelector("h4").contentEditable = "true";

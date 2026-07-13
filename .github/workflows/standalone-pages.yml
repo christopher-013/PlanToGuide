@@ -25,7 +25,7 @@ jobs:
       - name: Assemble standalone site
         run: |
           mkdir _site
-          cp index.html version.js catalogs.json app.js styles.css export-styles.js icon-source.js photo-store.js trip-schema.js plan-x-guide-centered-compass-morph-clean-x.svg manifest.webmanifest sw.js _site/
+          cp index.html version.js catalogs.json dynamic-catalog.js app.js styles.css export-styles.js icon-source.js photo-store.js trip-schema.js plan-x-guide-centered-compass-morph-clean-x.svg manifest.webmanifest sw.js _site/
           mkdir -p _site/icons
           cp icons/icon-192.png icons/icon-512.png _site/icons/
       - uses: actions/configure-pages@v5

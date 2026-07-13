@@ -1,0 +1,9 @@
+{{see
+| name=[[Museum of Layers|City Museum]]
+| content=Known for {{nowrap|historic rooms}} and a concise introduction to the city.
+}}
+{{listing
+| type=eat
+| name=Harbor Café
+| content=Breakfast, coffee, and [[local pastry|regional pastries]] near the waterfront.
+}}

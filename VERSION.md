@@ -56,3 +56,10 @@ Use this workspace for new V3 experiments and larger product changes.
 - Moved the full destination catalog and known-destination list into `catalogs.json`.
 - Kept a Tokyo/Japan embedded fallback for `file://` and catalog fetch failures.
 - Added `catalogs.json` to hosted/offline deployment files.
+
+## Phase 9 implemented
+
+- Added `dynamic-catalog.js` for unsupported destination research using only keyless Open-Meteo, Wikivoyage, and Wikipedia endpoints.
+- Added a three-tier recommendation flow: curated catalog, live research catalog, then starter fallback.
+- Cached dynamic catalogs in browser `localStorage` with a 30-day TTL and size guard.
+- Added source credit rendering for public-source suggestions while keeping imported text escaped and inert.

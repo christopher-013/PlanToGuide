@@ -6,6 +6,7 @@ const PRECACHE_URLS = [
   "index.html",
   "version.js",
   "catalogs.json",
+  "dynamic-catalog.js",
   "styles.css",
   "app.js",
   "trip-schema.js",
@@ -21,6 +22,7 @@ const NETWORK_ONLY_HOSTS = new Set([
   "api.open-meteo.com",
   "geocoding-api.open-meteo.com",
   "en.wikipedia.org",
+  "en.wikivoyage.org",
   "www.google.com",
   "maps.google.com"
 ]);

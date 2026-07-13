@@ -1,0 +1,8 @@
+{{see
+| name=Old Town Square
+| address=Central district
+| content=A compact landmark square with historic buildings, cafés, and evening atmosphere.
+}}
+{{do|name=River Walk|content=Follow the waterfront path for city views and a low-pressure orientation route.}}
+{{eat|name=Central Market Hall|content=Busy local food stalls and regional dishes.|address=Market Street}}
+{{buy|name=Design Arcade|content=Independent boutiques, books, and local gifts.|address=Creative Quarter}}
