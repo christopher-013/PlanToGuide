@@ -1529,6 +1529,7 @@ function makeActivitiesUnique(activities, seen, destination, date, preferences) 
     }
 
     const replacement = createPlanningBlock(destination, date, item.time, replacementIndex++, preferences, item.type);
+    if (item.anchor) replacement.anchor = true;
     seen.add(replacement.title.toLowerCase());
     return replacement;
   });
@@ -1586,32 +1587,85 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
   const dinnerTime = preferences.evening === "quiet" ? "18:30" : preferences.evening === "nightlife" ? "20:00" : "19:30";
   const zoneNote = zone ? `Today stays centered on ${zone.name}, minimizing cross-city travel.` : "Today follows one compact district.";
   const routeNote = preferences.transport === "low-walking" ? `${zoneNote} Keep walking segments short and use door-to-door transport.` : preferences.transport === "mixed" ? `${zoneNote} Use transit for the main route and a taxi when it saves energy.` : `${zoneNote} Connect nearby stops by walking and public transit.`;
+  const breakfastActivity = activity("Eat", "☕", breakfastTime, `Breakfast: ${breakfast.name}`, `${breakfast.detail} ${areaText(breakfast)} Allow 45–60 minutes.`);
+  const firstSightActivity = activity(index === 0 ? "Arrival" : "See", index === 0 ? "🧳" : "🏛️", morningTime, firstSight.name, `${firstSight.detail} ${areaText(firstSight)} Allow about 2–3 hours including nearby streets. ${routeNote}`);
+  const lunchActivity = activity("Eat", "🍽️", "12:30", `Lunch: ${lunch.name}`, `${lunch.detail} ${areaText(lunch)} Check current opening days and queues.`);
+  const dinnerActivity = activity("Evening", "🌙", dinnerTime, `${index === totalDays - 1 ? "Farewell dinner" : "Dinner"}: ${dinner.name}`, `${dinner.detail} ${areaText(dinner)} Reserve when possible and verify current hours.${preferences.notes ? ` Plan around this note: ${preferences.notes}.` : ""}`);
+  // Meals and the day's main sight are the day's non-negotiable structure; fillFullDay keeps these
+  // regardless of the time budget and only trims/adds everything else.
+  [breakfastActivity, firstSightActivity, lunchActivity, dinnerActivity].forEach((item) => { item.anchor = true; });
   const baseActivities = [
-    activity("Eat", "☕", breakfastTime, `Breakfast: ${breakfast.name}`, `${breakfast.detail} ${areaText(breakfast)} Allow 45–60 minutes.`),
-    activity(index === 0 ? "Arrival" : "See", index === 0 ? "🧳" : "🏛️", morningTime, firstSight.name, `${firstSight.detail} ${areaText(firstSight)} Allow about 2–3 hours including nearby streets. ${routeNote}`),
-    activity("Eat", "🍽️", "12:30", `Lunch: ${lunch.name}`, `${lunch.detail} ${areaText(lunch)} Check current opening days and queues.`),
+    breakfastActivity,
+    firstSightActivity,
+    lunchActivity,
     activity(afternoonType, afternoonIcon, "14:30", afternoonStop.name, `${afternoonStop.detail} ${areaText(afternoonStop)} Keep the route flexible for transit and photos.`),
-    activity("Evening", "🌙", dinnerTime, `${index === totalDays - 1 ? "Farewell dinner" : "Dinner"}: ${dinner.name}`, `${dinner.detail} ${areaText(dinner)} Reserve when possible and verify current hours.${preferences.notes ? ` Plan around this note: ${preferences.notes}.` : ""}`)
+    dinnerActivity
   ];
   if (idea) baseActivities.push(activity("Explore", "✨", "17:00", `Your request: ${titleCase(idea)}`, `A personalized ${destination} stop inspired directly by “${idea},” selected within or near ${zone ? zone.name : "today’s neighborhood"}. Confirm the best current match in Google Maps.`));
   const selectedActivities = selectedForDay.map((suggestion, suggestionIndex) => suggestionToActivity(suggestion, suggestionIndex));
   return [...selectedActivities, ...baseActivities];
 }
 
+function estimateActivityMinutes(item) {
+  const title = String(item.title || "").toLowerCase();
+  if (item.type === "Eat") {
+    if (title.startsWith("breakfast")) return 50;
+    if (title.startsWith("lunch")) return 60;
+    return 90; // dinner / farewell dinner
+  }
+  if (item.type === "Arrival") return 150;
+  if (item.type === "See") return 100;
+  if (item.type === "Shop") return 70;
+  if (item.type === "Evening") return 75;
+  if (item.type === "Booking" || item.type === "Must do") return 45;
+  return 60; // Explore filler
+}
+
+function dayBudgetMinutes(preferences = {}) {
+  const startHour = { early: 7.5, standard: 8.5, slow: 10 }[preferences.start] ?? 8.5;
+  const endHour = { quiet: 21.5, flexible: 22.5, nightlife: 23.5 }[preferences.evening] ?? 22.5;
+  return Math.max(0, Math.round((endHour - startHour) * 60));
+}
+
+function travelBufferMinutes(preferences = {}) {
+  return preferences.transport === "low-walking" ? 25 : preferences.transport === "mixed" ? 15 : 20;
+}
+
+// Anchors (meals plus the day's main sight) are always kept; everything else — the afternoon stop,
+// a personalized "idea" stop, selected suggestions, and generic filler — is added in priority order
+// only while it still fits the day's realistic time budget, so "packed" days stop growing once the
+// stops on offer would no longer plausibly fit alongside meals and travel time.
 function fillFullDay(activities, target, seen, destination, date, preferences, zone = null) {
+  const budgetMinutes = dayBudgetMinutes(preferences);
+  const buffer = travelBufferMinutes(preferences);
+  const isAnchor = (item) => Boolean(item.anchor);
+  const anchors = activities.filter(isAnchor);
+  const flex = activities.filter((item) => !isAnchor(item));
+  const kept = [...anchors];
+  let usedMinutes = anchors.reduce((sum, item) => sum + estimateActivityMinutes(item), 0) + Math.max(0, anchors.length - 1) * buffer;
+  const addIfFits = (item) => {
+    if (kept.length >= target) return false;
+    const cost = estimateActivityMinutes(item) + buffer;
+    if (usedMinutes + cost > budgetMinutes) return false;
+    usedMinutes += cost;
+    kept.push(item);
+    return true;
+  };
+  for (const item of flex) {
+    if (!addIfFits(item)) break;
+  }
   const slots = preferences.start === "slow" ? ["12:45", "14:00", "15:45", "17:15", "18:30", "21:00", "22:15"] : ["09:15", "10:45", "13:45", "16:00", "17:30", "18:30", "21:00", "22:15"];
   let index = 0;
-  while (activities.length < target && index < slots.length * 2) {
+  while (kept.length < target && index < slots.length * 2) {
     const time = slots[index % slots.length];
     const block = createPlanningBlock(destination, date, time, index, preferences, "Explore", zone);
     const key = block.title.toLowerCase();
-    if (!seen.has(key) && !activities.some((item) => item.time === time)) {
-      seen.add(key);
-      activities.push(block);
+    if (!seen.has(key) && !kept.some((item) => item.time === time)) {
+      if (addIfFits(block)) seen.add(key);
     }
     index += 1;
   }
-  return activities;
+  return kept;
 }
 
 function createPlanningBlock(destination, date, time, index, preferences = {}, requestedType = "Explore", zone = null) {
