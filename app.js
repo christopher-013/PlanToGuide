@@ -1240,6 +1240,18 @@ function renderSuggestionPicker(destination) {
       starterSuggestionNote.textContent = "Suggestions are limited for this destination — your selections and notes will be preserved for AI research.";
     }
   }
+  if (isResearching) {
+    // Don't render the generic starter placeholders while a live catalog is still resolving — that
+    // produces a "wrong results, then swap to right results" flash. Show a loading state instead and
+    // wait for the real (or definitively-starter) render triggered when the research promise settles.
+    suggestionGroups = [];
+    suggestionLookup = new Map();
+    document.querySelector("#adventureStepTitle").textContent = "Choose your own adventure";
+    document.querySelector("#adventureStepCopy").textContent = `Finding real places to see, eat, and shop in ${destination}…`;
+    suggestionBoard.innerHTML = `<div class="suggestion-board-loading"><span class="suggestion-board-loading-spinner" aria-hidden="true">◌</span><p>Researching real places for ${escapeHtml(destination)}…</p></div>`;
+    updateSelectionCount();
+    return;
+  }
   suggestionGroups = createSuggestionGroups(destination);
   suggestionLookup = new Map(suggestionGroups.flatMap((group) => group.items.map((suggestion) => [suggestion.key, suggestion])));
   suggestionBoard.innerHTML = "";
