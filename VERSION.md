@@ -1,5 +1,11 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.2.2 compact adventure workflow
+
+- Keeps the Adventure suggestion step within one desktop or mobile viewport whenever screen height allows.
+- Limits visible recommendation rows while preserving every suggestion in an independently scrollable, keyboard-focusable region.
+- Keeps the workflow, selection count, and Back/Next controls visible outside the scrolling results.
+
 ## v3.2.1 P0/P1 reliability release
 
 - Rejects unusable dynamic catalogs and adds throttled, retryable public-source research.

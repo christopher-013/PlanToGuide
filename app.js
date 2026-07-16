@@ -1181,6 +1181,8 @@ function crc32(bytes) {
 function showFormStep(stepNumber) {
   currentFormStep = stepNumber;
   builder.classList.toggle("builder-wide", stepNumber > 1);
+  builder.classList.toggle("builder-adventure", stepNumber === 2);
+  form.dataset.currentStep = String(stepNumber);
   document.querySelectorAll("[data-form-step]").forEach((step) => {
     const active = Number(step.dataset.formStep) === stepNumber;
     step.hidden = !active;
@@ -1319,6 +1321,9 @@ function renderSuggestionPicker(destination) {
     section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${displayIcon(group.icon)}</span><h3>${escapeHtml(group.label)}</h3><small>${group.items.length} ideas</small></div>`;
     const bubbles = document.createElement("div");
     bubbles.className = "suggestion-bubbles suggestion-card-list";
+    bubbles.tabIndex = 0;
+    bubbles.setAttribute("role", "region");
+    bubbles.setAttribute("aria-label", `${group.label}: ${group.items.length} scrollable suggestions`);
     group.items.forEach((suggestion) => {
       const card = document.createElement("article");
       card.className = `suggestion-bubble${selectedSuggestions.has(suggestion.key) ? " selected" : ""}`;

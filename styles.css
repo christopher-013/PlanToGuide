@@ -2577,6 +2577,396 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   }
 }
 
+/* Viewport-contained Adventure step: the recommendations scroll, the workflow controls do not. */
+.builder.builder-wide.builder-adventure {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] {
+  --adventure-board-height: clamp(150px, 38dvh, 360px);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding: clamp(9px, 1.5dvh, 16px) clamp(18px, 4vw, 58px);
+  overflow: hidden;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .step-row {
+  margin: 0;
+  padding: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress {
+  height: 52px;
+  margin: 5px 0 7px;
+  gap: 4px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress span {
+  height: 52px;
+  min-height: 0;
+  gap: 6px;
+  padding-block: 6px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress span b {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  font-size: 8px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small {
+  gap: 2px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small strong {
+  font-size: clamp(8px, .7vw, 10px);
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small em {
+  font-size: clamp(6px, .55vw, 8px);
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .security-note {
+  min-height: 0;
+  gap: 8px;
+  margin: 0 0 7px;
+  padding: 6px 9px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .security-note > span {
+  width: 19px;
+  height: 19px;
+  flex-basis: 19px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .security-note > div {
+  gap: 1px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .security-note p {
+  font-size: 8px;
+  line-height: 1.25;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] [data-form-step="2"].active {
+  display: grid;
+  grid-template-rows: auto auto auto auto auto auto;
+  min-height: 0;
+  align-content: start;
+  overflow: hidden;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro {
+  min-height: 0;
+  padding: 3px 0 5px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro .eyebrow {
+  margin-bottom: 2px;
+  font-size: 8px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro h2 {
+  margin: 0;
+  font-size: clamp(19px, 2vw, 24px);
+  line-height: 1.05;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro > p:not(.eyebrow) {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar {
+  min-height: 0;
+  gap: 10px;
+  margin: 3px 0 6px;
+  padding: 6px 9px;
+  border-radius: 9px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar strong,
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar span {
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar button {
+  min-height: 30px;
+  padding: 5px 11px;
+  font-size: 9px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-board {
+  display: block;
+  width: 100%;
+  height: var(--adventure-board-height);
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group[hidden] {
+  display: none;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading {
+  min-height: 25px;
+  margin: 0 0 4px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading > span {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading h3 {
+  font-size: 11px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading small {
+  font-size: 7px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  gap: 8px;
+  align-content: start;
+  padding: 1px 7px 7px 1px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 5px;
+  scrollbar-color: var(--gold) #eee9de;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list:focus-visible {
+  outline: 3px solid #1c669c;
+  outline-offset: -3px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list .suggestion-bubble {
+  grid-template-columns: 82px minmax(0, 1fr);
+  min-height: 104px;
+  gap: 0;
+  border-radius: 10px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-image {
+  width: 82px;
+  min-height: 80px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-body {
+  gap: 3px;
+  padding: 7px 9px 5px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-top {
+  gap: 5px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-top strong {
+  font-size: 11px;
+  line-height: 1.15;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-check {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-meta {
+  overflow: hidden;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-links {
+  gap: 3px 8px;
+  padding: 0 8px 6px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-links a {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 7px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .selection-summary {
+  min-height: 25px;
+  margin: 5px 0 0;
+  padding: 5px 9px;
+  font-size: 9px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .preference-actions {
+  margin: 5px 0 2px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .preference-actions .icon-nav-button {
+  min-height: 34px;
+  padding: 5px 12px;
+  font-size: 9px;
+}
+.builder.builder-wide .trip-form[data-current-step="2"] .compact-preference-error {
+  min-height: 11px;
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+@media (min-width: 1500px) {
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1050px) {
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .builder.builder-wide .trip-form[data-current-step="2"] {
+    --adventure-board-height: clamp(150px, 38dvh, 330px);
+    min-height: 0;
+    padding: 7px 10px 9px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .step-row {
+    padding-bottom: 4px;
+    font-size: 10px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress {
+    height: 46px;
+    margin: 4px 0 5px;
+    gap: 2px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span {
+    height: 46px;
+    gap: 2px;
+    padding: 5px 7px 5px 10px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span:first-child {
+    padding-left: 5px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span b {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    font-size: 7px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small strong {
+    font-size: clamp(6px, 1.65vw, 8px);
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small em {
+    font-size: clamp(5px, 1.3vw, 7px);
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .security-note {
+    margin-bottom: 5px;
+    padding: 5px 7px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .security-note .privacy-disclosure {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro {
+    padding: 2px 0 4px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro h2 {
+    font-size: 18px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro > p:not(.eyebrow) {
+    font-size: 8px;
+    -webkit-line-clamp: 1;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar {
+    margin: 2px 0 5px;
+    padding: 5px 7px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar span {
+    display: none;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar button {
+    min-height: 28px;
+    padding: 4px 9px;
+    font-size: 8px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding-right: 5px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-list .suggestion-bubble {
+    grid-template-columns: 70px minmax(0, 1fr);
+    min-height: 88px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-image {
+    width: 70px;
+    min-height: 68px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-body {
+    padding: 6px 8px 4px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-top strong {
+    font-size: 10px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-detail {
+    font-size: 7px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-card-links {
+    padding: 0 7px 5px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .selection-summary {
+    margin-top: 4px;
+    padding-block: 4px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .preference-actions {
+    margin-top: 4px;
+  }
+}
+
+@media (max-height: 620px) {
+  .builder.builder-wide .trip-form[data-current-step="2"] {
+    --adventure-board-height: clamp(112px, 27dvh, 168px);
+    padding-block: 5px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span small em,
+  .builder.builder-wide .trip-form[data-current-step="2"] .security-note .privacy-disclosure,
+  .builder.builder-wide .trip-form[data-current-step="2"] #adventureStepCopy {
+    display: none;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .security-note {
+    padding-block: 4px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-intro {
+    padding-block: 1px 3px;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-toolbar {
+    margin-bottom: 3px;
+    padding-block: 4px;
+  }
+}
+
 /* Recommendation cards keep selection and outbound research links as separate controls. */
 .suggestion-card-list .suggestion-bubble { cursor: default; }
 .suggestion-select-button {
