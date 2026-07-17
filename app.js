@@ -551,8 +551,6 @@ document.querySelector("#detailsBackButton").addEventListener("click", () => {
 });
 document.querySelector("#constraintsStepButton").addEventListener("click", () => showFormStep(4));
 document.querySelector("#constraintsBackButton").addEventListener("click", () => showFormStep(3));
-document.querySelector("#outputStepButton").addEventListener("click", () => showFormStep(5));
-document.querySelector("#outputBackButton").addEventListener("click", () => showFormStep(4));
 document.querySelector("#clearSelectionsButton").addEventListener("click", () => {
   selectedSuggestions.clear();
   suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((card) => {
@@ -1195,8 +1193,8 @@ function showFormStep(stepNumber) {
     if (index === displayedStep - 1) bar.setAttribute("aria-current", "step");
     else bar.removeAttribute("aria-current");
   });
-  document.querySelector("#formStepTitle").textContent = ["", "Trip basics", "Choose your adventure", "Travelers & style", "Bookings & constraints", "Output style"][stepNumber];
-  document.querySelector("#formStepCount").textContent = `Step ${displayedStep} of 5`;
+  document.querySelector("#formStepTitle").textContent = ["", "Trip basics", "Choose your adventure", "Travelers & style", "Bookings & constraints"][stepNumber];
+  document.querySelector("#formStepCount").textContent = `Step ${displayedStep} of 4`;
   forceWizardTop();
   requestAnimationFrame(() => {
     const heading = document.querySelector(`[data-form-step="${stepNumber}"] h1, [data-form-step="${stepNumber}"] h2, [data-form-step="${stepNumber}"] h3`);
@@ -1220,7 +1218,7 @@ function forceWizardTop() {
 }
 
 async function navigateToWizardStep(stepNumber) {
-  if (!Number.isInteger(stepNumber) || stepNumber < 1 || stepNumber > 5) return;
+  if (!Number.isInteger(stepNumber) || stepNumber < 1 || stepNumber > 4) return;
   if (stepNumber === currentFormStep) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     return;
@@ -1236,19 +1234,20 @@ async function showTripCreationTransition() {
   const overlay = document.querySelector("#tripCreationTransition");
   const logo = document.querySelector("#tripCreationLogo");
   overlay.hidden = false;
-  overlay.classList.remove("finishing");
+  overlay.classList.remove("finishing", "is-running");
   document.body.classList.add("creating-trip");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   logo.removeAttribute("src");
   void logo.offsetWidth;
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  overlay.classList.add("is-running");
   const animationSource = brandIconAnimationSource();
   logo.src = animationSource;
-  await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 650 : 4300));
+  await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 2800 : 9000));
   overlay.classList.add("finishing");
-  await new Promise((resolve) => setTimeout(resolve, 280));
+  await new Promise((resolve) => setTimeout(resolve, reducedMotion ? 180 : 650));
   overlay.hidden = true;
-  overlay.classList.remove("finishing");
+  overlay.classList.remove("finishing", "is-running");
   document.body.classList.remove("creating-trip");
   releaseBrandIconSource(animationSource, 0);
 }

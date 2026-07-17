@@ -1,5 +1,53 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.3.7 Adventure step viewport sizing
+
+- Expands the desktop Places to see panel to use available vertical space.
+- Gives mobile the same contained, no-page-scroll layout while keeping the suggestion list internally scrollable.
+
+## v3.3.6 Trip Basics card order
+
+- Restores the AI-updated-plan import panel beside the Tokyo example on wider screens.
+- Places the five deliverable previews beneath both cards across the banner width.
+- Uses the same example → import → deliverables order on smaller screens.
+
+## v3.3.5 Trip Basics showcase alignment
+
+- Keeps the Tokyo example above the output preview.
+- Places the AI-updated-plan import panel inline at the bottom right of the deliverable cards on wider screens.
+- Preserves a clear example → deliverables → import sequence on smaller screens.
+
+## v3.3.4 deliverable explanations
+
+- Moves the static deliverables preview beneath the example and AI import panels.
+- Adds detailed mouse-hover and keyboard-focus explanations for every deliverable.
+- Expands focused cards on touch-sized screens so the same details remain available without a mouse.
+
+## v3.3.3 Trip Basics output preview
+
+- Adds five static deliverable cards beneath the PLAN TO GUIDE hero message.
+- Places the output preview beside the Tokyo example and AI-plan import options on desktop.
+- Uses a compact horizontally scrollable card strip on mobile.
+
+## v3.3.2 larger dissolving deliverables
+
+- Enlarges the five creation-transition deliverable cards and their typography across desktop, tablet, and mobile layouts.
+- Makes each card expand to a prominent display size, then visibly shrink while blurring and dissolving away.
+- Retunes orbit spacing so the larger cards remain within responsive viewport boundaries.
+- Uses destination-neutral Mobile Trip App copy and reserves the final reveal for the AI Source-of-Truth File.
+
+## v3.3.1 orbital creation transition
+
+- Surrounds the animated compass and PLAN TO GUIDE message with five floating deliverable cards.
+- Gives each card a readable hold before it blurs and dissolves outward, with layouts tuned for desktop, mobile, and short screens.
+- Extends the full creation sequence to about 9.6 seconds while retaining a shorter, static reduced-motion experience.
+
+## v3.3.0 four-step creation flow
+
+- Makes Bookings &amp; constraints the final questionnaire step and removes the redundant Output step.
+- Builds the complete guide directly from Step 4 with the new Create Your Own Adventure action.
+- Moves every output deliverable into the branded creation transition as staggered animated cards.
+
 ## v3.2.3 real-device mobile workflow fit
 
 - Removes repeated Step 2 chrome on small screens while retaining the progress path and readable controls.
@@ -34,7 +82,7 @@ This root folder is now the active V3 workspace for `PlanToGuide`, started from 
 
 V3 begins from the polished PlanToGuide V2 app, including:
 
-- Five-step trip intake workflow.
+- Four-step trip intake workflow, with every output introduced during the creation transition.
 - Browser-only starter generation for supported and unsupported destinations.
 - Shareable mobile travel guide output.
 - AI-ready planning/export workflow.
