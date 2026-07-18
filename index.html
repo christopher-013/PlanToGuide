@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
   <link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml">
   <!-- When releasing, update the version string in version.js AND the ?v= value below — they must match. -->
-  <link rel="stylesheet" href="styles.css?v=3.4.0">
+  <link rel="stylesheet" href="styles.css?v=3.4.1">
 </head>
 <body>
   <main class="page-shell">
@@ -251,8 +251,12 @@
                 <p>This destination is not in the detailed browser catalog yet. Your site preserves your must-dos and bookings while providing an AI-ready planning structure.</p>
                 <ul><li>Verify landmark names, hours, closures, and ticket requirements</li><li>Research neighborhoods and optimize each day geographically</li><li>Confirm restaurant cuisine, ratings, dietary fit, and reservations</li><li>Replace placeholder shopping and activity cards with verified choices</li><li>Check transit times, weather, accessibility, and seasonal conditions</li></ul>
               </section>
-              <div class="today-card" id="todayCard"></div>
-              <div class="during-trip-grid" id="duringTripTools"></div>
+              <div class="home-day-plan" id="homeDayPlan"></div>
+              <div class="home-widget-slot" id="homeNextStop"></div>
+              <div class="home-widget-slot" id="homeNextReservation"></div>
+              <div class="home-widget-slot" id="homeRouteTransit"></div>
+              <div class="home-widget-slot" id="homeChecklist"></div>
+              <div class="home-widget-slot" id="homeEmergency"></div>
               <div class="home-days">
                 <div class="section-heading"><p>Day by day</p><button type="button" data-open-tab="itinerary">View all →</button></div>
                 <div id="homeDayList"></div>
@@ -409,12 +413,12 @@
     </article>
   </template>
 
-  <script src="version.js?v=3.4.0"></script>
-  <script src="dynamic-catalog.js?v=3.4.0"></script>
-  <script src="export-styles.js?v=3.4.0"></script>
-  <script src="icon-source.js?v=3.4.0"></script>
-  <script src="photo-store.js?v=3.4.0"></script>
-  <script src="trip-schema.js?v=3.4.0"></script>
-  <script src="app.js?v=3.4.0"></script>
+  <script src="version.js?v=3.4.1"></script>
+  <script src="dynamic-catalog.js?v=3.4.1"></script>
+  <script src="export-styles.js?v=3.4.1"></script>
+  <script src="icon-source.js?v=3.4.1"></script>
+  <script src="photo-store.js?v=3.4.1"></script>
+  <script src="trip-schema.js?v=3.4.1"></script>
+  <script src="app.js?v=3.4.1"></script>
 </body>
 </html>

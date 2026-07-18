@@ -987,7 +987,7 @@ function readLocalTextAsset(url) {
 }
 
 function createExportRuntime() {
-  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function registerGuideServiceWorker(){if(!("serviceWorker"in navigator)||!location.protocol.startsWith("http"))return;try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(_){}}function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});registerGuideServiceWorker();showTab('home');`;
+  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function registerGuideServiceWorker(){if(!("serviceWorker"in navigator)||!location.protocol.startsWith("http"))return;try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(_){}}function chkKey(id){return 'ptg:chk:'+id;}function applyChecklist(){result.querySelectorAll('[data-chk-id]').forEach(function(row){var done=false;try{done=localStorage.getItem(chkKey(row.dataset.chkId))==='1';}catch(e){}row.classList.toggle('done',done);row.setAttribute('aria-pressed',done);var box=row.querySelector('.checklist-box');if(box)box.textContent=done?'✓':'';});result.querySelectorAll('.checklist-widget').forEach(function(w){var rows=w.querySelectorAll('[data-chk-id]'),done=0;rows.forEach(function(r){if(r.classList.contains('done'))done++;});var c=w.querySelector('.checklist-count');if(c)c.textContent=done+'/'+rows.length+' done';});}function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);applyChecklist();window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const chk=event.target.closest('[data-chk-id]');if(chk){try{const k=chkKey(chk.dataset.chkId);localStorage.setItem(k,localStorage.getItem(k)==='1'?'0':'1');}catch(e){}applyChecklist();return}const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});registerGuideServiceWorker();showTab('home');applyChecklist();`;
 }
 
 async function bundleExportImages(html) {
@@ -2191,7 +2191,6 @@ function renderTrip() {
   renderWeatherPanel();
   renderCollections();
   renderBookings();
-  renderDuringTripTools();
   renderRefinementActions();
   renderPhotos();
   document.querySelector("#markdownPreview").textContent = createTripMarkdown();
@@ -2226,17 +2225,224 @@ async function updateSelectedDayBanner(day, index) {
 }
 
 function renderHomePanel() {
-  const firstDay = trip.days[activeDay];
-  const todayCard = document.querySelector("#todayCard");
-  todayCard.innerHTML = `
-    <div class="today-card-head">
-      <div><span>Start here · ${formatDate(firstDay.date, false)}</span><h4>${escapeHtml(firstDay.title)}</h4></div>
-      <button type="button" data-card-itinerary>Open day →</button>
-    </div>
-    <div class="today-stops">${firstDay.activities.slice(0, 3).map((activity) => `<div class="today-stop"><time>${escapeHtml(activity.time)}</time><strong><span aria-hidden="true">${displayIcon(activity.icon)}</span> ${escapeHtml(activity.title)}</strong></div>`).join("")}</div>`;
-  todayCard.querySelector("[data-card-itinerary]").addEventListener("click", () => switchAppTab("itinerary"));
+  const day = trip.days[activeDay];
+  renderHomeDayPlan(day);
+  renderHomeNextStop(day);
+  renderHomeNextReservation(day);
+  renderHomeRouteTransit(day);
+  renderHomeChecklist();
+  renderHomeEmergency();
+  renderHomeDayList();
+}
 
+function activityLockClass(activity) {
+  const status = String(activity?.status || "").toLowerCase();
+  if (/confirm|booked|locked|reserved/.test(status)) return "locked";
+  if (/optional|backup|flexible/.test(status)) return "optional";
+  return "";
+}
+
+function isLockedActivity(activity) {
+  return activityLockClass(activity) === "locked";
+}
+
+function sameCalendarDate(a, b) {
+  return a instanceof Date && b instanceof Date && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function compactTime(time) {
+  return String(time || "").replace(/\s*([ap])m$/i, (_, meridiem) => meridiem.toLowerCase());
+}
+
+// Selected Day plan card — day heading, locked-booking count, and the first stops with
+// status-colored markers, matching the gold-standard trip site's Day Plan card.
+function renderHomeDayPlan(day) {
+  const container = document.querySelector("#homeDayPlan");
+  if (!container) return;
+  const dow = new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(day.date).toUpperCase();
+  const locked = day.activities.filter(isLockedActivity).length;
+  const stops = day.activities.slice(0, 5).map((item) => {
+    const cls = activityLockClass(item);
+    return `<div class="dayplan-stop"><time>${escapeHtml(compactTime(item.time))}</time><span class="dayplan-dot ${cls}" aria-hidden="true"></span><span class="dayplan-icon" aria-hidden="true">${displayIcon(item.icon)}</span><span class="dayplan-name">${escapeHtml(cleanActivityTitle(item.title))}</span></div>`;
+  }).join("");
+  const more = day.activities.length > 5 ? `<div class="dayplan-more">+${day.activities.length - 5} more stops…</div>` : "";
+  container.innerHTML = `<p class="home-sec-label">${escapeHtml(formatDate(day.date, false).toUpperCase())} — SELECTED DAY</p>
+    <article class="dayplan-card" role="button" tabindex="0" aria-label="Open ${escapeHtml(day.title)} in the itinerary">
+      <div class="dayplan-head">
+        <div><span class="dayplan-kicker">${escapeHtml(dow)} · Day Plan</span><strong>${displayIcon(getDayIcon(day, activeDay))} ${escapeHtml(day.title)}</strong></div>
+        <span class="dayplan-badge">🔒 ${locked} locked</span>
+      </div>
+      <div class="dayplan-body">${stops}${more}</div>
+      <div class="dayplan-foot"><span>View full day →</span><span>${escapeHtml(day.zone?.name || trip.destination)}</span></div>
+    </article>`;
+  const card = container.querySelector(".dayplan-card");
+  const open = () => switchAppTab("itinerary");
+  card.addEventListener("click", open);
+  card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); } });
+}
+
+// Next Stop — time-aware while the trip is live, a day-overview teaser otherwise.
+function renderHomeNextStop(day) {
+  const container = document.querySelector("#homeNextStop");
+  if (!container) return;
+  const now = new Date();
+  const isToday = sameCalendarDate(now, day.date);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nextStop = isToday ? day.activities.find((item) => timeToMinutes(item.time) > nowMins) : null;
+  if (isToday && !nextStop && day.activities.length) {
+    container.innerHTML = `<article class="home-widget next-stop-widget complete"><span class="ns-emoji" aria-hidden="true">✅</span><div><strong>${escapeHtml(formatDate(day.date, false))} — Complete</strong><small>All stops for today are done</small></div></article>`;
+    return;
+  }
+  if (nextStop) {
+    const name = cleanActivityTitle(nextStop.title);
+    const address = nextStop.address || nextStop.area || "";
+    container.innerHTML = `<article class="home-widget next-stop-widget">
+      <div class="home-widget-head"><span aria-hidden="true">📍</span><span class="home-widget-label">Next Stop Today</span></div>
+      <div class="ns-body">
+        <div class="ns-row"><strong>${escapeHtml(name)}</strong><span class="ns-time">${escapeHtml(nextStop.time)}</span></div>
+        ${address ? `<p class="ns-addr">📍 ${escapeHtml(address)}</p>` : ""}
+      </div>
+      <div class="ns-actions"><a class="ns-btn maps" href="${googleMapsSearchUrl(name, nextStop.area || "")}" target="_blank" rel="noopener noreferrer">🗺️ Open in Maps</a><button type="button" class="ns-btn" data-open-itinerary>📅 Full Day</button></div>
+    </article>`;
+    container.querySelector("[data-open-itinerary]")?.addEventListener("click", () => switchAppTab("itinerary"));
+    return;
+  }
+  const locked = day.activities.filter(isLockedActivity).length;
+  container.innerHTML = `<article class="home-widget next-stop-widget preview">
+    <div class="home-widget-head"><span aria-hidden="true">📍</span><span class="home-widget-label">Next Stop</span><em class="home-widget-note">Pre-trip preview</em></div>
+    <div class="ns-preview"><span class="ns-preview-emoji" aria-hidden="true">${displayIcon(getDayIcon(day, activeDay))}</span><div class="ns-preview-copy"><strong>${escapeHtml(formatDate(day.date, false))} — ${escapeHtml(day.title)}</strong><small>${day.activities.length} stops · ${locked} locked booking${locked === 1 ? "" : "s"}</small></div><button type="button" class="ns-btn" data-open-itinerary>View →</button></div>
+  </article>`;
+  container.querySelector("[data-open-itinerary]")?.addEventListener("click", () => switchAppTab("itinerary"));
+}
+
+function collectAllBookings() {
+  const fromTrip = (trip.bookings || []).map((item) => ({ name: item.name, date: item.date || "", time: item.time || "", status: item.status || "confirmed", details: "" }));
+  const fromEntries = (typeof loadUserEntries === "function" ? loadUserEntries("booking") : []).map((item) => ({ name: item.title, date: item.date || "", time: "", status: "confirmed", details: item.details || "" }));
+  return [...fromTrip, ...fromEntries].filter((item) => item.name);
+}
+
+function bookingSortKey(booking) {
+  const minutes = timeToMinutes(booking.time);
+  return `${booking.date || "9999-99-99"}T${String(Number.isFinite(minutes) ? minutes : 9999).padStart(4, "0")}`;
+}
+
+// Next Reservation — the soonest confirmed booking on or after the selected day, with an
+// address and confirmation line pulled from a matching itinerary stop when available.
+function renderHomeNextReservation(day) {
+  const container = document.querySelector("#homeNextReservation");
+  if (!container) return;
+  const selectedIso = toInputDate(day.date);
+  const confirmed = collectAllBookings().filter((item) => /confirm|booked|locked|reserved/i.test(item.status));
+  confirmed.sort((a, b) => bookingSortKey(a).localeCompare(bookingSortKey(b)));
+  const next = confirmed.find((item) => item.date && item.date >= selectedIso) || confirmed[0];
+  if (!next) { container.innerHTML = ""; return; }
+  const match = trip.days.flatMap((entry) => entry.activities).find((item) => {
+    const title = cleanActivityTitle(item.title).toLowerCase();
+    const name = next.name.toLowerCase();
+    return title && name && (title.includes(name) || name.includes(title));
+  });
+  const address = match?.address || match?.area || "";
+  const when = [next.date ? formatDate(parseDate(next.date), false) : "", next.time].filter(Boolean).join(" · ");
+  const details = next.details && !/^\s*confirmed\s*$/i.test(next.details) ? next.details : "";
+  container.innerHTML = `<article class="home-widget next-res-widget">
+    <div class="home-widget-head locked"><span aria-hidden="true">🔒</span><span class="home-widget-label">Next Reservation</span><span class="nrc-badge">${escapeHtml(titleCase(next.status))}</span></div>
+    <div class="nrc-body">
+      <strong class="nrc-name">${escapeHtml(next.name)}</strong>
+      ${when ? `<p class="nrc-when">${escapeHtml(when)}</p>` : ""}
+      ${address ? `<p class="nrc-addr">📍 ${escapeHtml(address)}</p>` : ""}
+      ${details ? `<p class="nrc-conf">📋 ${escapeHtml(details)}</p>` : ""}
+      <a class="nrc-maps-btn" href="${googleMapsSearchUrl(next.name, address)}" target="_blank" rel="noopener noreferrer">🗺️ Open in Maps</a>
+    </div>
+  </article>`;
+}
+
+function transitModeLabel(travel) {
+  return travel.icon === "🚶" ? "Walk" : travel.icon === "🚕" ? "Taxi" : "Transit";
+}
+
+// Today's Route & Transit — the selected day's stops on a timeline with the travel leg
+// (mode + estimated minutes) to each following stop.
+function renderHomeRouteTransit(day) {
+  const container = document.querySelector("#homeRouteTransit");
+  if (!container) return;
+  const stops = day.activities;
+  if (!stops.length) { container.innerHTML = ""; return; }
+  const rows = stops.map((stop, index) => {
+    const next = stops[index + 1];
+    const travel = next ? estimateTravel(stop, next) : null;
+    const leg = travel
+      ? `<div class="rt-leg"><span class="rt-leg-mode">${displayIcon(travel.icon)} ${escapeHtml(transitModeLabel(travel))}</span><span class="rt-leg-dur">${travel.minutes} min</span></div>`
+      : "";
+    return `<div class="rt-stop"><div class="rt-rail"><span class="rt-dot ${activityLockClass(stop)}"></span>${next ? '<span class="rt-line"></span>' : ""}</div><div class="rt-content"><div class="rt-row"><span class="rt-name"><span aria-hidden="true">${displayIcon(stop.icon)}</span> ${escapeHtml(cleanActivityTitle(stop.title))}</span><span class="rt-time">${escapeHtml(stop.time)}</span></div>${leg}</div></div>`;
+  }).join("");
+  container.innerHTML = `<article class="home-widget route-transit-widget"><div class="home-widget-head"><span aria-hidden="true">🗺️</span><span class="home-widget-label">Today's Route &amp; Transit</span></div><div class="rt-list">${rows}</div></article>`;
+}
+
+function checklistItemKey(id) {
+  return `ptg:chk:${tripStorageSlug()}:${tripStorageStartDate()}:${id}`;
+}
+
+// Auto-generate a pre-trip checklist from the trip's bookings, practical info, and
+// preferences. Purely derived (no schema field); check state persists per trip.
+function buildPreTripChecklist() {
+  const items = [];
+  const confirmed = collectAllBookings().filter((item) => /confirm|booked|locked|reserved/i.test(item.status));
+  if (confirmed.length) {
+    const refs = confirmed.map((item) => item.details).filter(Boolean).join(" · ");
+    items.push({ id: "save-confirmations", text: "Save all booking confirmations offline", sub: refs || `${confirmed.length} confirmed reservation${confirmed.length === 1 ? "" : "s"} — keep vouchers and QR codes reachable without data` });
+  }
+  items.push({ id: "entry-docs", text: "Save entry, immigration, and ticket QR codes", sub: "Screenshot arrival/immigration forms and timed-entry tickets so they open offline" });
+  confirmed.slice(0, 6).forEach((item, index) => {
+    const when = item.date ? formatDate(parseDate(item.date), false) : "";
+    items.push({ id: `confirm-${index}`, text: `Confirm ${item.name}`, sub: [when, item.time, item.details].filter(Boolean).join(" · ") || "Re-check date, time, and confirmation details before departure" });
+  });
+  const zones = [...new Set(trip.days.map((entry) => entry.zone?.name).filter(Boolean))].slice(0, 6);
+  items.push({ id: "offline-maps", text: `Download offline maps for ${trip.destination}`, sub: zones.length ? `Cover ${zones.join(", ")}` : "Save the main neighborhoods you'll route between" });
+  items.push({ id: "entry-reqs", text: "Check passport validity and entry requirements", sub: `Confirm passports, any visa/ETA, and ${trip.destination} entry rules well before departure` });
+  items.push({ id: "emergency-offline", text: "Save emergency contacts and home base address offline", sub: (trip.preferences.homeBase ? `Home base: ${trip.preferences.homeBase}. ` : "") + "Local emergency number, embassy, insurance, and lodging address" });
+  items.push({ id: "money", text: "Sort out local payment and cash", sub: "Notify your bank, load a travel card, and carry some local currency for transit and small vendors" });
+  items.push({ id: "power", text: "Pack chargers, plug adapters, and a power bank", sub: `Bring the right plug adapters for ${trip.destination} plus a power bank for full days out` });
+  String(trip.preferences.mustDos || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 4).forEach((must, index) => {
+    items.push({ id: `mustdo-${index}`, text: `Lock in must-do: ${must}`, sub: "Book or confirm this priority so it stays protected in the plan" });
+  });
+  return items;
+}
+
+function renderHomeChecklist() {
+  const container = document.querySelector("#homeChecklist");
+  if (!container) return;
+  const items = buildPreTripChecklist();
+  const doneCount = items.filter((item) => safeStorageGet(checklistItemKey(item.id)) === "1").length;
+  container.innerHTML = `<article class="home-widget checklist-widget">
+    <div class="home-widget-head checklist-head"><span aria-hidden="true">✅</span><span class="home-widget-label">Pre-Trip Checklist</span><span class="checklist-count">${doneCount}/${items.length} done</span></div>
+    <div class="checklist-list">${items.map((item) => {
+      const checked = safeStorageGet(checklistItemKey(item.id)) === "1";
+      return `<button type="button" class="checklist-row${checked ? " done" : ""}" data-chk-id="${escapeHtml(item.id)}" aria-pressed="${checked}"><span class="checklist-box" aria-hidden="true">${checked ? "✓" : ""}</span><span class="checklist-copy"><span class="checklist-text">${escapeHtml(item.text)}</span><span class="checklist-sub">${escapeHtml(item.sub)}</span></span></button>`;
+    }).join("")}</div>
+  </article>`;
+  container.querySelectorAll("[data-chk-id]").forEach((row) => row.addEventListener("click", () => {
+    const key = checklistItemKey(row.dataset.chkId);
+    safeStorageSet(key, safeStorageGet(key) === "1" ? "0" : "1");
+    renderHomeChecklist();
+  }));
+}
+
+// Emergency Contacts — verified practical info plus the home base address, or a prompt to
+// fill it in when no verified details are present.
+function renderHomeEmergency() {
+  const container = document.querySelector("#homeEmergency");
+  if (!container) return;
+  const entries = createPracticalToolEntries();
+  const isPrompt = entries.length === 1 && entries[0][1] === "Emergency card";
+  const homeBase = trip.preferences.homeBase || "";
+  const rows = isPrompt ? "" : entries.map(([icon, label, value]) => `<div class="emg-row"><span class="emg-label">${displayIcon(icon)} ${escapeHtml(label)}</span><span class="emg-value">${escapeHtml(value)}</span></div>`).join("");
+  const homeRow = homeBase ? `<div class="emg-row"><span class="emg-label">🏨 Home base</span><span class="emg-value"><a href="${googleMapsSearchUrl(homeBase)}" target="_blank" rel="noopener noreferrer">${escapeHtml(homeBase)} 🗺️</a></span></div>` : "";
+  container.innerHTML = `<article class="home-widget emergency-widget"><div class="emg-title"><span aria-hidden="true">🚨</span> Emergency Contacts</div>${isPrompt ? `<p class="emg-prompt">${escapeHtml(entries[0][2])}</p>` : rows}${homeRow}</article>`;
+}
+
+function renderHomeDayList() {
   const list = document.querySelector("#homeDayList");
+  if (!list) return;
   list.innerHTML = "";
   trip.days.forEach((day, index) => {
     const button = document.createElement("button");
@@ -2247,21 +2453,6 @@ function renderHomePanel() {
     button.addEventListener("click", () => { activeDay = index; renderTrip(); switchAppTab("itinerary"); });
     list.appendChild(button);
   });
-}
-
-function renderDuringTripTools() {
-  const day = trip.days[activeDay];
-  const nextBooking = day.activities.find((item) => /confirmed|needs booking/i.test(item.status || ""));
-  const backup = day.activities.find((item) => /backup|optional/i.test(item.status || "")) || day.activities[day.activities.length - 1];
-  const homeBase = trip.preferences.homeBase || "Add your hotel or home base";
-  document.querySelector("#duringTripTools").innerHTML = [
-    ["🗓️", "Today’s plan", `${day.activities.length} stops · ${day.zone?.name || trip.destination}`],
-    ["⏰", "Next reservation", nextBooking ? `${nextBooking.time} · ${nextBooking.title}` : "No locked reservation today"],
-    ["🚇", "Transit note", `Start and finish near ${homeBase}. Keep transfers geographically compact.`],
-    ["🧳", "Luggage note", activeDay === 0 || activeDay === trip.days.length - 1 ? "Confirm hotel storage before arrival/departure." : "Leave bags at your home base."],
-    ["🌧️", "Rainy-day backup", `Use ${backup?.title || "a nearby indoor stop"} as the flexible alternative.`],
-    ...createPracticalToolEntries()
-  ].map(([icon, title, copy]) => `<article><span>${displayIcon(icon)}</span><div><strong>${escapeHtml(title)}</strong><p>${escapeHtml(copy)}</p></div></article>`).join("");
 }
 
 function createPracticalToolEntries() {

@@ -1,5 +1,11 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.4.1 gold-standard Home tab
+
+- Rebuilds the generated trip site's Home tab to match the Tokyo gold-standard layout: Selected Day plan card (with locked-booking count and status-colored stops), a time-aware Next Stop widget, Next Reservation (with address and confirmation line when available), Today's Route & Transit timeline, an auto-generated Pre-Trip Checklist, and Emergency Contacts.
+- Removes the old placeholder home cards (Today's plan / Next reservation / Transit note / Luggage note / Rainy-day backup / Emergency card), reusing their emoji vocabulary in the new sections.
+- Auto-generates the Pre-Trip Checklist from the trip's bookings, practical info, and preferences (no schema change); check state persists per trip and stays interactive in exported guides via a small runtime handler.
+
 ## v3.4.0 research reliability release
 
 - Precomputes research catalogs for ~60 top tourist cities at deploy time (`build-precomputed-catalogs.mjs` in the Pages workflow), shipped as `precomputed-catalogs.json`, so most destinations resolve instantly without touching the rate-limited runtime research path.

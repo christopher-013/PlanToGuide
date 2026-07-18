@@ -885,6 +885,96 @@ body.trip-mode .result { height: 100vh; min-height: 0; padding: 0; }
 .home-day-item small { color: var(--muted); font-size: 9px; }
 .home-day-item > i { color: var(--muted); font-style: normal; }
 
+/* Home tab — gold-standard sections: Day Plan, Next Stop, Next Reservation, Route & Transit, Checklist, Emergency */
+.home-day-plan, .home-widget-slot { margin-top: 18px; }
+.home-widget-slot:empty { display: none; margin-top: 0; }
+.home-sec-label { margin: 0 0 8px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.home-widget { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); box-shadow: 0 10px 26px rgba(28,31,38,.07); }
+.home-widget-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; color: white; background: linear-gradient(135deg, #14303a, #1c3a2a); }
+.home-widget-head.locked { background: linear-gradient(135deg, #1c2b1a, #0f2a1c); }
+.home-widget-head.checklist-head { background: linear-gradient(135deg, #1a0a2e, #2d1060); }
+.home-widget-label { color: rgba(255,255,255,.74); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.home-widget-note { margin-left: auto; color: rgba(255,255,255,.5); font-size: 10px; font-style: italic; }
+
+.dayplan-card { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); box-shadow: 0 12px 30px rgba(28,31,38,.08); cursor: pointer; transition: transform .18s, box-shadow .18s; }
+.dayplan-card:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(28,31,38,.12); }
+.dayplan-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; color: white; background: linear-gradient(135deg, var(--forest), var(--forest-dark)); }
+.dayplan-kicker { display: block; color: #f5c96f; font-size: 9px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.dayplan-head strong { display: block; margin-top: 3px; font: 600 18px "Fraunces", serif; }
+.dayplan-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 999px; background: rgba(0,0,0,.25); font-size: 10px; font-weight: 700; }
+.dayplan-body { padding: 8px 16px 4px; }
+.dayplan-stop { display: grid; grid-template-columns: 52px 10px 18px 1fr; align-items: center; gap: 8px; padding: 6px 0; }
+.dayplan-stop time { color: var(--muted); font-size: 11px; font-weight: 600; }
+.dayplan-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); }
+.dayplan-dot.locked { background: var(--coral); }
+.dayplan-dot.optional { background: var(--gold); }
+.dayplan-icon { font-size: 14px; }
+.dayplan-name { min-width: 0; overflow: hidden; color: var(--ink); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.dayplan-more { padding: 2px 0 6px 62px; color: var(--muted); font-size: 11px; }
+.dayplan-foot { display: flex; justify-content: space-between; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--line); color: var(--coral); font-size: 12px; font-weight: 700; }
+.dayplan-foot span:last-child { color: var(--muted); font-weight: 600; }
+
+.next-stop-widget.complete { display: flex; align-items: center; gap: 12px; padding: 14px; }
+.next-stop-widget.complete .ns-emoji { font-size: 28px; }
+.next-stop-widget.complete strong { display: block; color: var(--green); font-size: 14px; }
+.next-stop-widget.complete small { color: var(--muted); font-size: 11px; }
+.ns-body { padding: 11px 14px 4px; }
+.ns-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ns-row strong { font-size: 15px; color: var(--ink); }
+.ns-time { flex-shrink: 0; padding: 2px 8px; border-radius: 6px; color: white; background: #1a4a7a; font-size: 11px; font-weight: 700; }
+.ns-addr { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.ns-actions { display: flex; gap: 8px; padding: 10px 14px 12px; }
+.ns-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font-size: 12px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.ns-btn.maps { background: var(--aqua); border-color: rgba(68,114,196,.3); color: #254b7a; }
+.ns-preview { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.ns-preview-emoji { font-size: 28px; }
+.ns-preview-copy { min-width: 0; }
+.ns-preview strong { display: block; font-size: 14px; color: var(--ink); }
+.ns-preview small { color: var(--muted); font-size: 11px; }
+.ns-preview .ns-btn { flex: 0 0 auto; margin-left: auto; padding: 6px 12px; }
+
+.nrc-badge { margin-left: auto; padding: 2px 8px; border-radius: 6px; background: rgba(84,122,77,.35); color: #c8f2c2; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.nrc-body { padding: 12px 14px 14px; }
+.nrc-name { font-size: 16px; color: var(--ink); }
+.nrc-when { margin: 4px 0 0; color: var(--forest); font-size: 12px; font-weight: 700; }
+.nrc-addr, .nrc-conf { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.nrc-maps-btn { display: inline-flex; margin-top: 12px; padding: 8px 12px; border-radius: 8px; background: var(--aqua); color: #254b7a; font-size: 12px; font-weight: 700; text-decoration: none; }
+
+.rt-list { padding: 6px 14px 12px; }
+.rt-stop { display: grid; grid-template-columns: 24px 1fr; }
+.rt-rail { display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
+.rt-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+.rt-dot.locked { background: var(--coral); }
+.rt-dot.optional { background: var(--gold); }
+.rt-line { flex: 1; width: 2px; min-height: 22px; background: var(--line); }
+.rt-content { padding: 8px 0 0; }
+.rt-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rt-name { min-width: 0; overflow: hidden; color: var(--ink); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.rt-time { flex-shrink: 0; color: var(--muted); font-size: 12px; font-weight: 600; }
+.rt-leg { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; padding: 5px 9px; border-radius: 7px; background: var(--paper); }
+.rt-leg-mode { color: var(--blue); font-size: 11px; font-weight: 700; }
+.rt-leg-dur { margin-left: auto; color: var(--ink); font-size: 11px; font-weight: 700; }
+
+.checklist-count { margin-left: auto; color: rgba(255,255,255,.74); font-size: 11px; font-weight: 700; }
+.checklist-list { display: block; }
+.checklist-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 14px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; }
+.checklist-row:first-child { border-top: 0; }
+.checklist-box { flex-shrink: 0; display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border: 2px solid #c3c8c2; border-radius: 5px; color: white; font-size: 12px; font-weight: 800; }
+.checklist-row.done .checklist-box { border-color: #10b981; background: #10b981; }
+.checklist-copy { min-width: 0; }
+.checklist-text { display: block; color: var(--ink); font-size: 13px; font-weight: 600; }
+.checklist-row.done .checklist-text { color: var(--muted); text-decoration: line-through; }
+.checklist-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+.emergency-widget { padding: 14px 16px; border: 1px solid rgba(183,88,75,.3); border-radius: 14px; background: var(--rose); box-shadow: none; }
+.emg-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--coral); font-size: 13px; font-weight: 800; }
+.emg-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid rgba(183,88,75,.18); }
+.emg-row:first-of-type { border-top: 0; }
+.emg-label { color: var(--muted); font-size: 12px; }
+.emg-value { text-align: right; color: var(--coral); font-size: 12px; font-weight: 700; }
+.emg-value a { color: var(--blue); text-decoration: underline; }
+.emg-prompt { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
 .compact-app-hero { min-height: 142px; display: flex; align-items: end; justify-content: space-between; padding: 31px max(26px, calc((100% - 760px) / 2)) 24px; color: white; background: linear-gradient(120deg, #173e35, #2c6a5b); }
 .compact-app-hero h2 { margin: 0; font: 600 34px "Fraunces", serif; }
 .compact-app-hero p:not(.eyebrow) { margin: 6px 0 0; color: rgba(255,255,255,.65); font-size: 10px; }
