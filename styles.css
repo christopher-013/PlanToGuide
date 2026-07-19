@@ -1787,7 +1787,8 @@ html, body, body *, button, input, select, textarea, dialog, option {
 .style-question select, .style-question textarea { width: 100%; border: 1px solid #d9d3c6; border-radius: 7px; background: white; color: var(--ink); font: 600 10px/1.4 "Inter", sans-serif; }
 .style-question select { min-height: 38px; padding: 8px 10px; }
 .style-question textarea { resize: vertical; padding: 10px; }
-.style-notes { margin-bottom: 14px; }
+.style-notes { margin-bottom: 0; }
+.style-notes textarea { min-height: 42px; height: 42px; }
 .google-maps-link { display: inline-flex; margin-top: 9px; color: var(--forest); font-size: 9px; font-weight: 800; line-height: 1.3; text-decoration: none; }
 .google-maps-link:hover { color: var(--gold-dark); text-decoration: underline; }
 .maps-destination-context { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 9px; background: var(--sage); }
@@ -2156,7 +2157,7 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
 .demo-showcase span { color:rgba(255,255,255,.78); font-size:11px; line-height:1.45; }
 .demo-showcase a { width:fit-content; color:var(--gold); font-size:11px; font-weight:800; text-decoration:none; }
 .style-question input, .style-question textarea { width:100%; padding:11px 12px; border:1px solid #d8d2c5; border-radius:8px; color:var(--ink); background:#fff; font-size:11px; }
-.booking-input { margin:14px 0; }
+.booking-input { margin:0; }
 .template-picker, .mode-picker { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
 .template-picker label, .mode-picker label { display:grid; grid-template-columns:auto 1fr; gap:4px 10px; padding:18px; border:1px solid var(--line); border-radius:14px; background:#fffdf8; cursor:pointer; box-shadow:0 8px 24px rgba(30,52,45,.08); }
 .template-picker input, .mode-picker input { grid-row:1 / span 2; align-self:start; margin-top:3px; accent-color:var(--forest); }
@@ -4818,6 +4819,10 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   .builder.builder-wide [data-form-step="4"].active .style-question select,
   .builder.builder-wide [data-form-step="4"].active .style-question input,
   .builder.builder-wide [data-form-step="4"].active .style-question textarea { min-height: 46px; font-size: 13px; }
+  .builder.builder-wide [data-form-step="3"].active .style-notes textarea {
+    min-height: 42px;
+    height: 42px;
+  }
 }
 
 @media (min-width: 1600px) and (min-height: 800px) {
@@ -4885,12 +4890,22 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
 }
 
 /* Trip Basics supporting examples now finish the form, immediately before Next Step. */
-.trip-basics-end-showcase {
+.trip-basics-action-row {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 400px) auto;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
   margin: 2px 0 13px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
+}
+.trip-basics-end-showcase {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 .trip-basics-support-row {
   display: grid;
@@ -4969,15 +4984,22 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
 }
 .trip-basics-end-showcase .home-deliverables-heading > span { color: #8a6500; }
 .trip-basics-end-showcase .home-deliverables-heading > strong { color: var(--ink); }
-.trip-basics-end-showcase + .compact-next-button {
+.trip-basics-action-row .compact-next-button {
   margin-top: 0;
   margin-right: 0;
   margin-left: auto;
 }
 
 @media (max-width: 700px) {
+  .trip-basics-action-row {
+    grid-template-columns: minmax(0,1fr) minmax(128px,150px);
+    gap: 9px;
+    align-items: end;
+    margin-bottom: 10px;
+    padding-top: 11px;
+  }
   .trip-basics-support-row { width: 100%; grid-template-columns: 1fr; gap: 7px; }
-  .trip-basics-end-showcase { margin-bottom: 10px; padding-top: 11px; }
+  .trip-basics-end-showcase { margin: 0; padding: 0; }
   .trip-basics-end-showcase .home-deliverables-heading { align-items: flex-start; }
   .trip-basics-end-showcase .home-deliverables-cards {
     display: flex;
@@ -4993,7 +5015,7 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
     min-height: 66px;
     scroll-snap-align: start;
   }
-  .trip-basics-end-showcase + .compact-next-button { min-width: 190px; }
+  .trip-basics-action-row .compact-next-button { width: 100%; min-width: 0; }
 }
 
 /* Trip Basics hero: the animated product mark is the main visual, positioned
@@ -5073,6 +5095,11 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   transform: scaleX(0);
   transform-origin: left;
   animation: heroBrandUnderline .65s ease-out 1.35s forwards;
+}
+.builder:not(.builder-wide) .home-brand-lockup.brand-animation-reset img,
+.builder:not(.builder-wide) .home-brand-lockup.brand-animation-reset .home-brand-wordmark > span,
+.builder:not(.builder-wide) .home-brand-lockup.brand-animation-reset .home-brand-guide::after {
+  animation: none !important;
 }
 .builder:not(.builder-wide) .builder-hero-message .eyebrow {
   margin-bottom: 10px;

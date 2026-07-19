@@ -279,6 +279,8 @@ let dayBannerRenderVersion = 0;
 let suggestionGroups = [];
 let activeSuggestionCategory = 0;
 let currentFormStep = 1;
+const TRIP_BASICS_BRAND_REPLAY_INTERVAL_MS = 60_000;
+let tripBasicsBrandReplayTimer = 0;
 let destinationResearchTimer = 0;
 let destinationResearchController = null;
 let destinationResearchState = { query: "", geocode: null, status: "idle" };
@@ -294,6 +296,7 @@ startDateInput.value = toInputDate(defaultStart);
 endDateInput.value = toInputDate(defaultEnd);
 
 renderKnownDestinationOptions();
+scheduleTripBasicsBrandReplay();
 document.querySelectorAll(".form-progress [data-go-step]").forEach((stage) => {
   const openStage = () => navigateToWizardStep(Number(stage.dataset.goStep));
   stage.addEventListener("click", openStage);
@@ -651,6 +654,7 @@ form.addEventListener("submit", async (event) => {
   await transitionPromise;
   builder.hidden = true;
   result.hidden = false;
+  scheduleTripBasicsBrandReplay();
   document.body.classList.add("trip-mode");
   renderTrip();
   switchAppTab("home");
@@ -1241,6 +1245,45 @@ function showFormStep(stepNumber) {
       heading.focus({ preventScroll: true });
     }
   });
+  scheduleTripBasicsBrandReplay();
+}
+
+function tripBasicsBrandCanReplay() {
+  return currentFormStep === 1
+    && !builder.hidden
+    && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function replayTripBasicsBrandAnimation() {
+  if (!tripBasicsBrandCanReplay()) return false;
+  const lockup = document.querySelector(".home-brand-lockup");
+  const image = lockup?.querySelector("img");
+  if (!lockup || !image) return false;
+
+  const now = Date.now();
+  const previousReplay = Number(lockup.dataset.brandLastReplay || 0);
+  if (now - previousReplay < TRIP_BASICS_BRAND_REPLAY_INTERVAL_MS - 1000) return false;
+  lockup.dataset.brandLastReplay = String(now);
+
+  lockup.classList.add("brand-animation-reset");
+  const replacement = image.cloneNode(true);
+  const source = brandIconAnimationSource();
+  replacement.src = source;
+  image.replaceWith(replacement);
+  lockup.dataset.brandReplayCount = String(Number(lockup.dataset.brandReplayCount || 0) + 1);
+  void lockup.offsetWidth;
+  lockup.classList.remove("brand-animation-reset");
+  releaseBrandIconSource(source);
+  return true;
+}
+
+function scheduleTripBasicsBrandReplay() {
+  window.clearTimeout(tripBasicsBrandReplayTimer);
+  tripBasicsBrandReplayTimer = 0;
+  if (!tripBasicsBrandCanReplay()) return;
+  tripBasicsBrandReplayTimer = window.setTimeout(() => {
+    if (replayTripBasicsBrandAnimation()) scheduleTripBasicsBrandReplay();
+  }, TRIP_BASICS_BRAND_REPLAY_INTERVAL_MS);
 }
 
 function forceWizardTop() {
@@ -1897,13 +1940,15 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
       }
     }
   });
-  const selectionBuckets = Array.from({ length: days }, () => []);
-  selections.forEach((suggestion, index) => selectionBuckets[findBestZoneIndex(suggestion, dayZones, index)].push(suggestion));
+  const selectionBuckets = distributeTripSelections(selections, dayZones);
+  // Reserve every traveler-selected name before adding catalog recommendations so an
+  // automatic backfill can never duplicate or displace one of the user's priorities.
+  const usedRecommendedPlaces = new Set(selections.map(recommendationKey).filter(Boolean));
 
   const seenRecommendations = new Set();
   const itineraryDays = dateList.map((date, index) => {
     let activities = makeActivitiesUnique(
-      createActivities(index, days, ideas, destination, guide, selectionBuckets[index], preferences, dayZones[index]),
+      createActivities(index, days, ideas, destination, guide, selectionBuckets[index], preferences, dayZones[index], usedRecommendedPlaces),
       seenRecommendations,
       destination,
       date,
@@ -2049,33 +2094,106 @@ function rankForZone(items, zone) {
   return [...items].sort((a, b) => zoneScore(b, zone) - zoneScore(a, zone));
 }
 
+function recommendationKey(item = {}) {
+  return normalizeDestinationName(item.name || item.title || "");
+}
+
+function distributeTripSelections(selections = [], zones = []) {
+  const buckets = Array.from({ length: zones.length }, () => []);
+  if (!zones.length) return buckets;
+  selections.forEach((suggestion, fallbackIndex) => {
+    const category = ["see", "eat", "shop"].includes(suggestion.category) ? suggestion.category : "see";
+    const scored = zones.map((zone, index) => ({
+      index,
+      score: zoneScore(suggestion, zone),
+      categoryLoad: buckets[index].filter((item) => item.category === category).length,
+      totalLoad: buckets[index].length
+    }));
+    const bestScore = Math.max(...scored.map((entry) => entry.score));
+    const eligible = bestScore > 0 ? scored.filter((entry) => entry.score === bestScore) : scored;
+    eligible.sort((a, b) => a.categoryLoad - b.categoryLoad
+      || a.totalLoad - b.totalLoad
+      || Math.abs(a.index - (fallbackIndex % zones.length)) - Math.abs(b.index - (fallbackIndex % zones.length)));
+    buckets[eligible[0].index].push({ ...suggestion, category, userSelected: true });
+  });
+  return buckets;
+}
+
+function pickUnusedForZoneOrLocal(items, zone, fallbackIndex, kind, usedNames) {
+  const available = (Array.isArray(items) ? items : []).filter((item) => !usedNames.has(recommendationKey(item)));
+  const selected = pickForZone(available, zone, fallbackIndex);
+  if (selected) {
+    usedNames.add(recommendationKey(selected));
+    return selected;
+  }
+
+  const fallback = pickForZoneOrLocal([], zone, fallbackIndex, kind);
+  const baseName = fallback.name;
+  let suffix = 2;
+  while (usedNames.has(recommendationKey(fallback))) {
+    fallback.name = `${baseName} · option ${suffix}`;
+    suffix += 1;
+  }
+  usedNames.add(recommendationKey(fallback));
+  return fallback;
+}
+
 function findBestZoneIndex(item, zones, fallbackIndex = 0) {
   if (!Array.isArray(zones) || !zones.length) return 0;
   const ranked = zones.map((zone, index) => ({ index, score: zoneScore(item, zone) })).sort((a, b) => b.score - a.score || a.index - b.index);
   return ranked[0].score > 0 ? ranked[0].index : fallbackIndex % zones.length;
 }
 
-function createActivities(index, totalDays, ideas, destination, guide, selectedForDay = [], preferences = {}, zone = null) {
-  const firstSight = pickForZoneOrLocal(guide.attractions, zone, index * 2, "attraction");
-  const secondSight = pickForZoneOrLocal(guide.attractions.filter((item) => item !== firstSight), zone, index * 2 + 1, "attraction");
-  const breakfast = pickForZoneOrLocal(guide.food.breakfast, zone, index, "breakfast");
-  const lunch = pickForZoneOrLocal(guide.food.lunch, zone, index + 1, "lunch");
-  const dinner = pickForZoneOrLocal(guide.food.dinner, zone, index + 2, "dinner");
-  const shop = pickForZoneOrLocal(guide.shopping, zone, index, "shopping");
+function inferMealSlot(item = {}) {
+  const text = `${item.name || ""} ${item.cuisine || ""} ${item.detail || ""}`.toLowerCase();
+  if (/breakfast|brunch|bakery|pastry|coffee|café|cafe|bagel|donut/.test(text)) return "breakfast";
+  if (/dinner|supper|evening|fine dining|steakhouse|izakaya|wine bar/.test(text)) return "dinner";
+  if (/lunch|food hall|food court|market|sandwich|taco|burger|ramen|noodle/.test(text)) return "lunch";
+  return "";
+}
+
+function createActivities(index, totalDays, ideas, destination, guide, selectedForDay = [], preferences = {}, zone = null, usedRecommendedPlaces = new Set()) {
+  const selectedSee = selectedForDay.filter((item) => item.category === "see");
+  const selectedEat = selectedForDay.filter((item) => item.category === "eat");
+  const selectedShop = selectedForDay.filter((item) => item.category === "shop");
+  const firstSight = selectedSee.shift() || pickUnusedForZoneOrLocal(guide.attractions, zone, index * 2, "attraction", usedRecommendedPlaces);
+  const secondSight = selectedSee.shift() || pickUnusedForZoneOrLocal(guide.attractions, zone, index * 2 + 1, "attraction", usedRecommendedPlaces);
+  const selectedMealSlots = { breakfast: null, lunch: null, dinner: null };
+  const flexibleSelectedMeals = [];
+  selectedEat.forEach((item) => {
+    const slot = inferMealSlot(item);
+    if (slot && !selectedMealSlots[slot]) selectedMealSlots[slot] = item;
+    else flexibleSelectedMeals.push(item);
+  });
+  // One ambiguous restaurant can sensibly anchor lunch. Additional ambiguous or
+  // same-slot choices remain high-priority flexible food stops rather than being
+  // mislabeled as breakfast or dinner.
+  if (!selectedMealSlots.lunch && flexibleSelectedMeals.length) selectedMealSlots.lunch = flexibleSelectedMeals.shift();
+  const lunch = selectedMealSlots.lunch || pickUnusedForZoneOrLocal(guide.food.lunch, zone, index, "lunch", usedRecommendedPlaces);
+  const dinner = selectedMealSlots.dinner || pickUnusedForZoneOrLocal(guide.food.dinner, zone, index, "dinner", usedRecommendedPlaces);
+  const breakfast = selectedMealSlots.breakfast || pickUnusedForZoneOrLocal(guide.food.breakfast, zone, index, "breakfast", usedRecommendedPlaces);
+  const shop = selectedShop.shift() || pickUnusedForZoneOrLocal(guide.shopping, zone, index, "shopping", usedRecommendedPlaces);
+  const structuralSelections = new Set([firstSight, secondSight, breakfast, lunch, dinner, shop].filter((item) => item?.userSelected));
+  const remainingSelections = selectedForDay.filter((item) => !structuralSelections.has(item));
   const idea = ideas[index] || null;
-  const afternoonStop = index % 3 === 2 || index === totalDays - 1 ? shop : secondSight;
-  const afternoonType = afternoonStop === shop ? "Shop" : "See";
-  const afternoonIcon = afternoonType === "Shop" ? "🛍️" : "📍";
 
   const breakfastTime = preferences.start === "early" ? "07:30" : preferences.start === "slow" ? "10:00" : "08:30";
   const morningTime = preferences.start === "early" ? "09:00" : preferences.start === "slow" ? "11:30" : "10:00";
   const dinnerTime = preferences.evening === "quiet" ? "18:30" : preferences.evening === "nightlife" ? "20:00" : "19:30";
   const zoneNote = zone ? `Today stays centered on ${zone.name}, minimizing cross-city travel.` : "Today follows one compact district.";
   const routeNote = preferences.transport === "low-walking" ? `${zoneNote} Keep walking segments short and use door-to-door transport.` : preferences.transport === "mixed" ? `${zoneNote} Use transit for the main route and a taxi when it saves energy.` : `${zoneNote} Connect nearby stops by walking and public transit.`;
-  const breakfastActivity = activity("Eat", "☕", breakfastTime, `Breakfast: ${breakfast.name}`, `${breakfast.detail} ${areaText(breakfast)} Allow at least 60 minutes.`, "Recommended", breakfast);
-  const firstSightActivity = activity(index === 0 ? "Arrival" : "See", index === 0 ? "🧳" : "🏛️", morningTime, firstSight.name, `${firstSight.detail} ${areaText(firstSight)} Allow about 2–3 hours including nearby streets. ${routeNote}`, "Recommended", firstSight);
-  const lunchActivity = activity("Eat", "🍽️", "12:30", `Lunch: ${lunch.name}`, `${lunch.detail} ${areaText(lunch)} Allow about 90 minutes, including possible queues, and check current opening days.`, "Recommended", lunch);
-  const dinnerActivity = activity("Evening", "🌙", dinnerTime, `${index === totalDays - 1 ? "Farewell dinner" : "Dinner"}: ${dinner.name}`, `${dinner.detail} ${areaText(dinner)} Allow about 90 minutes. Reserve when possible and verify current hours.${preferences.notes ? ` Plan around this note: ${preferences.notes}.` : ""}`, "Recommended", dinner);
+  const priorityNote = (item) => item?.userSelected ? " Prioritized from your Adventure selections." : "";
+  const breakfastActivity = activity("Eat", "☕", breakfastTime, `Breakfast: ${breakfast.name}`, `${breakfast.detail} ${areaText(breakfast)} Allow at least 60 minutes.${priorityNote(breakfast)}`, "Recommended", breakfast);
+  const firstSightActivity = activity(index === 0 ? "Arrival" : "See", index === 0 ? "🧳" : "🏛️", morningTime, firstSight.name, `${firstSight.detail} ${areaText(firstSight)} Allow about 2–3 hours including nearby streets. ${routeNote}${priorityNote(firstSight)}`, "Recommended", firstSight);
+  const lunchActivity = activity("Eat", "🍽️", "12:30", `Lunch: ${lunch.name}`, `${lunch.detail} ${areaText(lunch)} Allow about 90 minutes, including possible queues, and check current opening days.${priorityNote(lunch)}`, "Recommended", lunch);
+  const dinnerActivity = activity("Evening", "🌙", dinnerTime, `${index === totalDays - 1 ? "Farewell dinner" : "Dinner"}: ${dinner.name}`, `${dinner.detail} ${areaText(dinner)} Allow about 90 minutes. Reserve when possible and verify current hours.${preferences.notes ? ` Plan around this note: ${preferences.notes}.` : ""}${priorityNote(dinner)}`, "Recommended", dinner);
+  const secondSightActivity = activity("See", "📍", "14:30", secondSight.name, `${secondSight.detail} ${areaText(secondSight)} Keep the route flexible for transit and photos.${priorityNote(secondSight)}`, "Recommended", secondSight);
+  const shopActivity = activity("Shop", "🛍️", "17:00", shop.name, `${shop.detail} ${areaText(shop)} Allow time to browse without crossing the city.${priorityNote(shop)}`, "Recommended", shop);
+  secondSightActivity._userPriority = Boolean(secondSight.userSelected);
+  shopActivity._userPriority = Boolean(shop.userSelected);
+  const flexiblePlaceActivities = shop.userSelected && !secondSight.userSelected
+    ? [shopActivity, secondSightActivity]
+    : [secondSightActivity, shopActivity];
   // Meals and the day's main sight are the day's non-negotiable structure; fillFullDay keeps these
   // regardless of the time budget and only trims/adds everything else.
   [breakfastActivity, firstSightActivity, lunchActivity, dinnerActivity].forEach((item) => { item.anchor = true; });
@@ -2083,11 +2201,11 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
     breakfastActivity,
     firstSightActivity,
     lunchActivity,
-    activity(afternoonType, afternoonIcon, "14:30", afternoonStop.name, `${afternoonStop.detail} ${areaText(afternoonStop)} Keep the route flexible for transit and photos.`, "Recommended", afternoonStop),
+    ...flexiblePlaceActivities,
     dinnerActivity
   ];
   if (idea) baseActivities.push(activity("Explore", "✨", "17:00", `Your request: ${titleCase(idea)}`, `A personalized ${destination} stop inspired directly by “${idea},” selected within or near ${zone ? zone.name : "today’s neighborhood"}. Confirm the best current match in Google Maps.`));
-  const selectedActivities = selectedForDay.map((suggestion, suggestionIndex) => suggestionToActivity(suggestion, suggestionIndex));
+  const selectedActivities = remainingSelections.map((suggestion, suggestionIndex) => suggestionToActivity(suggestion, suggestionIndex));
   return [...selectedActivities, ...baseActivities];
 }
 
@@ -2247,7 +2365,8 @@ function scheduleDayActivities(activities, preferences = {}) {
 
   const desiredEnd = Math.round(({ quiet: 20.5, flexible: 21.5, nightlife: 23 }[preferences.evening] ?? 21.5) * 60);
   if (cursor > desiredEnd) {
-    const removable = [...output].reverse().find((item) => !item.anchor && !/confirmed/i.test(String(item.status || "")) && !["Booking", "Must do"].includes(item.type));
+    const removableCandidates = [...output].reverse().filter((item) => !item.anchor && !/confirmed/i.test(String(item.status || "")) && !["Booking", "Must do"].includes(item.type));
+    const removable = removableCandidates.find((item) => !item._userPriority) || removableCandidates[0];
     if (removable) return scheduleDayActivities(input.filter((item) => item._order !== removable._order), preferences);
   }
 
@@ -2259,6 +2378,7 @@ function scheduleDayActivities(activities, preferences = {}) {
     item.travelEstimateBasis = leg.basis;
     delete item._order;
     delete item._requestedTime;
+    delete item._userPriority;
   });
   return output;
 }
@@ -2330,7 +2450,9 @@ function suggestionToActivity(suggestion, index) {
     suggestion.rating ? `Google rating: ${suggestion.rating}.` : "", suggestion.cuisine ? `Cuisine: ${suggestion.cuisine}.` : "",
     suggestion.order ? `What to order: ${suggestion.order}.` : "", suggestion.bestFor ? `Known for: ${suggestion.bestFor}.` : "",
     suggestion.address ? `Address: ${suggestion.address}.` : "", "Prioritized from your survey selection."].filter(Boolean).join(" ");
-  return activity(type, icon, time, suggestion.name, selectedDetail, "Recommended", suggestion);
+  const item = activity(type, icon, time, suggestion.name, selectedDetail, "Recommended", suggestion);
+  item._userPriority = Boolean(suggestion.userSelected);
+  return item;
 }
 
 function timeToMinutes(value) {

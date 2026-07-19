@@ -1,5 +1,37 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.5.9 prioritized Adventure backfill
+
+- Uses traveler-selected places first as the day's primary sights, meals, and shopping stops.
+- Backfills missing categories from the destination catalog's popularity-ranked recommendations according to trip length.
+- Tracks recommendation names across the full itinerary so automatically added places stay unique from day to day.
+- Balances selections across repeated neighborhood days instead of placing every matching choice on the first day.
+- Classifies selected restaurants into suitable breakfast, lunch, or dinner slots and keeps ambiguous extras as flexible food stops.
+- Evaluates selected shopping and secondary-sight stops before automatic flexible recommendations when the day's time budget is tight.
+- Removes an automatic flexible stop before a traveler-selected stop during final time-budget trimming.
+
+## v3.5.7 compact booked-items field
+
+- Places Already booked items inside the same responsive Constraints grid as the other questions.
+- Reduces the booking textarea from seven rows to three while preserving the multi-line booking format and examples.
+
+## v3.5.6 compact Travel Style interests field
+
+- Places the optional see, eat, and shop request inside the same responsive question grid as the other Travel Style controls.
+- Reduces its textarea to a compact two-line field while preserving resize support and the full planning prompt.
+
+## v3.5.5 recurring Trip Basics brand animation
+
+- Replays the animated PlanToGuide compass and coordinated PLAN TO GUIDE wordmark once per minute while Trip Basics remains open.
+- Resets the one-minute countdown when the user returns to Trip Basics and stops it on other workflow steps or in the generated guide.
+- Preserves the reduced-motion preference by disabling automatic animation replays when reduced motion is requested.
+
+## v3.5.4 aligned Trip Basics actions
+
+- Places the AI-updated-plan importer and Next Step action on the same bottom row.
+- Keeps the importer left-aligned and the primary navigation action right-aligned.
+- Uses a compact two-column treatment on mobile without overflowing the questionnaire.
+
 ## v3.5.3 coordinated homepage wordmark
 
 - Restyles the product name beneath the animated compass as PLAN TO GUIDE.

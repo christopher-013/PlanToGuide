@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
   <link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml">
   <!-- When releasing, update the version string in version.js AND the ?v= value below — they must match. -->
-  <link rel="stylesheet" href="styles.css?v=3.5.3">
+  <link rel="stylesheet" href="styles.css?v=3.5.9">
 </head>
 <body>
   <main class="page-shell">
@@ -105,19 +105,21 @@
               <p class="date-error" id="dateError" role="alert"></p>
             </div>
           </div>
-          <div class="trip-basics-end-showcase">
-            <div class="trip-basics-support-row">
-              <button type="button" class="import-callout support-action-card" data-open-import>
-                <strong>Already have an AI-updated plan?</strong>
-                <span>Paste the TRIP-PLAN.md your AI returned and re-render your trip website instantly.</span>
-                <span class="support-card-action">Import updated plan →</span>
-              </button>
+          <div class="trip-basics-action-row">
+            <div class="trip-basics-end-showcase">
+              <div class="trip-basics-support-row">
+                <button type="button" class="import-callout support-action-card" data-open-import>
+                  <strong>Already have an AI-updated plan?</strong>
+                  <span>Paste the TRIP-PLAN.md your AI returned and re-render your trip website instantly.</span>
+                  <span class="support-card-action">Import updated plan →</span>
+                </button>
+              </div>
             </div>
+            <button class="primary-button compact-next-button" id="nextStepButton" type="button">
+              <span>Next Step</span>
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
-          <button class="primary-button compact-next-button" id="nextStepButton" type="button">
-            <span>Next Step</span>
-            <span aria-hidden="true">→</span>
-          </button>
         </section>
 
         <section class="form-step" data-form-step="2" hidden>
@@ -159,8 +161,8 @@
             <label class="style-question"><span>Evening style</span><small>Quiet nights or one more adventure?</small><select id="eveningStyle"><option value="quiet">Quiet · finish after dinner</option><option value="flexible" selected>Flexible</option><option value="nightlife">Nightlife & late stops</option></select></label>
             <label class="style-question"><span>Getting around</span><small>Sets route and rest guidance.</small><select id="transportStyle"><option value="transit" selected>Walking + public transit</option><option value="mixed">Transit + taxis</option><option value="low-walking">Keep walking minimal</option></select></label>
             <label class="style-question"><span>Daily budget</span><small>Guides meals and optional experiences.</small><select id="tripBudget"><option value="value">Value conscious</option><option value="balanced" selected>Balanced</option><option value="splurge">Room to splurge</option></select></label>
+            <label class="style-question style-notes"><span>What do you want to see, eat, and shop for?</span><small>Optional—add specific neighborhoods, foods, hobbies, shops, landmarks, or experiences to weave into your itinerary.</small><textarea id="mobilityNotes" rows="2" placeholder="e.g. tile-covered streets, a seafood dinner, local ceramics, bookstores…"></textarea></label>
           </div>
-          <label class="style-question style-notes"><span>What do you want to see, eat, and shop for?</span><small>Optional—add specific neighborhoods, foods, hobbies, shops, landmarks, or experiences to weave into your itinerary.</small><textarea id="mobilityNotes" rows="3" placeholder="e.g. tile-covered streets, a seafood dinner, local ceramics, bookstores…"></textarea></label>
           <div class="wizard-actions final-actions">
             <button class="secondary-button" id="detailsBackButton" type="button">← Back</button>
             <button class="primary-button final-create-button" id="constraintsStepButton" type="button"><span>Bookings & constraints</span><span aria-hidden="true">→</span></button>
@@ -173,8 +175,8 @@
             <label class="style-question"><span>Mobility / walking tolerance</span><small>Stairs, step-free needs, daily walking limit, or rest requirements.</small><textarea id="mobilityNeeds" rows="3" placeholder="e.g. maximum 8,000 steps; avoid steep hills"></textarea></label>
             <label class="style-question"><span>Must-do activities</span><small>These priorities remain locked in the plan.</small><textarea id="mustDos" rows="3" placeholder="One per line"></textarea></label>
             <label class="style-question"><span>Things to avoid</span><small>Museums, nightlife, early mornings, long train rides, crowds, etc.</small><textarea id="avoidList" rows="3" placeholder="One per line"></textarea></label>
+            <label class="style-question booking-input"><span>Already booked items</span><small>One per line: Name | YYYY-MM-DD | time | status. Status can be confirmed, needs booking, optional, backup, or needs verification.</small><textarea id="bookedItems" rows="3" placeholder="Shibuya Sky | 2026-06-12 | 5:40 PM | confirmed&#10;Sushi lunch | 2026-06-12 | 1:00 PM | confirmed&#10;Harajuku shopping | 2026-06-12 | afternoon | optional"></textarea></label>
           </div>
-          <label class="style-question booking-input"><span>Already booked items</span><small>One per line: Name | YYYY-MM-DD | time | status. Status can be confirmed, needs booking, optional, backup, or needs verification.</small><textarea id="bookedItems" rows="7" placeholder="Shibuya Sky | 2026-06-12 | 5:40 PM | confirmed&#10;Sushi lunch | 2026-06-12 | 1:00 PM | confirmed&#10;Harajuku shopping | 2026-06-12 | afternoon | optional"></textarea></label>
           <div class="wizard-actions final-actions">
             <button class="secondary-button" id="constraintsBackButton" type="button">← Back</button>
             <button class="primary-button final-create-button" id="createTripButton" type="submit"><span>Create Your Own Adventure</span><span aria-hidden="true">→</span></button>
@@ -405,12 +407,12 @@
     </article>
   </template>
 
-  <script src="version.js?v=3.5.3"></script>
-  <script src="dynamic-catalog.js?v=3.5.3"></script>
-  <script src="export-styles.js?v=3.5.3"></script>
-  <script src="icon-source.js?v=3.5.3"></script>
-  <script src="photo-store.js?v=3.5.3"></script>
-  <script src="trip-schema.js?v=3.5.3"></script>
-  <script src="app.js?v=3.5.3"></script>
+  <script src="version.js?v=3.5.9"></script>
+  <script src="dynamic-catalog.js?v=3.5.9"></script>
+  <script src="export-styles.js?v=3.5.9"></script>
+  <script src="icon-source.js?v=3.5.9"></script>
+  <script src="photo-store.js?v=3.5.9"></script>
+  <script src="trip-schema.js?v=3.5.9"></script>
+  <script src="app.js?v=3.5.9"></script>
 </body>
 </html>
