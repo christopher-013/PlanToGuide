@@ -5,9 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f1e8">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://en.wikipedia.org https://en.wikivoyage.org https://overpass-api.de; frame-src 'self' https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://geocoding-api.open-meteo.com https://en.wikipedia.org https://en.wikivoyage.org https://commons.wikimedia.org https://overpass-api.de; frame-src 'self' https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>PlanToGuide — Turn your trip plan into a mobile travel guide</title>
   <meta name="description" content="Create a shareable trip website, mobile travel guide, and AI-ready planning file.">
+  <link rel="canonical" href="https://christopher-013.github.io/PlanToGuide/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PlanToGuide">
+  <meta property="og:title" content="PlanToGuide — Turn your trip plan into a mobile travel guide">
+  <meta property="og:description" content="Create a shareable trip website, printable itinerary, and AI-ready planning file — free, in your browser.">
+  <meta property="og:url" content="https://christopher-013.github.io/PlanToGuide/">
+  <meta property="og:image" content="https://christopher-013.github.io/PlanToGuide/icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PlanToGuide — Turn your trip plan into a mobile travel guide">
+  <meta name="twitter:description" content="Create a shareable trip website, printable itinerary, and AI-ready planning file — free, in your browser.">
+  <meta name="twitter:image" content="https://christopher-013.github.io/PlanToGuide/icons/icon-512.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
   <link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml">
   <!-- When releasing, update the version string in version.js AND the ?v= value below — they must match. -->
-  <link rel="stylesheet" href="styles.css?v=3.5.9">
+  <link rel="stylesheet" href="styles.css?v=3.6.0">
 </head>
 <body>
   <main class="page-shell">
@@ -182,7 +193,7 @@
             <button class="primary-button final-create-button" id="createTripButton" type="submit"><span>Create Your Own Adventure</span><span aria-hidden="true">→</span></button>
           </div>
         </section>
-        <p class="form-footnote">No account needed. Your draft stays in this browser.</p>
+        <p class="form-footnote">No account needed. Your draft stays in this browser. · Public beta — <a class="feedback-link" href="https://github.com/christopher-013/PlanToGuide/issues" target="_blank" rel="noopener noreferrer">send feedback ↗</a></p>
       </form>
     </section>
 
@@ -193,6 +204,7 @@
           <a class="brand app-brand" href="#" aria-label="PlanToGuide trip home"><span class="brand-mark"><img src="plan-x-guide-centered-compass-morph-clean-x.svg" alt=""></span><span class="brand-wordmark">PlanToGuide</span></a>
           <span class="app-destination" id="appDestination">Your trip</span>
           <div class="trip-header-actions">
+            <a class="export-button feedback-header-link" href="https://github.com/christopher-013/PlanToGuide/issues" target="_blank" rel="noopener noreferrer">Feedback</a>
             <button class="export-button" id="exportTripButton" type="button">Export</button>
             <button class="export-button" id="editTripButton" type="button">Edit trip</button>
           </div>
@@ -407,12 +419,12 @@
     </article>
   </template>
 
-  <script src="version.js?v=3.5.9"></script>
-  <script src="dynamic-catalog.js?v=3.5.9"></script>
-  <script src="export-styles.js?v=3.5.9"></script>
-  <script src="icon-source.js?v=3.5.9"></script>
-  <script src="photo-store.js?v=3.5.9"></script>
-  <script src="trip-schema.js?v=3.5.9"></script>
-  <script src="app.js?v=3.5.9"></script>
+  <script src="version.js?v=3.6.0"></script>
+  <script src="dynamic-catalog.js?v=3.6.0"></script>
+  <script src="export-styles.js?v=3.6.0"></script>
+  <script src="icon-source.js?v=3.6.0"></script>
+  <script src="photo-store.js?v=3.6.0"></script>
+  <script src="trip-schema.js?v=3.6.0"></script>
+  <script src="app.js?v=3.6.0"></script>
 </body>
 </html>

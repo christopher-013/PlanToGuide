@@ -789,11 +789,17 @@ out center tags 80;`;
     return anchors.every((anchor) => existing.has(anchor));
   }
 
+  // Word-boundary matchers so "park" cannot match "ballpark"/"parking" and inflate
+  // non-tourist venues (sports arenas were outranking landmarks via substring hits).
+  const TOURISM_KEYWORD_MATCHERS = new Map(
+    [...TOURISM_KEYWORD_WEIGHTS].map(([keyword, weight]) => [new RegExp(`\\b${escapeRegExp(keyword)}\\b`, "i"), weight])
+  );
+
   function tourismScore(item, destination = "") {
     const text = [item.name, item.area, item.detail, item.bestFor, item.cuisine, destination].filter(Boolean).join(" ").toLowerCase();
     let score = Number(item.seedRank || 0);
-    TOURISM_KEYWORD_WEIGHTS.forEach((weight, keyword) => {
-      if (text.includes(keyword)) score += weight;
+    TOURISM_KEYWORD_MATCHERS.forEach((weight, matcher) => {
+      if (matcher.test(text)) score += weight;
     });
     if (item.seeded) score += 60;
     if (item.image) score += 8;

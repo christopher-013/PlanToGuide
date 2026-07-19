@@ -1,5 +1,15 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.6.0 beta-readiness fixes
+
+- Allows `commons.wikimedia.org` in the CSP so the Wikimedia Commons image fallback added in v3.4.13 actually runs instead of being silently blocked.
+- Adds a quality gate to the deploy-time catalog builder: thin catalogs (e.g. a rate-limited run that captured only one Wikivoyage section with placeholder food/shopping) are rejected so runtime research stays available, instead of shipping a degraded catalog that blocks it.
+- Merges each deploy with the previous deploy's good catalogs: failed or unreached cities keep their last-known-good data, fresh (< 14 days) catalogs are carried without network work, and coverage converges across deploys. Doubles the research time budget so the full city list is reachable.
+- Fixes tourism keyword scoring to whole-word matching so "park" no longer matches "ballpark" and sports venues stop outranking landmarks.
+- Makes practical-info merging verification-aware: verified curated or AI-supplied values win, the built-in country table beats "Needs verification" placeholders, and generic defaults are the last resort.
+- Runs the Wikimedia Commons image fallback inside the shared lookup queue so image traffic respects the concurrency cap.
+- Adds Open Graph / Twitter link-preview tags, a canonical URL, robots.txt, and public-beta feedback links (builder footer and trip header) pointing at GitHub Issues.
+
 ## v3.5.9 prioritized Adventure backfill
 
 - Uses traveler-selected places first as the day's primary sights, meals, and shopping stops.

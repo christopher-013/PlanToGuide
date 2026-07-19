@@ -1705,16 +1705,17 @@ async function hydrateSuggestionImage(imageElement, suggestion, destination) {
     return;
   }
   try {
-    const params = new URLSearchParams({ action: "query", generator: "search", gsrsearch: `${suggestion.name} ${destination}`, gsrlimit: "5", prop: "pageimages", piprop: "thumbnail", pithumbsize: "520", format: "json", origin: "*" });
-    const payload = await queueSuggestionImageLookup(cacheKey, () => fetchSuggestionImage(`https://en.wikipedia.org/w/api.php?${params}`));
-    let source = resolvedPageImage(bestMatchingImagePage(payload, suggestion, destination));
-    let imageSource = "wikipedia";
-    if (!source) {
+    // The Commons fallback runs inside the same queued task so the whole lookup
+    // (Wikipedia, then Commons when needed) respects the shared concurrency cap.
+    const { source, imageSource } = await queueSuggestionImageLookup(cacheKey, async () => {
+      const params = new URLSearchParams({ action: "query", generator: "search", gsrsearch: `${suggestion.name} ${destination}`, gsrlimit: "5", prop: "pageimages", piprop: "thumbnail", pithumbsize: "520", format: "json", origin: "*" });
+      const payload = await fetchSuggestionImage(`https://en.wikipedia.org/w/api.php?${params}`);
+      const wikipediaSource = resolvedPageImage(bestMatchingImagePage(payload, suggestion, destination));
+      if (wikipediaSource) return { source: wikipediaSource, imageSource: "wikipedia" };
       const commonsParams = new URLSearchParams({ action: "query", generator: "search", gsrsearch: `${suggestion.name} ${destination}`, gsrnamespace: "6", gsrlimit: "8", prop: "imageinfo", iiprop: "url", iiurlwidth: "520", format: "json", origin: "*" });
       const commonsPayload = await fetchSuggestionImage(`https://commons.wikimedia.org/w/api.php?${commonsParams}`);
-      source = resolvedPageImage(bestMatchingImagePage(commonsPayload, suggestion, destination));
-      imageSource = "wikimedia-commons";
-    }
+      return { source: resolvedPageImage(bestMatchingImagePage(commonsPayload, suggestion, destination)), imageSource: "wikimedia-commons" };
+    });
     suggestionImageCache.set(cacheKey, source);
     if (source) applyImage(source, imageSource);
   } catch (_) {
@@ -1903,12 +1904,20 @@ function resolvePracticalInfo(destination = "", guide = {}) {
     touristHotline: "Tourist Hotline (EN): Verify with the destination's official tourism office",
     nearestEmbassy: "U.S. Embassy: Find the nearest post at usembassy.gov and save its number offline"
   };
-  return {
-    ...defaults,
-    ...(guide.practical || {}),
-    ...(COUNTRY_PRACTICAL_CONTACTS[countryCode] || {}),
-    countryCode
-  };
+  const practical = guide.practical || {};
+  const country = COUNTRY_PRACTICAL_CONTACTS[countryCode] || {};
+  // Verified curated/AI-supplied values win; the built-in country table beats
+  // "Needs verification" placeholders; generic defaults are the last resort.
+  const verified = (value) => typeof value === "string" && value && !/needs verification/i.test(value);
+  const pickField = (field) => (verified(practical[field]) ? practical[field] : (country[field] || practical[field] || defaults[field] || ""));
+  const merged = { ...practical };
+  ["emergencyNumbers", "touristHotline", "nearestEmbassy", "hospitalOrClinic", "transitTips", "tipping", "notes"].forEach((field) => {
+    const value = pickField(field);
+    if (value) merged[field] = value;
+  });
+  merged.keyPhrases = Array.isArray(practical.keyPhrases) && practical.keyPhrases.length ? practical.keyPhrases : (country.keyPhrases || []);
+  merged.countryCode = countryCode;
+  return merged;
 }
 
 function buildTrip(destination, start, end, wishes, selections = [], preferences = {}) {

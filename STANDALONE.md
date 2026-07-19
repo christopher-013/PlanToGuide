@@ -35,7 +35,7 @@ Then open `http://127.0.0.1:8767`.
 
 ## Publish it on GitHub Pages
 
-The `standalone-pages.yml` workflow first runs `build-precomputed-catalogs.mjs` to research top tourist destinations server-side, then packages the required static app files, including `index.html`, `version.js`, `catalogs.json`, `precomputed-catalogs.json`, `dynamic-catalog.js`, `styles.css`, `app.js`, `trip-schema.js`, `export-styles.js`, `icon-source.js`, `photo-store.js`, `plan-x-guide-centered-compass-morph-clean-x.svg`, `manifest.webmanifest`, `sw.js`, and the `icons/` folder. In the repository settings, set **Pages → Source** to **GitHub Actions**, then push to the `main` branch.
+The `standalone-pages.yml` workflow first runs `build-precomputed-catalogs.mjs` to research top tourist destinations server-side, then packages the required static app files, including `index.html`, `version.js`, `catalogs.json`, `precomputed-catalogs.json`, `dynamic-catalog.js`, `styles.css`, `app.js`, `trip-schema.js`, `export-styles.js`, `icon-source.js`, `photo-store.js`, `plan-x-guide-centered-compass-morph-clean-x.svg`, `manifest.webmanifest`, `sw.js`, `robots.txt`, and the `icons/` folder. In the repository settings, set **Pages → Source** to **GitHub Actions**, then push to the `main` branch.
 
 ## Privacy and cost
 
