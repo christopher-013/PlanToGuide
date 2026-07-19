@@ -1,5 +1,22 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.6.5 compact constraints
+
+- Reduces every Bookings & real-world constraints entry field to one visible row.
+- Keeps constraint and booking fields vertically resizable for longer details.
+
+## v3.6.3 workflow action alignment
+
+- Aligns the AI-updated plan importer with the Trip Basics Next Step action.
+- Standardizes Back and forward workflow controls as large rectangular buttons on desktop and mobile.
+
+## v3.6.1 golden-reference readability
+
+- Restyles Emergency Contacts with the Tokyo reference's blush panel, brick-red accents, and stronger contrast.
+- Increases emergency, itinerary, booking, route, weather, map, photo, and bottom-navigation typography across desktop and mobile.
+- Stacks long emergency contact labels and values on narrow screens so larger text remains readable without horizontal overflow.
+- Rebuilds the embedded export stylesheet so downloaded travel guides keep the updated presentation.
+
 ## v3.6.0 beta-readiness fixes
 
 - Allows `commons.wikimedia.org` in the CSP so the Wikimedia Commons image fallback added in v3.4.13 actually runs instead of being silently blocked.

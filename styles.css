@@ -2521,6 +2521,16 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   }
 }
 
+/* Step 4 uses compact one-row fields; users can still resize a field when
+   entering longer booking or constraint details. */
+.builder [data-form-step="4"] .style-question textarea {
+  min-height: 40px;
+  height: 40px;
+  max-height: 120px;
+  padding-block: 9px;
+  resize: vertical;
+}
+
 /* Browser-local photo journal */
 .photo-journal-panel { display:grid; gap:20px; }
 .photo-manager { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(360px,1.2fr); gap:22px; padding:20px; border:1px solid var(--line); border-radius:16px; background:#fffdf8; box-shadow:var(--shadow); }
@@ -5188,4 +5198,232 @@ html, body, body *, button, input, select, textarea, dialog, option { font-famil
   .builder.builder-wide .trip-form[data-current-step="2"] [data-form-step="2"].active {
     grid-template-rows: auto auto minmax(70px, 1fr) auto auto auto;
   }
+}
+
+/* Golden-reference report readability
+   The Tokyo guide uses a warm blush emergency panel with brick-red accents and
+   substantially larger body type. Keep PlanToGuide's responsive structure while
+   matching that contrast and bringing the generated guide to a comfortable
+   reading size on both phones and desktop displays. */
+.trip-app .emergency-widget {
+  padding: 13px 15px;
+  border: 1px solid rgba(192, 57, 43, .18);
+  border-radius: 14px;
+  color: #171717;
+  background: #fdf0ee;
+  box-shadow: none;
+}
+.trip-app .emg-title {
+  gap: 9px;
+  margin-bottom: 5px;
+  color: #c0392b;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.trip-app .emg-title > span {
+  font-size: 26px;
+  line-height: 1;
+}
+.trip-app .emg-row {
+  gap: 20px;
+  padding: 6px 0;
+  border-top-color: rgba(192, 57, 43, .18);
+  line-height: 1.45;
+}
+.trip-app .emg-label,
+.trip-app .emg-value {
+  font-size: 17px;
+  line-height: 1.45;
+}
+.trip-app .emg-label {
+  flex: 0 0 clamp(220px, 32%, 360px);
+  color: #272727;
+  font-weight: 600;
+}
+.trip-app .emg-value {
+  flex: 1 1 auto;
+  color: #a93226;
+  font-weight: 750;
+}
+.trip-app .emg-value a {
+  color: #255f9b;
+  text-underline-offset: 3px;
+}
+.trip-app .emg-prompt {
+  color: #3e4045;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.trip-app .home-sec-label { font-size: 12px; }
+.trip-app .home-widget-label { font-size: 13px; }
+.trip-app .home-widget-note { font-size: 12px; }
+.trip-app .checklist-text { font-size: 16px; line-height: 1.4; }
+.trip-app .checklist-sub { font-size: 13px; line-height: 1.45; }
+.trip-app .activity-time { font-size: 13px; line-height: 1.4; }
+.trip-app .activity-type,
+.trip-app .activity-status,
+.trip-app .status-tag { font-size: 10px; line-height: 1.35; }
+.trip-app .activity-copy h4 { font-size: 19px; line-height: 1.28; }
+.trip-app .activity-copy p { font-size: 15px; line-height: 1.58; }
+.trip-app .collection-card h3 { font-size: 19px; line-height: 1.32; }
+.trip-app .collection-card p { font-size: 14px; line-height: 1.55; }
+.trip-app .booking-cards h3 { font-size: 19px; line-height: 1.32; }
+.trip-app .booking-cards p,
+.trip-app .booking-cards small { font-size: 14px; line-height: 1.5; }
+.trip-app .route-flow-stop time { font-size: 12px; }
+.trip-app .route-flow-stop strong { font-size: 15px; line-height: 1.35; }
+.trip-app .route-flow-stop small { font-size: 13px; line-height: 1.45; }
+.trip-app .weather-location { font-size: 19px; }
+.trip-app .weather-summary { font-size: 13px; line-height: 1.5; }
+.trip-app .weather-metrics-row small { font-size: 10px; }
+.trip-app .weather-metrics-row strong { font-size: 13px; line-height: 1.35; }
+.trip-app .weather-disclaimer { font-size: 10px; line-height: 1.45; }
+.trip-app .map-estimate-note { font-size: 12px; line-height: 1.5; }
+.trip-app .photo-manager p,
+.trip-app .photo-day-map-sub { font-size: 13px; line-height: 1.5; }
+
+@media (min-width: 1024px) {
+  .trip-app .emg-title { font-size: 24px; }
+  .trip-app .emg-title > span { font-size: 29px; }
+  .trip-app .emg-label,
+  .trip-app .emg-value { font-size: 19px; }
+  .trip-app .emg-prompt { font-size: 18px; }
+  .trip-app .activity-time { font-size: 14px; }
+  .trip-app .activity-copy h4 { font-size: 21px; }
+  .trip-app .activity-copy p { font-size: 16px; }
+  .trip-app .collection-card h3,
+  .trip-app .booking-cards h3 { font-size: 21px; }
+  .trip-app .collection-card p,
+  .trip-app .booking-cards p,
+  .trip-app .booking-cards small { font-size: 15px; }
+  .trip-app .route-flow-stop time { font-size: 13px; }
+  .trip-app .route-flow-stop strong { font-size: 16px; }
+  .trip-app .route-flow-stop small { font-size: 14px; }
+  .trip-app .weather-location { font-size: 21px; }
+  .trip-app .weather-summary { font-size: 15px; }
+  .trip-app .weather-metrics-row strong { font-size: 14px; }
+  .trip-app .app-nav-button small { font-size: 12px; }
+}
+
+@media (max-width: 640px) {
+  .trip-app .emergency-widget { padding: 12px 14px; }
+  .trip-app .emg-title { font-size: 20px; }
+  .trip-app .emg-title > span { font-size: 24px; }
+  .trip-app .emg-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 0;
+  }
+  .trip-app .emg-label,
+  .trip-app .emg-value {
+    flex: 0 0 auto;
+    width: 100%;
+    font-size: 16px;
+    text-align: left;
+  }
+  .trip-app .activity-copy h4 { font-size: 18px; }
+  .trip-app .activity-copy p { font-size: 14px; }
+  .trip-app .collection-card h3,
+  .trip-app .booking-cards h3 { font-size: 18px; }
+  .trip-app .collection-card p,
+  .trip-app .booking-cards p,
+  .trip-app .booking-cards small { font-size: 13px; }
+  .trip-app .weather-summary { font-size: 13px; }
+  .trip-app .app-nav-button small { font-size: 10px; }
+}
+
+/* Workflow navigation: align the Trip Basics importer with its action and use
+   one substantial rectangular button treatment throughout the questionnaire. */
+.trip-basics-action-row {
+  align-items: start !important;
+}
+
+.trip-basics-action-row .trip-basics-end-showcase,
+.trip-basics-action-row .trip-basics-support-row,
+.trip-basics-action-row .import-callout {
+  margin-top: 0 !important;
+}
+
+.builder .wizard-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.builder .compact-next-button,
+.builder .wizard-actions .icon-nav-button,
+.builder .wizard-actions .secondary-button,
+.builder .wizard-actions .primary-button {
+  width: auto;
+  min-width: 230px;
+  min-height: 49px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.builder .wizard-actions .secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.builder .preference-actions .icon-nav-button,
+.builder.builder-wide .trip-form[data-current-step="2"] .preference-actions .icon-nav-button,
+.builder.builder-wide [data-form-step="2"] .preference-actions .icon-nav-button,
+.builder.builder-wide.builder-adventure .preference-actions .icon-nav-button {
+  min-width: 230px;
+  min-height: 49px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+@media (max-width: 620px) {
+  .trip-basics-action-row {
+    align-items: start !important;
+  }
+
+  .builder .trip-basics-action-row .compact-next-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 13px;
+    font-size: 12px;
+  }
+
+  .builder .wizard-actions {
+    gap: 9px;
+  }
+
+  .builder .wizard-actions .icon-nav-button,
+  .builder .wizard-actions .secondary-button,
+  .builder .wizard-actions .primary-button,
+  .builder .preference-actions .icon-nav-button,
+  .builder.builder-wide .trip-form[data-current-step="2"] .preference-actions .icon-nav-button,
+  .builder.builder-wide [data-form-step="2"] .preference-actions .icon-nav-button,
+  .builder.builder-wide.builder-adventure .preference-actions .icon-nav-button {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 13px;
+    font-size: 12px;
+  }
+}
+
+/* Final cascade override for the compact Step 4 fields. */
+.builder [data-form-step="4"] .style-question textarea,
+.builder.builder-wide [data-form-step="4"].active .style-question textarea {
+  min-height: 40px;
+  height: 40px;
+  max-height: 120px;
+  padding-block: 9px;
+  resize: vertical;
 }
