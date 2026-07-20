@@ -1,5 +1,11 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.6.6 itinerary-derived day-navigation icons
+
+- Derives each date-navigation emoji from that day's own itinerary (temples, castles, museums, markets, beaches, casinos, theme parks, and more), with the arrival day marked by a departure-flight icon.
+- Guarantees every day's icon is unique across the trip: when a day has no recognizable theme, or its theme is already used by an earlier day, it receives a distinct decorative fallback style.
+- Persists the derived icon on each day so the generated website, exports, and AI planning files stay consistent.
+
 ## v3.6.5 compact constraints
 
 - Reduces every Bookings & real-world constraints entry field to one visible row.

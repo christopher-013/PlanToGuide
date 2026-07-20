@@ -1998,6 +1998,7 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
       || day.activities[0];
     day.title = `${day.zone.name} · ${featured?.title || "Explore"}`;
   });
+  assignDayIcons(itineraryDays);
 
   return {
     destination,
@@ -3127,7 +3128,74 @@ function createSeasonalWeather(destination, date) {
   };
 }
 
+// Ordered theme table: most specific first. Order is the tiebreak when a day's stops
+// match several themes equally often, so "theme park" beats the generic park theme.
+const DAY_ICON_THEMES = [
+  [/\baquarium\b|\bsea ?life\b|\boceanarium\b/i, "🐠"],
+  [/\bzoo\b|\bsafari\b|\bwildlife\b/i, "🦁"],
+  [/\bdisney|\buniversal studios\b|\btheme park\b|\bamusement\b|\blegoland\b|\broller ?coaster\b/i, "🎢"],
+  [/\bcasino\b|\bthe strip\b/i, "🎰"],
+  [/\btemple\b|\bshrine\b|\bpagoda\b|\bsens[oō]-?ji\b|\bmeiji\b/i, "⛩️"],
+  [/\bcastle\b|\bpalace\b|\bfortress\b|\bcitadel\b/i, "🏰"],
+  [/\bcathedral\b|\bchurch\b|\bbasilica\b|\bchapel\b|\babbey\b|\bduomo\b/i, "⛪"],
+  [/\bmosque\b/i, "🕌"],
+  [/\bonsen\b|\bhot spring|\bthermal bath|\bspa\b/i, "♨️"],
+  [/\bbeach\b|\bcove\b|\blagoon\b|\bsnorkel/i, "🏖️"],
+  [/\bmountain\b|\bhik(?:e|ing)\b|\btrailhead\b|\bpeak\b|\bvolcano\b|\bgorge\b|\bcanyon\b/i, "⛰️"],
+  [/\bmuseum\b|\bgallery\b/i, "🖼️"],
+  [/\bstreet art\b|\bmural|\bart district\b/i, "🎨"],
+  [/\btower\b|\bobservator|\bobservation\b|\bsky ?(?:deck|tree)\b|\bskyline\b/i, "🗼"],
+  [/\bbridge\b/i, "🌉"],
+  [/\bharbou?r\b|\bwaterfront\b|\bcruise\b|\bferry\b|\bboat\b|\bcanal\b|\bpier\b/i, "⛵"],
+  [/\bmarket\b|\bfood hall\b|\bstreet food\b|\bfood tour\b|\bramen\b|\btsukiji\b/i, "🍜"],
+  [/\bshopping\b|\bmall\b|\bboutique|\bdepartment store|\bginza\b/i, "🛍️"],
+  [/\bstadium\b|\barena\b|\bballpark\b|\braceway\b|\bspeedway\b/i, "🏟️"],
+  [/\bpark\b|\bgarden|\bbotanical\b|\bforest\b/i, "🌳"],
+  [/\btheat(?:er|re)\b|\bopera\b|\bbroadway\b|\bconcert\b|\bshow\b/i, "🎭"],
+  [/\bwine|\bvineyard\b|\bbrewer|\bsake\b|\bdistiller/i, "🍷"],
+  [/\bold town\b|\bhistoric\b|\bheritage\b|\bruins\b|\bmonument\b/i, "🏛️"],
+  [/\bviewpoint\b|\bpanorama|\blookout\b|\bphoto\b/i, "📸"],
+  [/\brailway\b|\btrain\b|\bfunicular\b|\btram\b/i, "🚆"],
+  [/\billumination|\bnight (?:walk|view|market)\b/i, "🌙"]
+];
+
+// Unique fallback styles, deliberately disjoint from the theme emojis above.
+const DAY_ICON_FALLBACKS = ["🧭", "🏯", "🌆", "🎐", "🎡", "🌁", "🚠", "🛶", "🪁", "🎪", "🏮", "🌇", "🎠", "🪷"];
+
+function deriveDayIconCandidates(day, index, totalDays) {
+  const texts = (day.activities || []).map((item) => `${item.title || ""} ${item.area || ""} ${item.type || ""}`);
+  if (day.zone?.name) texts.push(day.zone.name);
+  const scored = DAY_ICON_THEMES.map(([pattern, icon], order) => ({
+    icon,
+    order,
+    count: texts.reduce((sum, text) => sum + (pattern.test(text) ? 1 : 0), 0)
+  })).filter((entry) => entry.count > 0);
+  scored.sort((a, b) => b.count - a.count || a.order - b.order);
+  const candidates = [];
+  if (index === 0 && (day.activities || []).some((item) => item.type === "Arrival")) candidates.push("🛫");
+  scored.forEach((entry) => { if (!candidates.includes(entry.icon)) candidates.push(entry.icon); });
+  if (index === totalDays - 1 && index > 0) candidates.push("🧳");
+  return candidates;
+}
+
+// Give every day-nav date an emoji drawn from that day's own itinerary; when a day has no
+// recognizable theme (or its theme is already taken by an earlier day), fall back to a
+// distinct decorative style so no two days share an icon.
+function assignDayIcons(days) {
+  const used = new Set();
+  days.forEach((day, index) => {
+    const candidates = deriveDayIconCandidates(day, index, days.length);
+    const icon = candidates.find((candidate) => !used.has(candidate))
+      || DAY_ICON_FALLBACKS.find((candidate) => !used.has(candidate))
+      || candidates[0]
+      || DAY_ICON_FALLBACKS[index % DAY_ICON_FALLBACKS.length];
+    used.add(icon);
+    day.icon = icon;
+  });
+}
+
 function getDayIcon(day, index) {
+  if (day.icon) return displayIcon(day.icon);
   if (day.zone && day.zone.icon) return displayIcon(day.zone.icon);
   const palette = ["🛫", "🏯", "🌆", "🎨", "🍜", "🎐", "🌳", "📸", "🗼", "🎭", "🚆", "🌙", "🎡", "🧭"];
   return palette[index % palette.length];
