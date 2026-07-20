@@ -349,9 +349,9 @@
       "banner": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1800&q=82",
       "attractions": [
         {
-          "name": "Westminster Abbey and Big Ben",
+          "name": "Westminster Abbey, Big Ben, and the London Eye",
           "area": "Westminster",
-          "detail": "Start early, tour the abbey, and walk the Thames toward the London Eye."
+          "detail": "Tour Westminster Abbey, see Big Ben and Parliament, then cross the Thames for the London Eye."
         },
         {
           "name": "Tower of London and Tower Bridge",
@@ -359,14 +359,24 @@
           "detail": "Allow a half day for the Crown Jewels, walls, and riverside views."
         },
         {
+          "name": "Buckingham Palace and St James’s Park",
+          "area": "Westminster",
+          "detail": "Check ceremonial schedules and continue through the royal parks."
+        },
+        {
           "name": "British Museum",
           "area": "Bloomsbury",
           "detail": "Choose priority galleries and pair the visit with nearby literary streets."
         },
         {
-          "name": "Buckingham Palace and St James’s Park",
-          "area": "Westminster",
-          "detail": "Check ceremonial schedules and continue through the royal parks."
+          "name": "St Paul’s Cathedral and Millennium Bridge",
+          "area": "City of London",
+          "detail": "Climb the cathedral galleries for views, then cross Millennium Bridge toward Bankside."
+        },
+        {
+          "name": "Natural History Museum",
+          "area": "South Kensington",
+          "detail": "Explore the landmark Hintze Hall and select galleries from its vast natural-history collection."
         },
         {
           "name": "Tate Modern and the South Bank",
@@ -374,9 +384,39 @@
           "detail": "Combine modern art, Millennium Bridge, and a riverside evening walk."
         },
         {
+          "name": "National Gallery and Trafalgar Square",
+          "area": "West End",
+          "detail": "See a focused selection of European masterpieces, then explore the heart of Trafalgar Square."
+        },
+        {
+          "name": "Churchill War Rooms",
+          "area": "Westminster",
+          "detail": "Reserve ahead for the underground wartime headquarters and Churchill Museum."
+        },
+        {
           "name": "Borough Market and Southwark Cathedral",
           "area": "London Bridge",
           "detail": "Visit hungry, sample market traders, then explore the historic riverfront."
+        },
+        {
+          "name": "Covent Garden and the West End",
+          "area": "West End",
+          "detail": "Browse the market halls and Seven Dials, then add a matinee or evening theatre performance."
+        },
+        {
+          "name": "Hyde Park and Kensington Gardens",
+          "area": "Kensington",
+          "detail": "Walk from the Serpentine to Kensington Palace through two of central London’s best-known parks."
+        },
+        {
+          "name": "Victoria and Albert Museum",
+          "area": "South Kensington",
+          "detail": "Choose galleries spanning fashion, design, decorative arts, photography, and performance."
+        },
+        {
+          "name": "Greenwich",
+          "area": "Southeast London",
+          "detail": "Take the river route for the observatory, park views, and maritime history."
         },
         {
           "name": "Notting Hill and Portobello Road",
@@ -384,9 +424,29 @@
           "detail": "Colorful streets, antiques, independent shops, and café stops."
         },
         {
-          "name": "Greenwich",
-          "area": "Southeast London",
-          "detail": "Take the river route for the observatory, park views, and maritime history."
+          "name": "Camden Market and Regent’s Canal",
+          "area": "Camden",
+          "detail": "Explore market stalls and street food, then walk a quieter stretch of Regent’s Canal."
+        },
+        {
+          "name": "Shakespeare’s Globe",
+          "area": "Bankside",
+          "detail": "Tour the reconstructed open-air theatre or reserve a performance beside the Thames."
+        },
+        {
+          "name": "Royal Botanic Gardens, Kew",
+          "area": "Kew",
+          "detail": "Allow several hours for the Palm House, Temperate House, treetop walkway, and landscaped gardens."
+        },
+        {
+          "name": "Hampton Court Palace",
+          "area": "Richmond upon Thames",
+          "detail": "Plan a half-day excursion for Tudor state rooms, royal kitchens, gardens, and the maze."
+        },
+        {
+          "name": "Warner Bros. Studio Tour London",
+          "area": "Leavesden",
+          "detail": "A book-ahead half-day outing for Harry Potter sets, costumes, props, and filmmaking exhibits."
         }
       ],
       "food": {

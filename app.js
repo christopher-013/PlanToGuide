@@ -389,10 +389,17 @@ function hasLiveOrCuratedCatalog(destination) {
 function getLiveOrCuratedCatalog(destination) {
   const known = resolveKnownDestination(destination);
   const candidate = known?.label || String(destination || "").trim();
-  return destinationCatalogs.find((catalog) => {
+  const matchingCatalogs = destinationCatalogs.filter((catalog) => {
     catalog.match.lastIndex = 0;
     return catalog.match.test(candidate);
-  }) || null;
+  });
+  // Curated catalogs are the editorial source of truth for supported destinations. A cached,
+  // precomputed, or newly researched catalog can enrich one, but must never replace its
+  // intentionally ranked places with an alphabetical research result set.
+  return matchingCatalogs.find((catalog) => !catalog.dynamic)
+    || matchingCatalogs.find((catalog) => catalog.precomputed)
+    || matchingCatalogs[0]
+    || null;
 }
 
 function setLiveResearchState(query, geocode, status = "geocoded") {
@@ -1451,7 +1458,7 @@ function renderSuggestionPicker(destination) {
         : suggestion.category === "shop"
           ? [suggestion.area, suggestion.bestFor || "Popular local shopping"]
           : [suggestion.area, "Popular place to see"];
-      card.innerHTML = `<button class="suggestion-select-button" type="button" aria-pressed="${selectedSuggestions.has(suggestion.key) ? "true" : "false"}"><img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="" aria-hidden="true" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span></span></button><span class="suggestion-card-links">${sourceCreditHtml(suggestion)}<a class="suggestion-map-link" href="${googleMapsSearchUrl(`${suggestion.name} ${destination}`)}" target="_blank" rel="noopener noreferrer">Verify current details on Google Maps ↗</a></span>`;
+      card.innerHTML = `<button class="suggestion-select-button" type="button" aria-pressed="${selectedSuggestions.has(suggestion.key) ? "true" : "false"}"><img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="" aria-hidden="true" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span></span></button><span class="suggestion-card-links">${sourceCreditHtml(suggestion)}<a class="suggestion-map-link" href="${googleMapsSearchUrl(suggestion.name, "", destination)}" target="_blank" rel="noopener noreferrer">Verify current details on Google Maps ↗</a></span>`;
       hydrateSuggestionImage(card.querySelector(".suggestion-card-image"), suggestion, destination);
       card.dataset.suggestionKey = suggestion.key;
       const selectButton = card.querySelector(".suggestion-select-button");
@@ -3599,8 +3606,8 @@ function cleanActivityTitle(title) {
   return title.replace(/^(Breakfast|Lunch|Dinner|Farewell dinner):\s*/i, "").replace(/\s·\s(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),.*$/i, "").trim();
 }
 
-function googleMapsSearchUrl(name, area = "") {
-  const query = [name, area, trip && trip.destination].filter(Boolean).join(" ");
+function googleMapsSearchUrl(name, area = "", destination = trip?.destination) {
+  const query = [name, area, destination].filter(Boolean).join(" ");
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 

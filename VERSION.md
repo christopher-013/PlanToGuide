@@ -1,5 +1,11 @@
 # PlanToGuide — Version 3 working copy
 
+## v3.7.2 curated destination priority
+
+- Makes curated catalogs the explicit editorial source of truth whenever curated, precomputed, cached, and live-researched catalogs all match the same destination.
+- Expands London's Places to See list to 20 recognizable attractions and districts, ordered around official Visit London must-see guidance instead of padding the list with generic neighborhood placeholders.
+- Keeps suggestion Google Maps links scoped to the destination currently being edited instead of appending the previous trip's destination.
+
 ## v3.7.1 notability-ranked Places to See
 
 - Queries Wikipedia categories through incoming-links-ranked search instead of alphabetical member listing, so huge categories ("Tourist attractions in London") surface Tower of London and Trafalgar Square instead of obscure A–B articles, and records that rank as a scoring boost.
