@@ -1,5 +1,11 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.1.3 direct feedback submission (no GitHub round-trip)
+
+- The feedback form's button is now **Submit**, and feedback is filed to GitHub Issues directly — the reporter never sees GitHub or needs an account/sign-in.
+- Adds `feedback-worker.js`, a Cloudflare Worker that holds a GitHub write token as a secret and creates the issue on the user's behalf (a public static site can't hold that token safely). The browser POSTs the feedback JSON to the Worker; setup is documented in `FEEDBACK-WORKER-SETUP.md`.
+- `beta-tools.js` gains a `FEEDBACK_ENDPOINT` config: when set to the Worker URL, Submit POSTs there and shows a "Thank you" inline; when empty or the Worker is unreachable, it falls back to opening a pre-filled GitHub issue so no note is lost. CSP now allows `https://*.workers.dev`.
+
 ## v4.1.2 mobile adventure card stacks photo over description
 
 - On phones (≤760px) the Adventure recommendation card now stacks the location photo above the description instead of beside it.

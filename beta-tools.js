@@ -24,6 +24,12 @@
   //   Leave it "" to keep analytics OFF (no third-party request is made).
   var CF_BEACON_TOKEN = "a7ddbdbdc90e436d98590a41f3cbf190";
 
+  // Feedback backend (Cloudflare Worker in feedback-worker.js) that files the report as
+  // a GitHub issue on the reporter's behalf, so they never leave the app. Paste the
+  // deployed Worker URL here, e.g. "https://plantoguide-feedback.<subdomain>.workers.dev".
+  // While empty, the form falls back to opening a pre-filled GitHub issue instead.
+  var FEEDBACK_ENDPOINT = "";
+
   var GITHUB_REPO = "christopher-013/PlanToGuide";
   var METRICS_KEY = "ptg_beta_metrics_v1";
   var MAX_EVENTS = 500;
@@ -135,6 +141,8 @@
     closeBtn && closeBtn.addEventListener("click", close);
     cancelBtn && cancelBtn.addEventListener("click", close);
 
+    var submitBtn = form && form.querySelector('button[type="submit"]');
+
     form && form.addEventListener("submit", function (event) {
       event.preventDefault();
       var fields = {
@@ -144,6 +152,46 @@
         email: (form.querySelector("#feedbackEmail") || {}).value || ""
       };
       track("feedback_submitted", { category: fields.category });
+
+      // Direct submission via the backend Worker → files the GitHub issue for the
+      // reporter, who never sees GitHub. Falls back to a pre-filled issue if the
+      // endpoint is unconfigured or unreachable, so feedback is never lost.
+      if (FEEDBACK_ENDPOINT) {
+        if (status) status.textContent = "Sending…";
+        if (submitBtn) submitBtn.disabled = true;
+        fetch(FEEDBACK_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            category: fields.category,
+            summary: fields.summary,
+            message: fields.message,
+            email: fields.email,
+            page: location.pathname + location.hash,
+            viewport: window.innerWidth + "x" + window.innerHeight,
+            version: globalThis.PLANTOGUIDE_VERSION || "",
+            userAgent: navigator.userAgent
+          })
+        }).then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json().catch(function () { return {}; });
+        }).then(function () {
+          if (status) status.textContent = "Thank you — your feedback was sent.";
+          if (form.reset) form.reset();
+          window.setTimeout(close, 1600);
+        }).catch(function () {
+          // Network / config failure: don't lose the note — open the pre-filled issue.
+          track("feedback_fallback_github");
+          if (status) status.textContent = "Couldn’t submit automatically — opening GitHub so your note isn’t lost.";
+          window.open(buildIssueUrl(fields), "_blank", "noopener,noreferrer");
+          window.setTimeout(close, 2000);
+        }).then(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+        return;
+      }
+
+      // No backend configured yet → pre-filled GitHub issue.
       var url = buildIssueUrl(fields);
       var win = window.open(url, "_blank", "noopener,noreferrer");
       if (status) {
