@@ -1,5 +1,10 @@
+param(
+  [ValidateRange(1, 65535)]
+  [int]$Port = 8767
+)
+
 $root = (Resolve-Path -LiteralPath $PSScriptRoot).Path
-$server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 8767)
+$server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Port)
 try { $server.Start() } catch { Write-Error "Preview server could not start: $($_.Exception.Message)"; exit 1 }
 $types = @{
   '.html'='text/html; charset=utf-8'
