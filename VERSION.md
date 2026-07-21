@@ -1,5 +1,11 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.1.2 mobile adventure card stacks photo over description
+
+- On phones (≤760px) the Adventure recommendation card now stacks the location photo above the description instead of beside it.
+- The description no longer scrolls on mobile (`overflow: hidden`), so a horizontal swipe that begins on the description text triggers Skip/Include/Favorite instead of being captured as a vertical scroll. The photo, title, badge, meta, and source links stay visible.
+- Desktop/tablet keep the side-by-side photo/description layout.
+
 ## v4.1.1 activate Cloudflare Web Analytics
 
 - Sets the Cloudflare Web Analytics beacon token in `beta-tools.js`, turning on aggregate visitor / page-view counting for the public beta. Verified the beacon injects with no CSP violation.

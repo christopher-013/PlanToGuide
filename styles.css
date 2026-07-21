@@ -5918,8 +5918,13 @@ body.start-splash-active { overflow: hidden; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading > span { width: 25px; height: 25px; font-size: 13px; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group-heading h3 { font-size: 11px; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-shell { gap: 5px; }
+  /* Mobile: stack the photo above the description instead of beside it, and stop the
+     description from being its own scroll container so horizontal swipes are never
+     captured as a vertical scroll. */
   .builder .suggestion-swipe-card,
-  .builder.builder-wide .suggestion-swipe-card { min-height: 0; grid-template-columns: 42% minmax(0, 1fr); border-radius: 14px; }
+  .builder.builder-wide .suggestion-swipe-card { min-height: 0; grid-template-columns: 1fr; grid-template-rows: minmax(0, 44%) minmax(0, 1fr); border-radius: 14px; }
+  .builder .suggestion-swipe-card .suggestion-card-body { overflow: hidden; touch-action: pan-y; }
+  .builder .suggestion-swipe-card .suggestion-card-detail { flex: 1 1 auto; min-height: 0; overflow: hidden; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-body { gap: 7px; padding: 13px; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-top strong { font: 700 18px/1.12 "DM Sans", sans-serif; }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-meta { font-size: 10px; line-height: 1.35; }
@@ -5949,7 +5954,7 @@ body.start-splash-active { overflow: hidden; }
   .builder.builder-wide .trip-form[data-current-step="2"] .security-note { display: none; }
   .builder.builder-wide .trip-form[data-current-step="2"] .form-progress span { height: 54px; }
   .builder .suggestion-swipe-card,
-  .builder.builder-wide .suggestion-swipe-card { grid-template-columns: 38% minmax(0, 1fr); }
+  .builder.builder-wide .suggestion-swipe-card { grid-template-columns: 1fr; grid-template-rows: minmax(0, 38%) minmax(0, 1fr); }
   .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-detail { font-size: 11px; }
 }
 
