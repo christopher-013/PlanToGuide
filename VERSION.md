@@ -1,4 +1,14 @@
-# PlanToGuide — Version 3 working copy
+# PlanToGuide — Version 4 UI working copy
+
+## v4.0.0 splash and swipeable adventure deck
+
+- Forks the latest synchronized v3.7.6 build onto the `codex/v4-ui-changes` branch without changing the v3 trip-data schema.
+- Presents the PlanToGuide hero as a full-screen opening splash, then fades directly into Trip Basics; reduced-motion users get a shorter, static transition.
+- Replaces the Adventure grids with one large photo-led recommendation at a time.
+- Adds a Tinder-style four-action rail for redo, Skip, Include, and Favorite, plus horizontal pointer/touch swipes, keyboard decisions, review progress, and an end-of-category summary.
+- Shows transparent red Skip and green Include overlays before each card exits; Favorite selections receive a star treatment and are scheduled before ordinary selections whenever geographic and time constraints allow.
+- Keeps the existing `selectedSuggestions` map as the inclusion source of truth and adds persisted rejection state, so left-swiped places cannot be reintroduced by automatic itinerary backfill.
+- Allows an all-skip path: the itinerary generator fills open time from other unreviewed, popularity-ranked recommendations instead of blocking the workflow.
 
 ## v3.7.6 synced-build safeguards
 

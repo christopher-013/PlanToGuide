@@ -13,6 +13,8 @@ const dateError = document.querySelector("#dateError");
 const preferenceError = document.querySelector("#preferenceError");
 const suggestionBoard = document.querySelector("#suggestionBoard");
 const selectionCount = document.querySelector("#selectionCount");
+const startSplash = document.querySelector("#startSplash");
+const startSplashContinue = document.querySelector("#startSplashContinue");
 
 function brandIconSource() {
   return window.PLANTOGUIDE_ICON_BASE64 ? `data:image/svg+xml;base64,${window.PLANTOGUIDE_ICON_BASE64}` : "plan-x-guide-centered-compass-morph-clean-x.svg";
@@ -268,6 +270,7 @@ let activeTab = "home";
 let weatherRenderVersion = 0;
 const liveWeatherCache = new Map();
 const selectedSuggestions = new Map();
+const rejectedSuggestions = new Map();
 const suggestionImageCache = new Map();
 const suggestionImageLookups = new Map();
 const suggestionImageQueue = [];
@@ -278,9 +281,17 @@ let suggestionDestination = "";
 let dayBannerRenderVersion = 0;
 let suggestionGroups = [];
 let activeSuggestionCategory = 0;
+let suggestionDeckPositions = [0, 0, 0];
+let suggestionDeckHistory = [[], [], []];
+let suggestionDeckDestination = "";
+let suggestionSwipeInFlight = false;
+let suggestionDeckRenderToken = 0;
+let focusNextSuggestionCard = false;
 let currentFormStep = 1;
 const TRIP_BASICS_BRAND_REPLAY_INTERVAL_MS = 60_000;
+const START_SPLASH_DURATION_MS = 3600;
 let tripBasicsBrandReplayTimer = 0;
+let startSplashTimer = 0;
 let destinationResearchTimer = 0;
 let destinationResearchController = null;
 let destinationResearchState = { query: "", geocode: null, status: "idle" };
@@ -296,6 +307,7 @@ startDateInput.value = toInputDate(defaultStart);
 endDateInput.value = toInputDate(defaultEnd);
 
 renderKnownDestinationOptions();
+if (!hasSavedTripAtLoad()) showStartSplash();
 scheduleTripBasicsBrandReplay();
 document.querySelectorAll(".form-progress [data-go-step]").forEach((stage) => {
   const openStage = () => navigateToWizardStep(Number(stage.dataset.goStep));
@@ -334,7 +346,9 @@ clearDestinationButton?.addEventListener("click", () => {
   destinationResearchState = { query: "", geocode: null, status: "idle" };
   if (destinationResearchController) destinationResearchController.abort();
   selectedSuggestions.clear();
+  rejectedSuggestions.clear();
   suggestionDestination = "";
+  resetSuggestionDeckState();
   updateDestinationClearButton();
   destinationInput.focus();
 });
@@ -498,6 +512,7 @@ async function goToPreferencesStep() {
   const previousDestination = (suggestionDestination || (trip && trip.destination) || "").trim().toLowerCase();
   if (previousDestination && previousDestination !== nextDestination.toLowerCase()) {
     selectedSuggestions.clear();
+    rejectedSuggestions.clear();
     wishListInput.value = "";
     preferenceError.textContent = "";
   }
@@ -592,11 +607,6 @@ document.querySelector("#detailsStepButton").addEventListener("click", () => {
     showFormStep(2);
     return;
   }
-  if (!selectedSuggestions.size && !wishListInput.value.trim()) {
-    preferenceError.textContent = "Choose at least one suggestion or tell us what interests you.";
-    wishListInput.focus();
-    return;
-  }
   preferenceError.textContent = "";
   showFormStep(3);
 });
@@ -609,11 +619,9 @@ document.querySelector("#constraintsStepButton").addEventListener("click", () =>
 document.querySelector("#constraintsBackButton").addEventListener("click", () => showFormStep(3));
 document.querySelector("#clearSelectionsButton").addEventListener("click", () => {
   selectedSuggestions.clear();
-  suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((card) => {
-    card.classList.remove("selected");
-    card.querySelector(".suggestion-select-button")?.setAttribute("aria-pressed", "false");
-  });
-  updateSelectionCount();
+  rejectedSuggestions.clear();
+  resetSuggestionDeckState(suggestionDestination);
+  renderSuggestionCategory();
 });
 function chooseForMeCountFromPace() {
   const paceField = document.querySelector("#tripPace");
@@ -625,14 +633,10 @@ document.querySelector("#surpriseMeButton").addEventListener("click", () => {
   const countPerCategory = chooseForMeCountFromPace();
   const selectionTargets = { see: countPerCategory, eat: countPerCategory, shop: countPerCategory };
   selectedSuggestions.clear();
+  rejectedSuggestions.clear();
   Object.entries(selectionTargets).forEach(([category, count]) => {
     const choices = [...suggestionLookup.values()].filter((item) => item.category === category && !item.researchPrompt);
     choices.slice(0, count).forEach((item) => selectedSuggestions.set(item.key, item));
-  });
-  suggestionBoard.querySelectorAll(".suggestion-bubble").forEach((card) => {
-    const selected = selectedSuggestions.has(card.dataset.suggestionKey);
-    card.classList.toggle("selected", selected);
-    card.querySelector(".suggestion-select-button")?.setAttribute("aria-pressed", selected ? "true" : "false");
   });
   preferenceError.textContent = "";
   updateSelectionCount();
@@ -650,20 +654,15 @@ form.addEventListener("submit", async (event) => {
     return;
   }
   dateError.textContent = "";
-  if (!selectedSuggestions.size && !wishListInput.value.trim()) {
-    preferenceError.textContent = "Choose at least one suggestion or tell us what interests you.";
-    showFormStep(2);
-    document.querySelector(".suggestion-select-button")?.focus();
-    return;
-  }
   preferenceError.textContent = "";
   const finalDestination = destinationInput.value.trim();
   const catalogWait = pendingDynamicCatalog && pendingDynamicCatalog.destination === finalDestination ? pendingDynamicCatalog.promise : Promise.resolve(null);
   const transitionPromise = showTripCreationTransition();
   await catalogWait;
   const selections = [...selectedSuggestions.values()];
+  const rejectedSelections = [...rejectedSuggestions.values()];
   const preferences = getTripPreferences();
-  trip = buildTrip(finalDestination, start, end, wishListInput.value.trim(), selections, preferences);
+  trip = buildTrip(finalDestination, start, end, wishListInput.value.trim(), selections, preferences, rejectedSelections);
   activeDay = 0;
   activeTab = "home";
   await transitionPromise;
@@ -673,7 +672,7 @@ form.addEventListener("submit", async (event) => {
   document.body.classList.add("trip-mode");
   renderTrip();
   switchAppTab("home");
-  safeStorageSet("plantoguide-trip", JSON.stringify({ destination: destinationInput.value, start: startDateInput.value, end: endDateInput.value, wishes: wishListInput.value, selections, preferences }));
+  safeStorageSet("plantoguide-trip", JSON.stringify({ destination: destinationInput.value, start: startDateInput.value, end: endDateInput.value, wishes: wishListInput.value, selections, rejectedSelections, preferences }));
   safeStorageRemove("plantoguide-imported-trip");
   safeStorageRemove("x-travel-agent-imported-trip");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -689,12 +688,14 @@ document.querySelector("#newTripButton").addEventListener("click", () => {
   safeStorageRemove("roam-trip");
   form.reset();
   selectedSuggestions.clear();
+  rejectedSuggestions.clear();
   suggestionDestination = "";
+  resetSuggestionDeckState();
   startDateInput.value = toInputDate(defaultStart);
   endDateInput.value = toInputDate(defaultEnd);
   updateDestinationModeBadge();
   showBuilder();
-  destinationInput.focus();
+  showStartSplash({ focusDestination: true });
 });
 document.querySelector("#printButton").addEventListener("click", printSelectedDayItinerary);
 document.querySelector("#exportTripButton").addEventListener("click", exportTripPackage);
@@ -720,6 +721,7 @@ document.querySelector("#addFoodEntry").addEventListener("click", () => addUserE
 document.querySelector("#addShopEntry").addEventListener("click", () => addUserEntry("shop"));
 
 function showBuilder() {
+  dismissStartSplash({ immediate: true });
   result.hidden = true;
   builder.hidden = false;
   document.body.classList.remove("trip-mode");
@@ -1070,7 +1072,7 @@ function createTripMarkdownBase() {
   const preferenceDetails = Object.entries(trip.preferences).filter(([, value]) => value).map(([key, value]) => `- **${titleCase(key)}:** ${value}`).join("\n");
   const researchChecklist = trip.researchMode ? `## Research Needed\n\n- Verify landmark names, current hours, closures, prices, and ticket requirements.\n- Research neighborhoods and optimize each day geographically.\n- Confirm restaurant cuisine, ratings, dietary fit, and reservation requirements.\n- Replace placeholder shopping and activity cards with verified choices.\n- Check transit times, weather, accessibility, and seasonal conditions.\n- Preserve all traveler-entered must-dos and confirmed bookings while refining the plan.` : "";
   const preferenceLines = [preferenceDetails, researchChecklist].filter(Boolean).join("\n\n");
-  const selected = trip.selections.length ? trip.selections.map((item) => `- ${item.name}${item.area ? ` — ${item.area}` : ""}: ${item.detail}${item.sourceLabel ? ` (Source: ${item.sourceLabel}${item.sourceLicense ? `, ${item.sourceLicense}` : ""}${item.sourceUrl ? ` — ${item.sourceUrl}` : ""})` : ""}`).join("\n") : "- No manually selected places.";
+  const selected = trip.selections.length ? trip.selections.map((item) => `- ${item.favorite ? "⭐ " : ""}${item.name}${item.area ? ` — ${item.area}` : ""}: ${item.detail}${item.sourceLabel ? ` (Source: ${item.sourceLabel}${item.sourceLicense ? `, ${item.sourceLicense}` : ""}${item.sourceUrl ? ` — ${item.sourceUrl}` : ""})` : ""}`).join("\n") : "- No manually selected places.";
   const locked = trip.bookings.length ? trip.bookings.map((item) => `- **${item.name}** — ${item.date || "date flexible"} — ${item.time || "time TBD"} — ${titleCase(item.status)}`).join("\n") : "- No locked bookings supplied.";
   const optional = trip.days.flatMap((day) => day.activities.filter((item) => /optional|backup/i.test(item.status || "")).map((item) => `- ${formatDate(day.date, false)} — ${item.title} — ${item.status}`)).join("\n") || "- No optional items marked.";
   const days = trip.days.map((day, index) => `## ${index + 1}. ${formatDate(day.date, true)} — ${day.title}\n\n**Area focus:** ${day.zone?.name || trip.destination}\n\n${day.activities.map((item) => `### ${item.time}${item.endTime ? `–${item.endTime}` : ""} — ${item.title}\n\n- Status: ${item.status || "Recommended"}\n- Type: ${item.type}\n- Duration: ${item.durationMinutes || estimateActivityMinutes(item)} minutes\n${item.travelMinutesToNext ? `- Travel to next stop: approximately ${item.travelMinutesToNext} minutes by ${item.travelModeToNext || "local transport"}\n` : ""}- Details: ${item.description}\n- Google Maps: ${googleMapsSearchUrl(cleanActivityTitle(item.title))}${item.sourceLabel ? `\n- Source: ${item.sourceLabel}${item.sourceLicense ? ` (${item.sourceLicense})` : ""}${item.sourceAttribution ? ` — ${item.sourceAttribution}` : ""}${item.sourceUrl ? ` — ${item.sourceUrl}` : ""}` : ""}`).join("\n\n")}`).join("\n\n---\n\n");
@@ -1233,6 +1235,74 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+function hasSavedTripAtLoad() {
+  return Boolean(
+    safeStorageGet("plantoguide-trip")
+    || safeStorageGet("plantoguide-imported-trip")
+    || safeStorageGet("x-travel-agent-imported-trip")
+    || safeStorageGet("x-travel-agent-trip")
+    || safeStorageGet("x-travel-guide-trip")
+    || safeStorageGet("roam-trip")
+  );
+}
+
+function showStartSplash(options = {}) {
+  if (!startSplash || document.body.classList.contains("trip-mode")) return;
+  window.clearTimeout(startSplashTimer);
+  startSplash.dataset.focusDestination = options.focusDestination ? "true" : "false";
+  startSplash.hidden = false;
+  startSplash.classList.remove("is-leaving");
+  builder.classList.add("start-splash-active");
+  document.body.classList.add("start-splash-active");
+
+  const currentLogo = startSplash.querySelector(".home-brand-lockup img");
+  if (currentLogo) {
+    const replacement = currentLogo.cloneNode(true);
+    const source = brandIconAnimationSource();
+    replacement.src = source;
+    currentLogo.replaceWith(replacement);
+    releaseBrandIconSource(source);
+  }
+
+  requestAnimationFrame(() => startSplashContinue?.focus({ preventScroll: true }));
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  startSplashTimer = window.setTimeout(
+    () => dismissStartSplash({ focusDestination: options.focusDestination }),
+    reducedMotion ? 1100 : START_SPLASH_DURATION_MS
+  );
+}
+
+function dismissStartSplash(options = {}) {
+  if (!startSplash || startSplash.hidden) return;
+  window.clearTimeout(startSplashTimer);
+  startSplashTimer = 0;
+  const focusDestination = options.focusDestination ?? startSplash.dataset.focusDestination === "true";
+  const finish = () => {
+    startSplash.hidden = true;
+    startSplash.classList.remove("is-leaving");
+    builder.classList.remove("start-splash-active");
+    document.body.classList.remove("start-splash-active");
+    form.classList.remove("v4-reveal");
+    void form.offsetWidth;
+    form.classList.add("v4-reveal");
+    forceWizardTop();
+    if (focusDestination) destinationInput.focus({ preventScroll: true });
+    else {
+      const stepTitle = document.querySelector("#formStepTitle");
+      stepTitle?.setAttribute("tabindex", "-1");
+      stepTitle?.focus({ preventScroll: true });
+    }
+  };
+  if (options.immediate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finish();
+    return;
+  }
+  startSplash.classList.add("is-leaving");
+  window.setTimeout(finish, 720);
+}
+
+startSplashContinue?.addEventListener("click", () => dismissStartSplash({ focusDestination: true }));
+
 function showFormStep(stepNumber) {
   currentFormStep = stepNumber;
   builder.classList.toggle("builder-wide", stepNumber > 1);
@@ -1393,7 +1463,11 @@ function setTripPreferences(preferences = {}) {
 
 function renderSuggestionPicker(destination) {
   const normalizedDestination = destination.toLowerCase();
-  if (suggestionDestination && suggestionDestination !== normalizedDestination) selectedSuggestions.clear();
+  if (suggestionDestination && suggestionDestination !== normalizedDestination) {
+    selectedSuggestions.clear();
+    rejectedSuggestions.clear();
+  }
+  if (suggestionDeckDestination !== normalizeDestinationName(destination)) resetSuggestionDeckState(destination);
   suggestionDestination = normalizedDestination;
   document.querySelector("#suggestionDestination").textContent = destination;
   const starterSuggestionNote = document.querySelector("#starterSuggestionNote");
@@ -1440,40 +1514,17 @@ function renderSuggestionPicker(destination) {
   suggestionBoard.innerHTML = "";
 
   suggestionGroups.forEach((group, groupIndex) => {
+    const reviewedKeys = new Set((suggestionDeckHistory[groupIndex] || []).map((entry) => entry.key));
+    const firstUnreviewed = group.items.findIndex((item) => !reviewedKeys.has(item.key));
+    suggestionDeckPositions[groupIndex] = firstUnreviewed < 0 ? group.items.length : firstUnreviewed;
+  });
+
+  suggestionGroups.forEach((group, groupIndex) => {
     const section = document.createElement("section");
     section.className = "suggestion-group";
     section.dataset.suggestionCategory = groupIndex;
     section.hidden = groupIndex !== activeSuggestionCategory;
-    section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${displayIcon(group.icon)}</span><h3>${escapeHtml(group.label)}</h3><small>${group.items.length} ideas</small></div>`;
-    const bubbles = document.createElement("div");
-    bubbles.className = "suggestion-bubbles suggestion-card-list";
-    bubbles.tabIndex = 0;
-    bubbles.setAttribute("role", "region");
-    bubbles.setAttribute("aria-label", `${group.label}: ${group.items.length} scrollable suggestions`);
-    group.items.forEach((suggestion) => {
-      const card = document.createElement("article");
-      card.className = `suggestion-bubble${selectedSuggestions.has(suggestion.key) ? " selected" : ""}`;
-      const meta = suggestion.category === "eat"
-        ? [suggestion.cuisine || "Local and regional cuisine", suggestion.rating ? `Google rating: ${suggestion.rating}` : "Google rating: view live"]
-        : suggestion.category === "shop"
-          ? [suggestion.area, suggestion.bestFor || "Popular local shopping"]
-          : [suggestion.area, "Popular place to see"];
-      card.innerHTML = `<button class="suggestion-select-button" type="button" aria-pressed="${selectedSuggestions.has(suggestion.key) ? "true" : "false"}"><img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="" aria-hidden="true" loading="lazy"><span class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong><span class="suggestion-check">✓</span></span><span class="suggestion-card-meta">${meta.filter(Boolean).map(escapeHtml).join(" · ")}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span></span></button><span class="suggestion-card-links">${sourceCreditHtml(suggestion)}<a class="suggestion-map-link" href="${googleMapsSearchUrl(suggestion.name, "", destination)}" target="_blank" rel="noopener noreferrer">Verify current details on Google Maps ↗</a></span>`;
-      hydrateSuggestionImage(card.querySelector(".suggestion-card-image"), suggestion, destination);
-      card.dataset.suggestionKey = suggestion.key;
-      const selectButton = card.querySelector(".suggestion-select-button");
-      selectButton.addEventListener("click", () => {
-        if (selectedSuggestions.has(suggestion.key)) selectedSuggestions.delete(suggestion.key);
-        else selectedSuggestions.set(suggestion.key, suggestion);
-        const selected = selectedSuggestions.has(suggestion.key);
-        card.classList.toggle("selected", selected);
-        selectButton.setAttribute("aria-pressed", selected ? "true" : "false");
-        preferenceError.textContent = "";
-        updateSelectionCount();
-      });
-      bubbles.appendChild(card);
-    });
-    section.appendChild(bubbles);
+    section.innerHTML = `<div class="suggestion-group-heading"><span aria-hidden="true">${displayIcon(group.icon)}</span><h3>${escapeHtml(group.label)}</h3><small>${group.items.length} ideas</small></div><div class="suggestion-swipe-shell"><div class="suggestion-swipe-deck" role="region" aria-label="${escapeHtml(group.label)} recommendation deck"></div><div class="suggestion-swipe-actions" role="group" aria-label="Recommendation actions"></div><p class="suggestion-swipe-hint">Swipe or press <strong>←</strong> to skip · swipe or press <strong>→</strong> to include · press <strong>F</strong> to favorite</p><p class="suggestion-swipe-status sr-only" aria-live="polite"></p></div>`;
     suggestionBoard.appendChild(section);
   });
   renderSuggestionCategory();
@@ -1509,7 +1560,198 @@ function renderSuggestionCategory() {
   suggestionBoard.querySelectorAll("[data-suggestion-category]").forEach((section) => {
     section.hidden = Number(section.dataset.suggestionCategory) !== activeSuggestionCategory;
   });
+  const activeSection = suggestionBoard.querySelector(`[data-suggestion-category="${activeSuggestionCategory}"]`);
+  if (activeSection) renderSuggestionDeckCard(group, activeSection);
   updateSelectionCount();
+}
+
+function resetSuggestionDeckState(destination = "") {
+  suggestionDeckDestination = normalizeDestinationName(destination);
+  suggestionDeckPositions = [0, 0, 0];
+  suggestionDeckHistory = [[], [], []];
+  suggestionSwipeInFlight = false;
+  suggestionDeckRenderToken += 1;
+}
+
+function nextUnreviewedSuggestionIndex(group, startIndex = 0) {
+  const reviewed = new Set((suggestionDeckHistory[activeSuggestionCategory] || []).map((entry) => entry.key));
+  for (let index = startIndex; index < group.items.length; index += 1) {
+    if (!reviewed.has(group.items[index].key)) return index;
+  }
+  for (let index = 0; index < Math.min(startIndex, group.items.length); index += 1) {
+    if (!reviewed.has(group.items[index].key)) return index;
+  }
+  return group.items.length;
+}
+
+function suggestionMeta(suggestion) {
+  if (suggestion.category === "eat") {
+    return [suggestion.cuisine || "Local and regional cuisine", suggestion.rating ? `Google rating: ${suggestion.rating}` : "Google rating: view live"];
+  }
+  if (suggestion.category === "shop") return [suggestion.area, suggestion.bestFor || "Popular local shopping"];
+  return [suggestion.area, "Popular place to see"];
+}
+
+function renderSuggestionDeckCard(group, section) {
+  const deck = section.querySelector(".suggestion-swipe-deck");
+  const actions = section.querySelector(".suggestion-swipe-actions");
+  const status = section.querySelector(".suggestion-swipe-status");
+  if (!deck || !actions) return;
+
+  suggestionSwipeInFlight = false;
+  const renderToken = ++suggestionDeckRenderToken;
+  const history = suggestionDeckHistory[activeSuggestionCategory] || [];
+  const reviewed = new Set(history.map((entry) => entry.key));
+  let position = suggestionDeckPositions[activeSuggestionCategory] || 0;
+  if (position < group.items.length && reviewed.has(group.items[position].key)) position = nextUnreviewedSuggestionIndex(group, position + 1);
+  suggestionDeckPositions[activeSuggestionCategory] = position;
+
+  if (position >= group.items.length) {
+    const selectedInCategory = group.items.filter((item) => selectedSuggestions.has(item.key)).length;
+    deck.innerHTML = `<div class="suggestion-deck-complete"><span aria-hidden="true">✓</span><h4>${escapeHtml(group.label)} reviewed</h4><p>You included ${selectedInCategory} of ${group.items.length}. Your itinerary will fill any open time with other popular recommendations.</p><button type="button" class="suggestion-review-button">Review these again</button></div>`;
+    actions.innerHTML = `<button type="button" class="suggestion-action-button suggestion-redo-button suggestion-undo-button"${history.length ? "" : " disabled"} aria-label="Redo last recommendation choice" title="Redo"><span aria-hidden="true">↶</span></button>`;
+    actions.querySelector(".suggestion-undo-button")?.addEventListener("click", undoSuggestionDecision);
+    if (status) status.textContent = `${group.label} complete. ${selectedInCategory} included.`;
+    deck.querySelector(".suggestion-review-button")?.addEventListener("click", () => {
+      suggestionDeckHistory[activeSuggestionCategory] = [];
+      suggestionDeckPositions[activeSuggestionCategory] = 0;
+      focusNextSuggestionCard = true;
+      renderSuggestionCategory();
+    });
+    return;
+  }
+
+  const suggestion = group.items[position];
+  const selectedValue = selectedSuggestions.get(suggestion.key);
+  const selected = Boolean(selectedValue);
+  const favorite = Boolean(selectedValue?.favorite);
+  const meta = suggestionMeta(suggestion).filter(Boolean).map(escapeHtml).join(" · ");
+  const remaining = group.items.length - reviewed.size;
+  deck.innerHTML = `<article class="suggestion-bubble suggestion-swipe-card${selected ? " selected" : ""}${favorite ? " favorite" : ""}" data-suggestion-key="${escapeHtml(suggestion.key)}" tabindex="0" aria-label="${escapeHtml(suggestion.name)}. Swipe right or press the right arrow to include. Swipe left or press the left arrow to skip. Press F to favorite."><div class="suggestion-swipe-image-wrap"><img class="suggestion-card-image" src="${escapeHtml(suggestion.image || suggestionImagePlaceholder(suggestion))}" alt="" aria-hidden="true" loading="eager" draggable="false"><span class="suggestion-deck-progress">${reviewed.size + 1} of ${group.items.length}</span></div><div class="suggestion-card-body"><span class="suggestion-card-top"><strong>${escapeHtml(suggestion.name)}</strong>${favorite ? '<span class="suggestion-selected-badge favorite">★ Favorite</span>' : selected ? '<span class="suggestion-selected-badge">Already included</span>' : ""}</span><span class="suggestion-card-meta">${meta}</span><span class="suggestion-card-detail">${escapeHtml(suggestion.detail)}</span><span class="suggestion-card-links">${sourceCreditHtml(suggestion)}<a class="suggestion-map-link" href="${googleMapsSearchUrl(suggestion.name, "", destinationInput.value.trim())}" target="_blank" rel="noopener noreferrer">Verify current details on Google Maps ↗</a></span></div><span class="suggestion-decision-overlay skip" aria-hidden="true"><span>✕</span><strong>Skip</strong></span><span class="suggestion-decision-overlay include" aria-hidden="true"><span>♥</span><strong>Include</strong></span><span class="suggestion-decision-overlay favorite" aria-hidden="true"><span>★</span><strong>Favorite</strong></span></article>`;
+  actions.innerHTML = `<button type="button" class="suggestion-action-button suggestion-redo-button suggestion-undo-button"${history.length ? "" : " disabled"} aria-label="Redo last recommendation choice" title="Redo"><span aria-hidden="true">↶</span></button><button type="button" class="suggestion-action-button suggestion-skip-button" aria-label="Skip ${escapeHtml(suggestion.name)}" title="Skip"><span aria-hidden="true">✕</span></button><button type="button" class="suggestion-action-button suggestion-include-button" aria-label="Include ${escapeHtml(suggestion.name)}" title="Include"><span aria-hidden="true">♥</span></button><button type="button" class="suggestion-action-button suggestion-favorite-button" aria-label="Favorite ${escapeHtml(suggestion.name)} and prioritize it earlier" title="Favorite"><span aria-hidden="true">★</span></button>`;
+  if (status) status.textContent = `${suggestion.name}. ${remaining} recommendations remain in ${group.label}.`;
+
+  const card = deck.querySelector(".suggestion-swipe-card");
+  hydrateSuggestionImage(card.querySelector(".suggestion-card-image"), suggestion, destinationInput.value.trim());
+  bindSuggestionSwipe(card, suggestion.key, renderToken);
+  actions.querySelector(".suggestion-skip-button")?.addEventListener("click", () => applySuggestionDecision(suggestion.key, "skip", card, renderToken));
+  actions.querySelector(".suggestion-include-button")?.addEventListener("click", () => applySuggestionDecision(suggestion.key, "include", card, renderToken));
+  actions.querySelector(".suggestion-favorite-button")?.addEventListener("click", () => applySuggestionDecision(suggestion.key, "favorite", card, renderToken));
+  actions.querySelector(".suggestion-undo-button")?.addEventListener("click", undoSuggestionDecision);
+  if (focusNextSuggestionCard) {
+    focusNextSuggestionCard = false;
+    requestAnimationFrame(() => card.focus({ preventScroll: true }));
+  }
+}
+
+function applySuggestionDecision(key, decision, card, renderToken) {
+  if (suggestionSwipeInFlight || renderToken !== suggestionDeckRenderToken) return;
+  if (!["skip", "include", "favorite"].includes(decision)) return;
+  const group = suggestionGroups[activeSuggestionCategory];
+  const position = group?.items.findIndex((item) => item.key === key) ?? -1;
+  if (!group || position < 0) return;
+  const suggestion = group.items[position];
+  const selectedValueBefore = selectedSuggestions.get(key) || null;
+  const rejectedValueBefore = rejectedSuggestions.get(key) || null;
+  suggestionDeckHistory[activeSuggestionCategory].push({ key, position, selectedValueBefore, rejectedValueBefore, suggestion });
+  if (decision !== "skip") {
+    selectedSuggestions.set(key, { ...suggestion, favorite: decision === "favorite" });
+    rejectedSuggestions.delete(key);
+  } else {
+    selectedSuggestions.delete(key);
+    rejectedSuggestions.set(key, suggestion);
+  }
+  suggestionDeckPositions[activeSuggestionCategory] = nextUnreviewedSuggestionIndex(group, position + 1);
+  suggestionSwipeInFlight = true;
+  preferenceError.textContent = "";
+  updateSelectionCount();
+  if (card) {
+    card.style.removeProperty("transform");
+    card.style.removeProperty("--include-progress");
+    card.style.removeProperty("--skip-progress");
+    card.classList.add(`show-${decision}-decision`);
+    window.setTimeout(() => card.classList.add(decision === "skip" ? "is-skipping" : decision === "favorite" ? "is-favoriting" : "is-including"), 150);
+  }
+  window.setTimeout(() => {
+    if (renderToken !== suggestionDeckRenderToken) return;
+    focusNextSuggestionCard = true;
+    renderSuggestionCategory();
+  }, 460);
+}
+
+function undoSuggestionDecision() {
+  if (suggestionSwipeInFlight) return;
+  const history = suggestionDeckHistory[activeSuggestionCategory] || [];
+  const previous = history.pop();
+  if (!previous) return;
+  if (previous.selectedValueBefore) selectedSuggestions.set(previous.key, previous.selectedValueBefore);
+  else selectedSuggestions.delete(previous.key);
+  if (previous.rejectedValueBefore) rejectedSuggestions.set(previous.key, previous.rejectedValueBefore);
+  else rejectedSuggestions.delete(previous.key);
+  const group = suggestionGroups[activeSuggestionCategory];
+  const restoredPosition = group?.items.findIndex((item) => item.key === previous.key) ?? -1;
+  suggestionDeckPositions[activeSuggestionCategory] = restoredPosition >= 0 ? restoredPosition : nextUnreviewedSuggestionIndex(group, 0);
+  focusNextSuggestionCard = true;
+  preferenceError.textContent = "";
+  renderSuggestionCategory();
+}
+
+function bindSuggestionSwipe(card, key, renderToken) {
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let deltaX = 0;
+  let deltaY = 0;
+
+  const resetCard = () => {
+    pointerId = null;
+    deltaX = 0;
+    deltaY = 0;
+    card.classList.remove("is-dragging");
+    card.style.removeProperty("transform");
+    card.style.removeProperty("--include-progress");
+    card.style.removeProperty("--skip-progress");
+  };
+  const finishGesture = () => {
+    if (pointerId === null) return;
+    const threshold = Math.min(105, card.getBoundingClientRect().width * .22);
+    const horizontalIntent = Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+    if (horizontalIntent && Math.abs(deltaX) >= threshold) {
+      const decision = deltaX > 0 ? "include" : "skip";
+      pointerId = null;
+      applySuggestionDecision(key, decision, card, renderToken);
+      return;
+    }
+    resetCard();
+  };
+
+  card.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("a, button")) return;
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    card.classList.add("is-dragging");
+    card.setPointerCapture?.(pointerId);
+  });
+  card.addEventListener("pointermove", (event) => {
+    if (pointerId !== event.pointerId) return;
+    deltaX = event.clientX - startX;
+    deltaY = event.clientY - startY;
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    const rotation = Math.max(-8, Math.min(8, deltaX / 24));
+    card.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+    const progress = String(Math.min(1, Math.abs(deltaX) / 130));
+    card.style.setProperty("--include-progress", deltaX > 0 ? progress : "0");
+    card.style.setProperty("--skip-progress", deltaX < 0 ? progress : "0");
+  });
+  card.addEventListener("pointerup", finishGesture);
+  card.addEventListener("pointercancel", resetCard);
+  card.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key.toLowerCase() !== "f") return;
+    event.preventDefault();
+    const decision = event.key === "ArrowLeft" ? "skip" : event.key === "ArrowRight" ? "include" : "favorite";
+    applySuggestionDecision(key, decision, card, renderToken);
+  });
 }
 
 function createSuggestionGroups(destination) {
@@ -1973,7 +2215,7 @@ function resolvePracticalInfo(destination = "", guide = {}) {
   return merged;
 }
 
-function buildTrip(destination, start, end, wishes, selections = [], preferences = {}) {
+function buildTrip(destination, start, end, wishes, selections = [], preferences = {}, rejectedSelections = []) {
   preferences = { pace: "balanced", party: "couple", start: "standard", evening: "flexible", transport: "transit", budget: "balanced", notes: "", ...preferences };
   const days = Math.min(Math.max(daysBetween(start, end) + 1, 1), 14);
   const ideas = parseIdeas([wishes, preferences.notes].filter(Boolean).join(", "));
@@ -2005,7 +2247,7 @@ function buildTrip(destination, start, end, wishes, selections = [], preferences
   const selectionBuckets = distributeTripSelections(selections, dayZones);
   // Reserve every traveler-selected name before adding catalog recommendations so an
   // automatic backfill can never duplicate or displace one of the user's priorities.
-  const usedRecommendedPlaces = new Set(selections.map(recommendationKey).filter(Boolean));
+  const usedRecommendedPlaces = new Set([...selections, ...rejectedSelections].map(recommendationKey).filter(Boolean));
 
   const seenRecommendations = new Set();
   const itineraryDays = dateList.map((date, index) => {
@@ -2164,7 +2406,10 @@ function recommendationKey(item = {}) {
 function distributeTripSelections(selections = [], zones = []) {
   const buckets = Array.from({ length: zones.length }, () => []);
   if (!zones.length) return buckets;
-  selections.forEach((suggestion, fallbackIndex) => {
+  const orderedSelections = selections
+    .map((suggestion, originalIndex) => ({ suggestion, originalIndex }))
+    .sort((a, b) => Number(Boolean(b.suggestion.favorite)) - Number(Boolean(a.suggestion.favorite)) || a.originalIndex - b.originalIndex);
+  orderedSelections.forEach(({ suggestion, originalIndex }) => {
     const category = ["see", "eat", "shop"].includes(suggestion.category) ? suggestion.category : "see";
     const scored = zones.map((zone, index) => ({
       index,
@@ -2176,9 +2421,12 @@ function distributeTripSelections(selections = [], zones = []) {
     const eligible = bestScore > 0 ? scored.filter((entry) => entry.score === bestScore) : scored;
     eligible.sort((a, b) => a.categoryLoad - b.categoryLoad
       || a.totalLoad - b.totalLoad
-      || Math.abs(a.index - (fallbackIndex % zones.length)) - Math.abs(b.index - (fallbackIndex % zones.length)));
-    buckets[eligible[0].index].push({ ...suggestion, category, userSelected: true });
+      || (suggestion.favorite
+        ? a.index - b.index
+        : Math.abs(a.index - (originalIndex % zones.length)) - Math.abs(b.index - (originalIndex % zones.length))));
+    buckets[eligible[0].index].push({ ...suggestion, category, userSelected: true, favorite: Boolean(suggestion.favorite) });
   });
+  buckets.forEach((bucket) => bucket.sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite))));
   return buckets;
 }
 
@@ -2216,9 +2464,10 @@ function inferMealSlot(item = {}) {
 }
 
 function createActivities(index, totalDays, ideas, destination, guide, selectedForDay = [], preferences = {}, zone = null, usedRecommendedPlaces = new Set()) {
-  const selectedSee = selectedForDay.filter((item) => item.category === "see");
-  const selectedEat = selectedForDay.filter((item) => item.category === "eat");
-  const selectedShop = selectedForDay.filter((item) => item.category === "shop");
+  const favoriteFirst = (a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite));
+  const selectedSee = selectedForDay.filter((item) => item.category === "see").sort(favoriteFirst);
+  const selectedEat = selectedForDay.filter((item) => item.category === "eat").sort(favoriteFirst);
+  const selectedShop = selectedForDay.filter((item) => item.category === "shop").sort(favoriteFirst);
   const firstSight = selectedSee.shift() || pickUnusedForZoneOrLocal(guide.attractions, zone, index * 2, "attraction", usedRecommendedPlaces);
   const secondSight = selectedSee.shift() || pickUnusedForZoneOrLocal(guide.attractions, zone, index * 2 + 1, "attraction", usedRecommendedPlaces);
   const selectedMealSlots = { breakfast: null, lunch: null, dinner: null };
@@ -2237,7 +2486,7 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
   const breakfast = selectedMealSlots.breakfast || pickUnusedForZoneOrLocal(guide.food.breakfast, zone, index, "breakfast", usedRecommendedPlaces);
   const shop = selectedShop.shift() || pickUnusedForZoneOrLocal(guide.shopping, zone, index, "shopping", usedRecommendedPlaces);
   const structuralSelections = new Set([firstSight, secondSight, breakfast, lunch, dinner, shop].filter((item) => item?.userSelected));
-  const remainingSelections = selectedForDay.filter((item) => !structuralSelections.has(item));
+  const remainingSelections = selectedForDay.filter((item) => !structuralSelections.has(item)).sort(favoriteFirst);
   const idea = ideas[index] || null;
 
   const breakfastTime = preferences.start === "early" ? "07:30" : preferences.start === "slow" ? "10:00" : "08:30";
@@ -2245,7 +2494,7 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
   const dinnerTime = preferences.evening === "quiet" ? "18:30" : preferences.evening === "nightlife" ? "20:00" : "19:30";
   const zoneNote = zone ? `Today stays centered on ${zone.name}, minimizing cross-city travel.` : "Today follows one compact district.";
   const routeNote = preferences.transport === "low-walking" ? `${zoneNote} Keep walking segments short and use door-to-door transport.` : preferences.transport === "mixed" ? `${zoneNote} Use transit for the main route and a taxi when it saves energy.` : `${zoneNote} Connect nearby stops by walking and public transit.`;
-  const priorityNote = (item) => item?.userSelected ? " Prioritized from your Adventure selections." : "";
+  const priorityNote = (item) => item?.favorite ? " Favorite from your Adventure selections; scheduled before ordinary picks when the route allows." : item?.userSelected ? " Prioritized from your Adventure selections." : "";
   const breakfastActivity = activity("Eat", "☕", breakfastTime, `Breakfast: ${breakfast.name}`, `${breakfast.detail} ${areaText(breakfast)} Allow at least 60 minutes.${priorityNote(breakfast)}`, "Recommended", breakfast);
   const firstSightActivity = activity(index === 0 ? "Arrival" : "See", index === 0 ? "🧳" : "🏛️", morningTime, firstSight.name, `${firstSight.detail} ${areaText(firstSight)} Allow about 2–3 hours including nearby streets. ${routeNote}${priorityNote(firstSight)}`, "Recommended", firstSight);
   const lunchActivity = activity("Eat", "🍽️", "12:30", `Lunch: ${lunch.name}`, `${lunch.detail} ${areaText(lunch)} Allow about 90 minutes, including possible queues, and check current opening days.${priorityNote(lunch)}`, "Recommended", lunch);
@@ -2254,6 +2503,8 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
   const shopActivity = activity("Shop", "🛍️", "17:00", shop.name, `${shop.detail} ${areaText(shop)} Allow time to browse without crossing the city.${priorityNote(shop)}`, "Recommended", shop);
   secondSightActivity._userPriority = Boolean(secondSight.userSelected);
   shopActivity._userPriority = Boolean(shop.userSelected);
+  secondSightActivity._favoritePriority = Boolean(secondSight.favorite);
+  shopActivity._favoritePriority = Boolean(shop.favorite);
   const flexiblePlaceActivities = shop.userSelected && !secondSight.userSelected
     ? [shopActivity, secondSightActivity]
     : [secondSightActivity, shopActivity];
@@ -2429,7 +2680,9 @@ function scheduleDayActivities(activities, preferences = {}) {
   const desiredEnd = Math.round(({ quiet: 20.5, flexible: 21.5, nightlife: 23 }[preferences.evening] ?? 21.5) * 60);
   if (cursor > desiredEnd) {
     const removableCandidates = [...output].reverse().filter((item) => !item.anchor && !/confirmed/i.test(String(item.status || "")) && !["Booking", "Must do"].includes(item.type));
-    const removable = removableCandidates.find((item) => !item._userPriority) || removableCandidates[0];
+    const removable = removableCandidates.find((item) => !item._userPriority && !item._favoritePriority)
+      || removableCandidates.find((item) => !item._favoritePriority)
+      || removableCandidates[0];
     if (removable) return scheduleDayActivities(input.filter((item) => item._order !== removable._order), preferences);
   }
 
@@ -2442,6 +2695,7 @@ function scheduleDayActivities(activities, preferences = {}) {
     delete item._order;
     delete item._requestedTime;
     delete item._userPriority;
+    delete item._favoritePriority;
   });
   return output;
 }
@@ -2455,7 +2709,13 @@ function fillFullDay(activities, target, seen, destination, date, preferences, z
   const buffer = travelBufferMinutes(preferences);
   const isAnchor = (item) => Boolean(item.anchor);
   const anchors = activities.filter(isAnchor);
-  const flex = activities.filter((item) => !isAnchor(item));
+  const flex = activities
+    .filter((item) => !isAnchor(item))
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .sort((a, b) => Number(Boolean(b.item._favoritePriority)) - Number(Boolean(a.item._favoritePriority))
+      || Number(Boolean(b.item._userPriority)) - Number(Boolean(a.item._userPriority))
+      || a.originalIndex - b.originalIndex)
+    .map((entry) => entry.item);
   const kept = [...anchors];
   let usedMinutes = anchors.reduce((sum, item) => sum + estimateActivityMinutes(item), 0) + Math.max(0, anchors.length - 1) * buffer;
   const addIfFits = (item) => {
@@ -2467,7 +2727,7 @@ function fillFullDay(activities, target, seen, destination, date, preferences, z
     return true;
   };
   for (const item of flex) {
-    if (!addIfFits(item)) break;
+    addIfFits(item);
   }
   const slots = preferences.start === "slow" ? ["12:45", "14:00", "15:45", "17:15", "18:30", "21:00", "22:15"] : ["09:15", "10:45", "13:45", "16:00", "17:30", "18:30", "21:00", "22:15"];
   let index = 0;
@@ -2512,9 +2772,10 @@ function suggestionToActivity(suggestion, index) {
   const selectedDetail = [suggestion.detail, suggestion.area ? `Area: ${suggestion.area}.` : "",
     suggestion.rating ? `Google rating: ${suggestion.rating}.` : "", suggestion.cuisine ? `Cuisine: ${suggestion.cuisine}.` : "",
     suggestion.order ? `What to order: ${suggestion.order}.` : "", suggestion.bestFor ? `Known for: ${suggestion.bestFor}.` : "",
-    suggestion.address ? `Address: ${suggestion.address}.` : "", "Prioritized from your survey selection."].filter(Boolean).join(" ");
+    suggestion.address ? `Address: ${suggestion.address}.` : "", suggestion.favorite ? "Favorite from your Adventure selections; schedule this before ordinary picks when the route allows." : "Prioritized from your survey selection."].filter(Boolean).join(" ");
   const item = activity(type, icon, time, suggestion.name, selectedDetail, "Recommended", suggestion);
   item._userPriority = Boolean(suggestion.userSelected);
+  item._favoritePriority = Boolean(suggestion.favorite);
   return item;
 }
 
@@ -2533,7 +2794,7 @@ function timeToMinutes(value) {
 
 function activity(type, icon, time, title, description, status = "Recommended", metadata = {}) {
   const item = { type, icon, time, title, description, status };
-  ["area", "address", "lat", "lon", "image", "sourceLabel", "sourceUrl", "sourceId", "sourceLicense", "sourceAttribution", "researchPrompt"].forEach((key) => {
+  ["area", "address", "lat", "lon", "image", "sourceLabel", "sourceUrl", "sourceId", "sourceLicense", "sourceAttribution", "researchPrompt", "favorite"].forEach((key) => {
     if (metadata?.[key] !== undefined && metadata?.[key] !== null && metadata?.[key] !== "") item[key] = metadata[key];
   });
   return item;
@@ -4119,6 +4380,7 @@ function restoreSavedTrip() {
     wishListInput.value = trip.wishes || "";
     setTripPreferences(trip.preferences || {});
     selectedSuggestions.clear();
+    rejectedSuggestions.clear();
     activeDay = 0;
     activeTab = "home";
     builder.hidden = true;
@@ -4140,16 +4402,20 @@ function restoreSavedTrip() {
   wishListInput.value = saved.wishes || "";
   setTripPreferences(saved.preferences || {});
   selectedSuggestions.clear();
+  rejectedSuggestions.clear();
   (saved.selections || []).forEach((suggestion) => {
     if (suggestion && suggestion.key) selectedSuggestions.set(suggestion.key, suggestion);
   });
+  (saved.rejectedSelections || []).forEach((suggestion) => {
+    if (suggestion && suggestion.key) rejectedSuggestions.set(suggestion.key, suggestion);
+  });
 
-  if (!saved.destination || !saved.start || !saved.end || (!saved.wishes && !selectedSuggestions.size)) return;
+  if (!saved.destination || !saved.start || !saved.end) return;
   const start = parseDate(saved.start);
   const end = parseDate(saved.end);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return;
 
-  trip = buildTrip(saved.destination.trim(), start, end, saved.wishes.trim(), [...selectedSuggestions.values()], saved.preferences || {});
+  trip = buildTrip(saved.destination.trim(), start, end, saved.wishes.trim(), [...selectedSuggestions.values()], saved.preferences || {}, [...rejectedSuggestions.values()]);
   activeDay = 0;
   activeTab = "home";
   builder.hidden = true;

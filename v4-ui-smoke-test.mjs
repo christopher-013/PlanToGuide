@@ -25,7 +25,8 @@ assert.match(script, /function undoSuggestionDecision\(/, "The deck must support
 assert.match(script, /const rejectedSuggestions = new Map\(\)/, "Skipped recommendations must have explicit exclusion state");
 assert.match(script, /\[\.\.\.selections, \.\.\.rejectedSelections\]\.map\(recommendationKey\)/, "Automatic itinerary backfill must honor skipped recommendations");
 assert.match(script, /rejectedSuggestions\.set\(key, suggestion\)/, "A left decision must record the recommendation as rejected");
-assert.match(script, /rejectedSuggestions\.delete\(previous\.key\)/, "Undo must restore recommendation exclusion state");
+assert.match(script, /rejectedValueBefore\s*=\s*rejectedSuggestions\.get\(key\)/, "History must preserve the exact prior rejection value");
+assert.match(script, /previous\.rejectedValueBefore[\s\S]{0,100}?rejectedSuggestions\.set\(previous\.key, previous\.rejectedValueBefore\)/, "Redo must restore the exact prior rejection value");
 assert.match(script, /rejectedSelections, preferences/, "Saved drafts must retain skipped recommendations");
 assert.match(script, /form\.reset\(\);[\s\S]{0,180}?resetSuggestionDeckState\(\);/, "New Trip must reset deck review history");
 assert.match(script, /addEventListener\("pointerdown"/, "The deck must support pointer and touch swipes");
@@ -64,6 +65,7 @@ assert.match(script, /--include-progress/, "Rightward dragging must control only
 
 assert.match(applyDecisionSource, /decision\s*===\s*["']favorite["']/, "Favorite must be a first-class deck decision");
 assert.match(applyDecisionSource, /favorite\s*:\s*(?:decision\s*===\s*["']favorite["']|true)/, "Favorite decisions must persist priority on the selected suggestion");
+assert.match(applyDecisionSource, /selectedValueBefore\s*=\s*selectedSuggestions\.get\(key\)/, "Redo must preserve exact prior selection state, including Favorite");
 assert.match(distributeSelectionsSource, /favorite/, "Itinerary distribution must inspect favorite priority");
 assert.match(distributeSelectionsSource, /\.sort\(/, "Itinerary distribution must order selected recommendations by priority");
 assert.match(createActivitiesSource, /favorite/, "Activity placement must preserve favorite priority within each day");

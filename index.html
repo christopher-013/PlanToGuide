@@ -26,7 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@600&display=swap" rel="stylesheet">
   <link rel="icon" href="plan-x-guide-centered-compass-morph-clean-x.svg" type="image/svg+xml">
   <!-- When releasing, update the version string in version.js AND the ?v= value below — they must match. -->
-  <link rel="stylesheet" href="styles.css?v=3.7.6">
+  <link rel="stylesheet" href="styles.css?v=4.0.0">
 </head>
 <body>
   <main class="page-shell">
@@ -39,14 +39,14 @@
       <button class="text-button" id="newTripButton" type="button">New trip</button>
     </header>
 
-    <section class="builder" id="builder" aria-labelledby="builderTitle">
-      <div class="builder-copy">
+    <section class="builder" id="builder" aria-label="PlanToGuide trip builder">
+      <div class="builder-copy start-splash" id="startSplash" role="region" aria-labelledby="builderTitle" aria-describedby="startSplashDescription" hidden>
         <div class="builder-hero-lockup">
           <a class="builder-brand home-brand-lockup" href="#" aria-label="PlanToGuide home"><span aria-hidden="true"><img src="plan-x-guide-centered-compass-morph-clean-x.svg" alt=""></span><strong class="home-brand-wordmark" aria-hidden="true"><span class="home-brand-plan">PLAN</span><span class="home-brand-to">TO</span><span class="home-brand-guide">GUIDE</span></strong></a>
           <div class="builder-hero-message">
             <p class="eyebrow">Trip website builder · Free browser mode</p>
             <h1 id="builderTitle">Turn your trip <strong class="hero-brand-word hero-brand-plan">PLAN</strong> <strong class="hero-brand-word hero-brand-to">TO</strong> a<br>mobile travel <strong class="hero-brand-word hero-brand-guide">GUIDE.</strong></h1>
-            <p class="lede homepage-tagline">Create a shareable trip website, printable itinerary, and AI-ready planning file for your next trip.</p>
+            <p class="lede homepage-tagline" id="startSplashDescription">Create a shareable trip website, printable itinerary, and AI-ready planning file for your next trip.</p>
           </div>
         </div>
         <div class="journey-line" aria-hidden="true">
@@ -59,6 +59,10 @@
         <div class="trust-note">
           <span class="avatar-stack" aria-hidden="true"><i>🌊</i><i>🌿</i><i>🏛️</i></span>
           <span>Built for curious travelers, not tour groups.</span>
+        </div>
+        <div class="start-splash-actions">
+          <button class="start-splash-continue" id="startSplashContinue" type="button">Start planning <span aria-hidden="true">→</span></button>
+          <span class="start-splash-progress" aria-hidden="true"><i></i></span>
         </div>
       </div>
 
@@ -419,12 +423,12 @@
     </article>
   </template>
 
-  <script src="version.js?v=3.7.6"></script>
-  <script src="dynamic-catalog.js?v=3.7.6"></script>
-  <script src="export-styles.js?v=3.7.6"></script>
-  <script src="icon-source.js?v=3.7.6"></script>
-  <script src="photo-store.js?v=3.7.6"></script>
-  <script src="trip-schema.js?v=3.7.6"></script>
-  <script src="app.js?v=3.7.6"></script>
+  <script src="version.js?v=4.0.0"></script>
+  <script src="dynamic-catalog.js?v=4.0.0"></script>
+  <script src="export-styles.js?v=4.0.0"></script>
+  <script src="icon-source.js?v=4.0.0"></script>
+  <script src="photo-store.js?v=4.0.0"></script>
+  <script src="trip-schema.js?v=4.0.0"></script>
+  <script src="app.js?v=4.0.0"></script>
 </body>
 </html>
