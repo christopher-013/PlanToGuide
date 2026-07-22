@@ -1,5 +1,10 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.2.8 creation animation: cream canvas, cards around the words
+
+- The post-Step-4 creation animation returns to a **cream background** (from the dark navy of v4.2.1).
+- The five "what we create" cards now fade in at **distributed spots around the centered logo + brand line** — two above the words and three below — instead of stacking in a single spot. Verified at desktop that the cards sit clear of the words with no overlap; phones stack them two-above / three-below.
+
 ## v4.2.7 real suggestions lead the deck (far fewer placeholders)
 
 - **The Adventure deck was padding every category to a fixed 20 with generic filler cards** ("Kyoto neighborhood café", "top-rated local restaurant", ...) even when plenty of real researched places existed. Now real, researched places always lead; generic discovery cards only pad a genuinely thin destination up to a small minimum (6), never to 20. Placeholder detection also covers older precomputed fillers.
