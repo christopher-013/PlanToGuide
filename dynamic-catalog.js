@@ -703,11 +703,11 @@
   nwr(around:${radius},${lat},${lon})["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|marketplace)$"]["name"];
   nwr(around:${radius},${lat},${lon})["shop"~"^(bakery|mall|department_store|boutique|clothes|gift|books|art|antiques|jewelry|supermarket)$"]["name"];
 );
-out center tags 80;`;
+out center tags 120;`;
     const data = await fetchOverpass(query, signal);
     return dedupeItems((data?.elements || []).map((element) => osmToDynamicItem(element, destination, geocode)).filter(Boolean))
       .sort((a, b) => (Number(b.osmScore || 0) + tourismScore(b, destination)) - (Number(a.osmScore || 0) + tourismScore(a, destination)))
-      .slice(0, 40);
+      .slice(0, 60);
   }
 
   const TOURISM_KEYWORD_WEIGHTS = new Map([
@@ -904,7 +904,7 @@ out center tags 80;`;
     Object.keys(food).forEach((bucket) => {
       let guard = 0;
       while (food[bucket].length < 3 && guard < 12) { pushUnique(bucket, filler[bucket][guard % filler[bucket].length]); guard += 1; }
-      food[bucket] = food[bucket].slice(0, 6);
+      food[bucket] = food[bucket].slice(0, 9);
     });
     return food;
   }
@@ -1037,8 +1037,8 @@ out center tags 80;`;
       if (see.length >= 4) break;
       see.push(toPlace(fallback, fallbackArea));
     }
-    const eatItems = items.filter((item) => item.type === "eat").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), cuisine: item.cuisine || "Local cuisine", order: item.order || "Check the current menu and signature dishes." }));
-    const buy = items.filter((item) => item.type === "buy").slice(0, 18).map((item) => ({ ...toPlace(item, fallbackArea), bestFor: item.bestFor || "Local shopping, gifts, and browsing" }));
+    const eatItems = items.filter((item) => item.type === "eat").slice(0, 28).map((item) => ({ ...toPlace(item, fallbackArea), cuisine: item.cuisine || "Local cuisine", order: item.order || "Check the current menu and signature dishes." }));
+    const buy = items.filter((item) => item.type === "buy").slice(0, 28).map((item) => ({ ...toPlace(item, fallbackArea), bestFor: item.bestFor || "Local shopping, gifts, and browsing" }));
     const fillerImage = seeded.banner || [...see, ...eatItems, ...buy].find((item) => item.image)?.image || NEUTRAL_BANNER_PLACEHOLDER;
     const food = distributeFoodItems(eatItems, destination, fallbackArea);
     const zones = see.slice(0, 8).map((item, index) => ({

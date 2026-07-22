@@ -2021,25 +2021,34 @@ function createSuggestionGroups(destination) {
       attempts += 1;
     }
   };
-  addDiscoveryIdeas(see, "see", [
-    { name: "landmark walk", detail: "A compact route linking the neighborhood’s defining architecture, public spaces, and most-photographed viewpoints." },
-    { name: "museum or cultural highlight", detail: "A well-reviewed cultural stop that explains the area’s art, history, or contemporary identity." },
-    { name: "park and scenic viewpoint", detail: "A popular outdoor pause chosen for atmosphere, photography, and a broader sense of the district." }
-  ], 20);
-  addDiscoveryIdeas(eat, "eat", [
-    { name: "top-rated local restaurant", detail: "A highly reviewed neighborhood option; use the live Maps listing to compare current rating, hours, and reservations.", meta: "Regional cuisine" },
-    { name: "popular casual lunch", detail: "A busy local favorite suited to the day’s route, with a shorter service time and a signature neighborhood dish.", meta: "Casual local cuisine" },
-    { name: "specialty café or bakery", detail: "A well-liked coffee, pastry, or dessert stop that works naturally between nearby sights.", meta: "Café and bakery" }
-  ], 20);
-  addDiscoveryIdeas(shop, "shop", [
-    { name: "independent shopping street", detail: "A walkable cluster of local boutiques and small businesses rather than a single isolated store.", meta: "Local fashion, design, books, and gifts" },
-    { name: "market and specialty shops", detail: "A popular place to browse regional products and useful souvenirs while staying inside the day’s neighborhood.", meta: "Food gifts, crafts, and regional specialties" },
-    { name: "design and vintage district", detail: "A neighborhood shopping circuit known for distinctive independent finds and browsing.", meta: "Vintage, design, and independent labels" }
-  ], 20);
+  // Real, researched places always lead the deck. Generic "discovery" ideas only pad a
+  // thin destination up to a small minimum so the deck is never nearly empty — never to a
+  // fixed 20. A place with real research (or a real source) is never a placeholder.
+  const MIN_DECK_ITEMS = 6;
+  const MAX_DECK_ITEMS = 20;
+  const assembleGroup = (items, category, templates) => {
+    const group = items.filter((item) => !isPlaceholderPlace(item)).slice(0, MAX_DECK_ITEMS);
+    const placeholders = items.filter((item) => isPlaceholderPlace(item));
+    for (let i = 0; i < placeholders.length && group.length < MIN_DECK_ITEMS; i += 1) group.push(placeholders[i]);
+    if (group.length < MIN_DECK_ITEMS) addDiscoveryIdeas(group, category, templates, MIN_DECK_ITEMS);
+    return group.slice(0, MAX_DECK_ITEMS);
+  };
   return [
-    { label: "Places to see", icon: "🏛️", items: see.slice(0, 20) },
-    { label: "Places to eat", icon: "🍽️", items: eat.slice(0, 20) },
-    { label: "Places to shop", icon: "🛍️", items: shop.slice(0, 20) }
+    { label: "Places to see", icon: "🏛️", items: assembleGroup(see, "see", [
+      { name: "landmark walk", detail: "A compact route linking the neighborhood’s defining architecture, public spaces, and most-photographed viewpoints." },
+      { name: "museum or cultural highlight", detail: "A well-reviewed cultural stop that explains the area’s art, history, or contemporary identity." },
+      { name: "park and scenic viewpoint", detail: "A popular outdoor pause chosen for atmosphere, photography, and a broader sense of the district." }
+    ]) },
+    { label: "Places to eat", icon: "🍽️", items: assembleGroup(eat, "eat", [
+      { name: "top-rated local restaurant", detail: "A highly reviewed neighborhood option; use the live Maps listing to compare current rating, hours, and reservations.", meta: "Regional cuisine" },
+      { name: "popular casual lunch", detail: "A busy local favorite suited to the day’s route, with a shorter service time and a signature neighborhood dish.", meta: "Casual local cuisine" },
+      { name: "specialty café or bakery", detail: "A well-liked coffee, pastry, or dessert stop that works naturally between nearby sights.", meta: "Café and bakery" }
+    ]) },
+    { label: "Places to shop", icon: "🛍️", items: assembleGroup(shop, "shop", [
+      { name: "independent shopping street", detail: "A walkable cluster of local boutiques and small businesses rather than a single isolated store.", meta: "Local fashion, design, books, and gifts" },
+      { name: "market and specialty shops", detail: "A popular place to browse regional products and useful souvenirs while staying inside the day’s neighborhood.", meta: "Food gifts, crafts, and regional specialties" },
+      { name: "design and vintage district", detail: "A neighborhood shopping circuit known for distinctive independent finds and browsing.", meta: "Vintage, design, and independent labels" }
+    ]) }
   ];
 }
 

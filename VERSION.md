@@ -1,5 +1,11 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.2.7 real suggestions lead the deck (far fewer placeholders)
+
+- **The Adventure deck was padding every category to a fixed 20 with generic filler cards** ("Kyoto neighborhood café", "top-rated local restaurant", ...) even when plenty of real researched places existed. Now real, researched places always lead; generic discovery cards only pad a genuinely thin destination up to a small minimum (6), never to 20. Placeholder detection also covers older precomputed fillers.
+- **Surfaces more real places** from the existing keyless sources (OpenStreetMap + Wikivoyage + Wikipedia): the OSM fetch keeps more results (120→60 ranked) and the per-slot dining/shopping caps were raised, so well-covered cities fill the deck with real names.
+- Result for Kyoto (fully dynamic): See 20/20 real, Eat 19 real (was 13 real + 7 fillers), Shop 9/9 real — zero placeholders. Thin destinations still get a usable deck, padded only up to the minimum.
+
 ## v4.2.6 preloaded + always-present suggestion images
 
 - **Preloads the next few cards' images.** When a recommendation card is shown, the next 3 unreviewed cards (see/eat/shop) have their images resolved and their pixels preloaded in the background, so advancing the deck shows the photo immediately instead of a placeholder-then-image flash.
