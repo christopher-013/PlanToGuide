@@ -869,33 +869,41 @@ out center tags 80;`;
       assigned.add(key);
       return true;
     };
+    // Café/bakery -> breakfast; markets & food halls -> lunch; explicit fine-dining -> dinner.
+    // Everything else is a general restaurant that works equally for lunch OR dinner, so
+    // spread those across lunch and dinner (least-filled first) instead of dumping them all
+    // into dinner — otherwise lunch is left with only generic filler.
+    const flexible = [];
     eatItems.forEach((item) => {
       const text = `${item.name} ${item.cuisine || ""} ${item.detail || ""}`.toLowerCase();
       if (/cafe|coffee|bakery|brunch|breakfast|pastry|donut|bagel/.test(text)) pushUnique("breakfast", item);
-      else if (/market|food hall|food court|fast food|taco|sandwich|burger|noodle|ramen|pizza/.test(text)) pushUnique("lunch", item);
-      else pushUnique("dinner", item);
+      else if (/food hall|food court|marketplace|market|hawker|fast food/.test(text)) pushUnique("lunch", item);
+      else if (/fine dining|steakhouse|izakaya|wine bar|tasting menu|bistro|trattoria|fine-dining/.test(text)) pushUnique("dinner", item);
+      else flexible.push(item);
     });
-    eatItems.forEach((item, index) => pushUnique(["breakfast", "lunch", "dinner"][index % 3], item));
+    flexible.forEach((item) => {
+      pushUnique(food.lunch.length <= food.dinner.length ? "lunch" : "dinner", item);
+    });
     const filler = {
       breakfast: [
-        { name: `${destination} neighborhood café`, area: fallbackArea, detail: "Use live Maps research to choose a highly rated breakfast spot near the day’s route.", cuisine: "Café and local breakfast", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} bakery breakfast stop`, area: fallbackArea, detail: "Look for a popular bakery or coffee shop near the morning neighborhood and verify current hours.", cuisine: "Bakery and coffee", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} brunch option`, area: fallbackArea, detail: "Research a well-reviewed brunch spot that fits your group size and morning timing.", cuisine: "Brunch", sourceLabel: "PlanToGuide", sourceUrl: "" }
+        { name: `${destination} neighborhood café`, area: fallbackArea, detail: "Use live Maps research to choose a highly rated breakfast spot near the day’s route.", cuisine: "Café and local breakfast", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} bakery breakfast stop`, area: fallbackArea, detail: "Look for a popular bakery or coffee shop near the morning neighborhood and verify current hours.", cuisine: "Bakery and coffee", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} brunch option`, area: fallbackArea, detail: "Research a well-reviewed brunch spot that fits your group size and morning timing.", cuisine: "Brunch", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true }
       ],
       lunch: [
-        { name: `${destination} local lunch favorite`, area: fallbackArea, detail: "Choose a well-reviewed lunch stop near the day’s sights and verify current hours.", cuisine: "Regional cuisine", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} market lunch stop`, area: fallbackArea, detail: "Find a food hall, public market, or casual counter-service option that works for flexible groups.", cuisine: "Market and casual dining", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} casual neighborhood meal`, area: fallbackArea, detail: "Pick a practical lunch with short travel time and a current menu that fits dietary needs.", cuisine: "Casual local food", sourceLabel: "PlanToGuide", sourceUrl: "" }
+        { name: `${destination} local lunch favorite`, area: fallbackArea, detail: "Choose a well-reviewed lunch stop near the day’s sights and verify current hours.", cuisine: "Regional cuisine", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} market lunch stop`, area: fallbackArea, detail: "Find a food hall, public market, or casual counter-service option that works for flexible groups.", cuisine: "Market and casual dining", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} casual neighborhood meal`, area: fallbackArea, detail: "Pick a practical lunch with short travel time and a current menu that fits dietary needs.", cuisine: "Casual local food", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true }
       ],
       dinner: [
-        { name: `${destination} dinner reservation option`, area: fallbackArea, detail: "Research a dinner spot that matches your budget, dietary needs, and route.", cuisine: "Local dinner", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} special dinner pick`, area: fallbackArea, detail: "Look for a memorable dinner option near the evening plan and confirm reservations.", cuisine: "Dinner", sourceLabel: "PlanToGuide", sourceUrl: "" },
-        { name: `${destination} relaxed evening restaurant`, area: fallbackArea, detail: "Choose a lower-stress dinner close to the final stop or home base.", cuisine: "Relaxed dinner", sourceLabel: "PlanToGuide", sourceUrl: "" }
+        { name: `${destination} dinner reservation option`, area: fallbackArea, detail: "Research a dinner spot that matches your budget, dietary needs, and route.", cuisine: "Local dinner", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} special dinner pick`, area: fallbackArea, detail: "Look for a memorable dinner option near the evening plan and confirm reservations.", cuisine: "Dinner", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true },
+        { name: `${destination} relaxed evening restaurant`, area: fallbackArea, detail: "Choose a lower-stress dinner close to the final stop or home base.", cuisine: "Relaxed dinner", sourceLabel: "PlanToGuide", sourceUrl: "", researchPrompt: true }
       ]
     };
     Object.keys(food).forEach((bucket) => {
-      let index = 0;
-      while (food[bucket].length < 3) pushUnique(bucket, filler[bucket][index++ % filler[bucket].length]);
+      let guard = 0;
+      while (food[bucket].length < 3 && guard < 12) { pushUnique(bucket, filler[bucket][guard % filler[bucket].length]); guard += 1; }
       food[bucket] = food[bucket].slice(0, 6);
     });
     return food;

@@ -2623,6 +2623,25 @@ function distributeTripSelections(selections = [], zones = []) {
   return buckets;
 }
 
+// A place is a generic placeholder if it's flagged researchPrompt or is a
+// PlanToGuide-generated filler (label "PlanToGuide" with no real source URL) — the
+// latter covers older precomputed catalogs whose fillers predate the researchPrompt flag.
+function isPlaceholderPlace(item) {
+  return !item || item.researchPrompt === true || (item.sourceLabel === "PlanToGuide" && !item.sourceUrl);
+}
+
+// Pick an unused *real* place (never a generic placeholder) for the zone, or null when
+// the list has no unused real entries.
+function pickUnusedRealForZone(items, zone, fallbackIndex, usedNames) {
+  const available = (Array.isArray(items) ? items : []).filter((item) => !isPlaceholderPlace(item) && !usedNames.has(recommendationKey(item)));
+  const selected = pickForZone(available, zone, fallbackIndex);
+  if (selected) {
+    usedNames.add(recommendationKey(selected));
+    return selected;
+  }
+  return null;
+}
+
 function pickUnusedForZoneOrLocal(items, zone, fallbackIndex, kind, usedNames) {
   const available = (Array.isArray(items) ? items : []).filter((item) => !usedNames.has(recommendationKey(item)));
   const selected = pickForZone(available, zone, fallbackIndex);
@@ -2674,9 +2693,20 @@ function createActivities(index, totalDays, ideas, destination, guide, selectedF
   // same-slot choices remain high-priority flexible food stops rather than being
   // mislabeled as breakfast or dinner.
   if (!selectedMealSlots.lunch && flexibleSelectedMeals.length) selectedMealSlots.lunch = flexibleSelectedMeals.shift();
-  const lunch = selectedMealSlots.lunch || pickUnusedForZoneOrLocal(guide.food.lunch, zone, index, "lunch", usedRecommendedPlaces);
-  const dinner = selectedMealSlots.dinner || pickUnusedForZoneOrLocal(guide.food.dinner, zone, index, "dinner", usedRecommendedPlaces);
-  const breakfast = selectedMealSlots.breakfast || pickUnusedForZoneOrLocal(guide.food.breakfast, zone, index, "breakfast", usedRecommendedPlaces);
+  // Pool all real (non-placeholder) dining so a slot whose own list is exhausted can still
+  // get a real restaurant — e.g. a real dinner spot used for lunch — before any generic
+  // filler. Own lists are tried first; the shared pool then fills gaps (dinner prioritized);
+  // only then does a slot fall back to a "local lunch favorite"-style placeholder.
+  const realDiningPool = [...(guide.food.breakfast || []), ...(guide.food.lunch || []), ...(guide.food.dinner || [])].filter((item) => !isPlaceholderPlace(item));
+  let breakfastPick = selectedMealSlots.breakfast || pickUnusedRealForZone(guide.food.breakfast, zone, index, usedRecommendedPlaces);
+  let lunchPick = selectedMealSlots.lunch || pickUnusedRealForZone(guide.food.lunch, zone, index, usedRecommendedPlaces);
+  let dinnerPick = selectedMealSlots.dinner || pickUnusedRealForZone(guide.food.dinner, zone, index, usedRecommendedPlaces);
+  dinnerPick = dinnerPick || pickUnusedRealForZone(realDiningPool, zone, index, usedRecommendedPlaces);
+  lunchPick = lunchPick || pickUnusedRealForZone(realDiningPool, zone, index, usedRecommendedPlaces);
+  breakfastPick = breakfastPick || pickUnusedRealForZone(realDiningPool, zone, index, usedRecommendedPlaces);
+  const breakfast = breakfastPick || pickUnusedForZoneOrLocal([], zone, index, "breakfast", usedRecommendedPlaces);
+  const lunch = lunchPick || pickUnusedForZoneOrLocal([], zone, index, "lunch", usedRecommendedPlaces);
+  const dinner = dinnerPick || pickUnusedForZoneOrLocal([], zone, index, "dinner", usedRecommendedPlaces);
   const shop = selectedShop.shift() || pickUnusedForZoneOrLocal(guide.shopping, zone, index, "shopping", usedRecommendedPlaces);
   const structuralSelections = new Set([firstSight, secondSight, breakfast, lunch, dinner, shop].filter((item) => item?.userSelected));
   const remainingSelections = selectedForDay.filter((item) => !structuralSelections.has(item)).sort(favoriteFirst);

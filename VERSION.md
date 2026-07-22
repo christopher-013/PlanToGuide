@@ -1,5 +1,11 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.2.3 fewer generic "places to eat" placeholders
+
+- **Root cause fix (research):** the dining splitter sent every restaurant without a "café" or "market" keyword straight to dinner, so a destination's general restaurants all piled into dinner and lunch/breakfast were left with generic filler. General restaurants (which work for either meal) are now spread across lunch and dinner, so each meal gets real places. Applies to new research and the deploy-time precomputed catalogs.
+- **Itinerary fix (pooling):** each day now pools all real (non-placeholder) dining across breakfast/lunch/dinner, so a slot whose own list is exhausted borrows a real restaurant (e.g. a real dinner spot for lunch) before falling back to a "local lunch favorite"-style placeholder. Also recognizes older precomputed fillers (PlanToGuide-labeled, no source) as placeholders so they're replaced by real places when available.
+- Verified: a dinner-heavy Manila-style catalog now fills breakfast/lunch/dinner with real places instead of placeholders; curated cities (London) still show all-real meals with zero placeholders.
+
 ## v4.2.2 remove free-text "what to see, eat, shop" field
 
 - Removes the optional "What do you want to see, eat, and shop for?" free-text field from Travel style — the Adventure swipe deck and the quick-pick chips already capture these preferences. Reading and restoring the old value is guarded, so existing saved/imported drafts still load.
