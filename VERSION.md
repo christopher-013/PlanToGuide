@@ -1,5 +1,13 @@
 # Adtona — Version 5 UI working copy
 
+## v5.1.0 sharper suggestions, a photo on every card, faster results
+
+- **Wikivoyage places now arrive with a real photo for free** — the listing's `image=` becomes a Commons `Special:FilePath` thumbnail (no extra API call). Combined with the Wikipedia photos already captured, most "see"/"shop" places show a real image with zero per-card lookups.
+- **Precomputed catalogs now bake in eat/shop (and imageless sights) photos** — the deploy-time build resolves a representative Commons photo per place using a global keyword cache (so shared keywords like "sushi"/"shopping mall" are fetched once for the whole build). Top destinations show a real photo instantly, with no runtime image lookup.
+- **Faster image resolution for restaurants/shops** — they no longer waste a Wikipedia name-search (they almost never have an article); resolution goes straight to the Commons name match and the representative photo, cutting a request per card and easing rate limits.
+- **Progressive deck render** — the deck no longer waits for the slowest source. The "See" deck (Wikipedia, with photos) renders as soon as the fast sources resolve, then OpenStreetMap folds in eat/shop when it lands. The re-render preserves your place in the deck.
+- **More aggressive image warming** — the first images of every category are warmed the instant research resolves (and lookahead prefetch went 3 → 5), so opening cards and tab switches show a real photo without a placeholder flash.
+
 ## v5.0.0 rebrand to Adtona
 
 - **The app is now Adtona** — from the Filipino *"Adto na"* ("go now"). The name, tagline, logo, app icons, favicon, PWA manifest, page metadata (title/description/social cards), and all in-product copy are rebranded from PlanToGuide to Adtona.

@@ -556,18 +556,31 @@ async function ensureDynamicCatalog(destination, options = {}) {
     }
   }
   if (!geocode) return null;
-  try {
-    const catalog = await buildDynamicCatalog(destination, { geocode });
-    if (!catalog) {
-      console.warn("Adtona dynamic catalog fallback: no usable public-source listings for", destination);
-      return null;
-    }
+  const applyDynamicCatalog = (catalog) => {
+    if (!catalog) return null;
     if (!(catalog.match instanceof RegExp)) catalog.match = new RegExp(catalog.matchPattern || `^(?:${destination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})$`, catalog.matchFlags || "iu");
     const existingIndex = destinationCatalogs.findIndex((candidate) => candidate.dynamic && candidate.label === catalog.label);
     if (existingIndex >= 0) destinationCatalogs.splice(existingIndex, 1, catalog);
     else destinationCatalogs.push(catalog);
     updateDestinationModeBadge();
     return catalog;
+  };
+  try {
+    const catalog = await buildDynamicCatalog(destination, {
+      geocode,
+      // Progressive render: apply and show the early (See-led) deck as soon as the fast
+      // Wikimedia sources resolve, then the full result (with OSM eat/shop) replaces it below.
+      onPartial: (partial) => {
+        if (applyDynamicCatalog(partial) && currentFormStep >= 2 && destinationInput.value.trim() === destination) {
+          renderSuggestionPicker(destination);
+        }
+      }
+    });
+    if (!catalog) {
+      console.warn("Adtona dynamic catalog fallback: no usable public-source listings for", destination);
+      return null;
+    }
+    return applyDynamicCatalog(catalog);
   } catch (_) {
     console.warn("Adtona dynamic catalog fallback: public-source research failed for", destination);
     return null;
@@ -1739,6 +1752,9 @@ function renderSuggestionPicker(destination) {
   });
   renderSuggestionCategory();
   updateSelectionCount();
+  // Warm the first images of every category the instant research resolves, so the opening
+  // cards (and a tab switch) render a real photo with no placeholder flash.
+  suggestionGroups.forEach((group, groupIndex) => prefetchSuggestionImages(group, 0, groupIndex === activeSuggestionCategory ? 6 : 2));
   scheduleSuggestionImageRetry(destination);
 }
 
@@ -1850,7 +1866,7 @@ function renderSuggestionDeckCard(group, section) {
   const card = deck.querySelector(".suggestion-swipe-card");
   hydrateSuggestionImage(card.querySelector(".suggestion-card-image"), suggestion, destinationInput.value.trim());
   // Preload the next few cards' images so advancing the deck feels instant.
-  prefetchSuggestionImages(group, position + 1, 3);
+  prefetchSuggestionImages(group, position + 1, 5);
   bindSuggestionSwipe(card, suggestion.key, renderToken);
   actions.querySelector(".suggestion-skip-button")?.addEventListener("click", () => applySuggestionDecision(suggestion.key, "skip", card, renderToken));
   actions.querySelector(".suggestion-include-button")?.addEventListener("click", () => applySuggestionDecision(suggestion.key, "include", card, renderToken));
@@ -2371,9 +2387,16 @@ async function resolveSuggestionImage(suggestion, destination) {
         const params = new URLSearchParams({ action: "query", generator: "search", gsrsearch: search, gsrlimit: "8", prop: "pageimages", piprop: "thumbnail", pithumbsize: "520", format: "json", origin: "*" });
         return fetchSuggestionImage(`https://en.wikipedia.org/w/api.php?${params}`);
       };
-      // 1) Exact place on Wikipedia (name + destination).
-      let page = bestMatchingImagePage(await wikiSearch(`${queryName} ${destination}`), matchTarget, destination);
-      if (page) return { source: resolvedPageImage(page), imageSource: "wikipedia" };
+      // Restaurants and shops almost never have their own Wikipedia article, so skip the
+      // Wikipedia name search for them (one fewer request per card, fewer rate-limit trips)
+      // and rely on the Commons name match plus the representative photo below.
+      const isEatShop = suggestion.category === "eat" || suggestion.category === "shop";
+      let page = null;
+      // 1) Exact place on Wikipedia (name + destination) — attractions only.
+      if (!isEatShop) {
+        page = bestMatchingImagePage(await wikiSearch(`${queryName} ${destination}`), matchTarget, destination);
+        if (page) return { source: resolvedPageImage(page), imageSource: "wikipedia" };
+      }
       // 2) Exact place on Wikimedia Commons (name + destination).
       const commonsParams = new URLSearchParams({ action: "query", generator: "search", gsrsearch: `${queryName} ${destination}`, gsrnamespace: "6", gsrlimit: "10", prop: "imageinfo", iiprop: "url", iiurlwidth: "520", format: "json", origin: "*" });
       page = bestMatchingImagePage(await fetchSuggestionImage(`https://commons.wikimedia.org/w/api.php?${commonsParams}`), matchTarget, destination);
@@ -2422,7 +2445,7 @@ async function warmSuggestionImage(suggestion, destination) {
 }
 
 // Preload the next few unreviewed cards in the deck so advancing feels instant.
-function prefetchSuggestionImages(group, fromPosition, count = 3) {
+function prefetchSuggestionImages(group, fromPosition, count = 5) {
   if (!group || !Array.isArray(group.items)) return;
   const reviewed = new Set((suggestionDeckHistory[activeSuggestionCategory] || []).map((entry) => entry.key));
   const destination = (destinationInput?.value || "").trim();

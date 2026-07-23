@@ -311,6 +311,17 @@
     return text.replace(/\s+/g, " ").trim();
   }
 
+  // A Wikivoyage listing's `image=` is a Commons filename. Special:FilePath resolves it to a
+  // real thumbnail with NO extra API call (the browser follows the redirect), so these places
+  // get a real photo for free instead of a per-card image lookup. Skip diagrams/maps/SVGs.
+  function commonsImageUrl(rawName, width = 640) {
+    const name = String(rawName || "").replace(/^\s*(?:file|image|bild)\s*:\s*/i, "").trim();
+    if (!name || /^(none|various|no|n\/a)$/i.test(name)) return "";
+    if (!/\.(jpe?g|png|webp)$/i.test(name)) return "";
+    if (/\b(map|diagram|locator|logo|flag|coat[_ ]of[_ ]arms|plan)\b/i.test(name)) return "";
+    return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(name.replace(/\s+/g, "_"))}?width=${width}`;
+  }
+
   function parseListingTemplate(content, pageTitle) {
     const parts = splitTopLevel(content);
     const templateName = parts.shift().trim().toLowerCase();
@@ -336,6 +347,7 @@
       type,
       area: stripWikitext(pageTitle || fields.address || fields.district || ""),
       detail: description || "A Wikivoyage-listed place to research and verify before visiting.",
+      image: commonsImageUrl(fields.image),
       address: stripWikitext(fields.address || ""),
       lat: coordinate(fields.lat || fields.latitude),
       lon: coordinate(fields.long || fields.lon || fields.longitude),
@@ -1103,13 +1115,24 @@ out center tags 120;`;
         const matchPattern = cached.matchPattern || destinationMatchPattern([destination, geocode?.name]);
         return recordOutcome({ ...cached, matchPattern, matchFlags: cached.matchFlags || "iu", match: new RegExp(matchPattern, cached.matchFlags || "iu") });
       }
-      const [voyage, wikiGeo, wikiCategory, osm] = await Promise.all([
+      // OSM (Overpass) is the slowest source and supplies mainly eat/shop. Start it, but assemble
+      // a partial catalog from the fast Wikimedia sources first — the "See" deck (Wikipedia, with
+      // photos) can render right away while OSM finishes and folds in eat/shop.
+      const osmPromise = fetchOpenStreetMapRecommendations(destination, geocode, controller.signal).catch(() => []);
+      const [voyage, wikiGeo, wikiCategory] = await Promise.all([
         fetchWikivoyageListings([geocode.name, geocode.country].filter(Boolean).join(" "), geocode.name, controller.signal).catch(() => ({ title: "", items: [] })),
         fetchWikipediaGeoPlaces(geocode, controller.signal).catch(() => []),
-        fetchWikipediaCategoryPlaces(destination, geocode, controller.signal).catch(() => []),
-        fetchOpenStreetMapRecommendations(destination, geocode, controller.signal).catch(() => [])
+        fetchWikipediaCategoryPlaces(destination, geocode, controller.signal).catch(() => [])
       ]);
-      const catalog = assembleDynamicCatalog(destination, geocode, { wikivoyageTitle: voyage.title, wikivoyageItems: voyage.items, wikipediaItems: [...wikiGeo, ...wikiCategory], osmItems: osm });
+      const wikipediaItems = [...wikiGeo, ...wikiCategory];
+      if (typeof options.onPartial === "function") {
+        try {
+          const partial = assembleDynamicCatalog(destination, geocode, { wikivoyageTitle: voyage.title, wikivoyageItems: voyage.items, wikipediaItems, osmItems: [] });
+          if (partial) options.onPartial(partial);
+        } catch (_) { /* progressive render is best-effort; the final result below is authoritative */ }
+      }
+      const osm = await osmPromise;
+      const catalog = assembleDynamicCatalog(destination, geocode, { wikivoyageTitle: voyage.title, wikivoyageItems: voyage.items, wikipediaItems, osmItems: osm });
       if (!catalog) return recordOutcome(null);
       const cacheable = { ...catalog, match: undefined };
       dynamicCatalogCache.set(slug, cacheable);
