@@ -2062,6 +2062,68 @@ function suggestionImagePlaceholder(suggestion) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+// Which category illustration best represents a place. Reuses the same keyword mapping the
+// live representative-photo lookup uses, so the offline fallback matches the kind of place.
+function bundledSceneKey(suggestion, destination) {
+  const keyword = representativeImageKeyword(suggestion, destination);
+  if (suggestion.category === "eat") return /coffee|cafe/.test(keyword) ? "cafe" : "food";
+  if (suggestion.category === "shop") return /market/.test(keyword) ? "market" : "shopping";
+  if (/temple|shrine|pagoda/.test(keyword)) return "temple";
+  if (/castle|fort|palace|citadel/.test(keyword)) return "castle";
+  if (/cathedral|church|mosque|basilica|chapel/.test(keyword)) return "worship";
+  if (/museum|theatre|monument|tower|bridge|gallery/.test(keyword)) return "museum";
+  if (/mountain|park|beach|lake|garden|landscape/.test(keyword)) return "nature";
+  if (/market/.test(keyword)) return "market";
+  return "city";
+}
+
+function bundledSceneMarkup(key) {
+  switch (key) {
+    case "temple":
+      return `<g fill="#fff" opacity=".92"><rect x="205" y="112" width="10" height="16"/><path d="M160 128 L260 128 L286 152 L134 152 Z"/><rect x="168" y="152" width="84" height="20"/><path d="M120 172 L300 172 L326 200 L94 200 Z"/><rect x="112" y="200" width="196" height="16"/><rect x="150" y="216" width="120" height="16"/></g>`;
+    case "castle":
+      return `<g fill="#fff" opacity=".92"><rect x="120" y="168" width="30" height="64"/><rect x="270" y="168" width="30" height="64"/><rect x="150" y="150" width="120" height="82"/><rect x="120" y="160" width="8" height="8"/><rect x="142" y="160" width="8" height="8"/><rect x="150" y="142" width="10" height="8"/><rect x="176" y="142" width="10" height="8"/><rect x="202" y="142" width="10" height="8"/><rect x="228" y="142" width="10" height="8"/><rect x="254" y="142" width="10" height="8"/><rect x="272" y="160" width="8" height="8"/><rect x="292" y="160" width="8" height="8"/><rect x="198" y="196" width="24" height="36" fill="#1b3a4a"/></g>`;
+    case "worship":
+      return `<g fill="#fff" opacity=".92"><rect x="203" y="106" width="6" height="20"/><circle cx="206" cy="150" r="30"/><rect x="160" y="150" width="92" height="82"/><rect x="132" y="176" width="24" height="56"/><rect x="256" y="176" width="24" height="56"/><rect x="196" y="198" width="20" height="34" fill="#1b3a4a"/></g>`;
+    case "museum":
+      return `<g fill="#fff" opacity=".92"><path d="M138 150 L274 150 L206 116 Z"/><rect x="138" y="150" width="136" height="12"/><rect x="150" y="162" width="12" height="60"/><rect x="176" y="162" width="12" height="60"/><rect x="202" y="162" width="12" height="60"/><rect x="228" y="162" width="12" height="60"/><rect x="250" y="162" width="12" height="60"/><rect x="136" y="222" width="140" height="12"/></g>`;
+    case "nature":
+      return `<g fill="#fff" opacity=".86"><path d="M56 232 L170 126 L252 232 Z"/><path d="M168 232 L282 148 L392 232 Z"/></g><path d="M170 126 L150 152 L190 152 Z" fill="#fff" opacity=".55"/>`;
+    case "food":
+      return `<g fill="#fff" opacity=".92"><path d="M150 178 Q210 244 270 178 Z"/><ellipse cx="210" cy="178" rx="62" ry="11"/></g><g stroke="#fff" stroke-width="5" fill="none" opacity=".7" stroke-linecap="round"><path d="M196 150 q-8 -12 0 -24"/><path d="M224 150 q8 -12 0 -24"/></g>`;
+    case "cafe":
+      return `<g fill="#fff" opacity=".92"><path d="M168 170 h64 v28 a32 32 0 0 1 -64 0 Z"/><ellipse cx="204" cy="224" rx="64" ry="10"/></g><path d="M232 176 a18 16 0 0 1 0 30" fill="none" stroke="#fff" stroke-width="7" opacity=".92"/><g stroke="#fff" stroke-width="5" fill="none" opacity=".7" stroke-linecap="round"><path d="M192 158 q-8 -12 0 -24"/><path d="M216 158 q8 -12 0 -24"/></g>`;
+    case "shopping":
+      return `<g fill="#fff" opacity=".92"><path d="M150 172 h66 v66 h-66 Z"/><path d="M224 184 h54 v54 h-54 Z"/></g><path d="M166 172 a17 12 0 0 1 34 0" fill="none" stroke="#fff" stroke-width="6" opacity=".92"/><path d="M238 184 a14 10 0 0 1 26 0" fill="none" stroke="#fff" stroke-width="6" opacity=".92"/>`;
+    case "market":
+      return `<g fill="#fff" opacity=".9"><path d="M110 150 L190 150 L182 174 L118 174 Z"/><rect x="120" y="174" width="6" height="58"/><rect x="174" y="174" width="6" height="58"/><path d="M198 150 L278 150 L270 174 L206 174 Z"/><rect x="208" y="174" width="6" height="58"/><rect x="262" y="174" width="6" height="58"/><path d="M286 150 L366 150 L358 174 L294 174 Z"/><rect x="296" y="174" width="6" height="58"/><rect x="350" y="174" width="6" height="58"/></g>`;
+    default: // city
+      return `<g fill="#fff" opacity=".9"><rect x="96" y="150" width="34" height="82"/><rect x="138" y="120" width="40" height="112"/><rect x="186" y="164" width="30" height="68"/><rect x="224" y="98" width="44" height="134"/><rect x="276" y="140" width="34" height="92"/><rect x="318" y="176" width="30" height="56"/></g>`;
+  }
+}
+
+// Offline, network-free category illustration used when no live photo is available (nothing
+// found, or the Wikimedia lookups are rate-limited — common on mobile/cellular). Every card
+// then shows a relevant scene instead of bare initials, and stays eligible for a real-photo
+// upgrade on the next retry sweep.
+function bundledSuggestionImage(suggestion, destination) {
+  try {
+    const palette = suggestion.category === "eat" ? ["#7a4433", "#e0a06f"]
+      : suggestion.category === "shop" ? ["#4f3f63", "#ab90bd"]
+      : ["#22506a", "#7bacb8"];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="280" viewBox="0 0 420 280">`
+      + `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="${palette[0]}"/><stop offset="1" stop-color="${palette[1]}"/></linearGradient></defs>`
+      + `<rect width="420" height="280" fill="url(#bg)"/>`
+      + `<circle cx="344" cy="52" r="30" fill="#fff" opacity=".16"/>`
+      + `<rect x="0" y="232" width="420" height="48" fill="#fff" opacity=".08"/>`
+      + bundledSceneMarkup(bundledSceneKey(suggestion, destination))
+      + `</svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  } catch (_) {
+    return suggestionImagePlaceholder(suggestion);
+  }
+}
+
 const IMAGE_MATCH_STOP_WORDS = new Set([
   "and", "the", "of", "at", "in", "for", "restaurant", "cafe", "market", "shop",
   "shopping", "street", "district", "center", "centre", "park", "local", "popular",
@@ -2334,6 +2396,7 @@ async function hydrateSuggestionImage(imageElement, suggestion, destination) {
     if (!source || !imageElement.isConnected) return;
     imageElement.src = source;
     imageElement.classList.remove("is-placeholder");
+    imageElement.classList.toggle("is-fallback", sourceName === "bundled");
     imageElement.dataset.imageSource = sourceName;
   };
   imageElement.addEventListener("error", restorePlaceholder);
@@ -2341,7 +2404,14 @@ async function hydrateSuggestionImage(imageElement, suggestion, destination) {
   if (suggestion.researchPrompt) { imageElement.dataset.imageLookup = "ready"; return; }
   imageElement.dataset.imageLookup = "loading";
   const { source, imageSource } = await resolveSuggestionImage(suggestion, destination);
-  if (source) applyImage(source, imageSource);
+  if (source) {
+    applyImage(source, imageSource);
+  } else {
+    // No live photo (not found, or Wikimedia throttled — common on mobile): show a category
+    // illustration instead of bare initials. It stays flagged so the retry sweep can still
+    // upgrade it to a real photo once a lookup succeeds.
+    applyImage(bundledSuggestionImage(suggestion, destination), "bundled");
+  }
   imageElement.dataset.imageLookup = "ready";
 }
 
@@ -2350,7 +2420,7 @@ async function hydrateSuggestionImage(imageElement, suggestion, destination) {
 // times so every fetched or cached image lands on a visible card once the window clears.
 let suggestionImageRetryToken = 0;
 function scheduleSuggestionImageRetry(destination, attempt = 0) {
-  if (attempt >= 5) return;
+  if (attempt >= 8) return;
   const token = ++suggestionImageRetryToken;
   const throttleWait = typeof wikimediaRetryAfterMs === "function" ? wikimediaRetryAfterMs() : 0;
   // While rate limited, wait out the throttle window so the retry actually reaches the network;
@@ -2359,7 +2429,9 @@ function scheduleSuggestionImageRetry(destination, attempt = 0) {
   setTimeout(() => {
     if (token !== suggestionImageRetryToken) return; // a newer render superseded this sweep
     if (normalizeDestinationName(destination) !== normalizeDestinationName(suggestionDestination || "")) return;
-    const pending = Array.from(suggestionBoard.querySelectorAll(".suggestion-card-image.is-placeholder"));
+    // Sweep both bare placeholders and category-illustration fallbacks so a real photo can
+    // replace either once the lookup succeeds (e.g. after a mobile rate-limit window clears).
+    const pending = Array.from(suggestionBoard.querySelectorAll(".suggestion-card-image.is-placeholder, .suggestion-card-image.is-fallback"));
     if (!pending.length) return;
     pending.forEach((image) => {
       const key = image.closest(".suggestion-bubble")?.dataset.suggestionKey;

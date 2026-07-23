@@ -1,5 +1,11 @@
 # PlanToGuide — Version 4 UI working copy
 
+## v4.3.0 consistent mobile results + a photo on every card
+
+- **Every suggestion card now shows a relevant image, even on a weak mobile connection.** The deck's photos are looked up live from Wikipedia/Commons, and on mobile those lookups often hit a rate-limit (shared carrier IP) that trips the Wikimedia circuit breaker — cards used to fall back to bare initials. Now, when no live photo is available (not found, or throttled), a card shows a **network-free category illustration** matched to the place type (temple, castle, place of worship, museum, nature, city skyline, plated food, café, shopping bags, market stalls) instead of initials. It stays flagged so the retry sweep can still upgrade it to a real photo once a lookup succeeds.
+- **Slow connections get more time before falling back to generic filler.** Research timeouts were raised (fetch 6s→9s, Overpass 10s→13s and its server-side query 9s→12s, whole pipeline 12s→16s) so a phone on a weak signal can finish real OpenStreetMap/Wikivoyage lookups instead of aborting into generic discovery cards. The placeholder-to-photo retry sweep also runs more passes (5→8) to catch photos that arrive after a rate-limit window clears.
+- Why mobile looked different from desktop: the deck is assembled **live per session** and cached per device for 30 days, so a warm desktop cache showed richer results and photos while a cold, throttled phone showed fewer real places and missing images. These changes narrow that gap; seeding photo URLs into the precomputed catalog (a larger change) would close it entirely.
+
 ## v4.2.9 mobile swipe labels, direct feedback, security smoke test
 
 - **Mobile swipe now shows the decision label before the card leaves.** A left/right swipe briefly holds the red **Skip** / green **Include** label (~300 ms) before gliding off-screen (~440 ms), so on a phone you actually see which way it went. Button and keyboard decisions keep their slightly longer hold (360/500 ms). This softens the fully-instant swipe exit from v4.2.5 — just enough to read the label, still a quick flick.

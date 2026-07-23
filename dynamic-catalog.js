@@ -1,9 +1,12 @@
 (function (global) {
   "use strict";
 
-  const FETCH_TIMEOUT_MS = 6000;
-  const OVERPASS_TIMEOUT_MS = 10000;
-  const PIPELINE_TIMEOUT_MS = 12000;
+  // Timeouts are generous enough to survive a slow mobile/cellular connection: on a fast
+  // desktop the requests still return quickly, but a phone on a weak signal now gets time to
+  // finish instead of aborting and falling back to generic filler cards.
+  const FETCH_TIMEOUT_MS = 9000;
+  const OVERPASS_TIMEOUT_MS = 13000;
+  const PIPELINE_TIMEOUT_MS = 16000;
   const MAX_CONCURRENT_REQUESTS = 6;
   const MAX_REQUEST_ATTEMPTS = 3;
   // 429 is deliberately NOT retryable: retrying pours more requests into an already-tripped
@@ -698,7 +701,7 @@
     const lat = Number(geocode.latitude);
     const lon = Number(geocode.longitude);
     const radius = Number(geocode.population || 0) > 2000000 ? 20000 : Number(geocode.population || 0) > 500000 ? 14000 : 12000;
-    const query = `[out:json][timeout:9];
+    const query = `[out:json][timeout:12];
 (
   nwr(around:${radius},${lat},${lon})["amenity"~"^(restaurant|cafe|fast_food|food_court|bar|pub|marketplace)$"]["name"];
   nwr(around:${radius},${lat},${lon})["shop"~"^(bakery|mall|department_store|boutique|clothes|gift|books|art|antiques|jewelry|supermarket)$"]["name"];
