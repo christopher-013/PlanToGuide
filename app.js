@@ -727,6 +727,36 @@ document.querySelector("#copyChatGptButton").addEventListener("click", () => cop
 document.querySelector("#copyClaudeButton").addEventListener("click", () => copyAiPrompt("Claude"));
 document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.tab)));
 document.querySelectorAll("[data-open-tab]").forEach((button) => button.addEventListener("click", () => switchAppTab(button.dataset.openTab)));
+
+// Mobile day navigation on the generated site: a horizontal swipe changes the day while
+// keeping the current tab (Home, Itinerary, Bookings, Maps, Food, Shop, Photos). Per the
+// requested mapping: swipe left → previous day, swipe right → next day.
+function attachTripDaySwipe() {
+  const views = document.querySelector(".trip-app-views");
+  if (!views) return;
+  let startX = 0, startY = 0, startTime = 0, tracking = false;
+  views.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) { tracking = false; return; }
+    const touch = event.touches[0];
+    startX = touch.clientX; startY = touch.clientY; startTime = Date.now(); tracking = true;
+  }, { passive: true });
+  views.addEventListener("touchend", (event) => {
+    if (!tracking) return;
+    tracking = false;
+    if (!trip?.days?.length) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (Date.now() - startTime > 700) return;
+    // Deliberate horizontal flick only, so vertical scrolling is never hijacked.
+    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.7) return;
+    const target = Math.max(0, Math.min(trip.days.length - 1, activeDay + (dx < 0 ? -1 : 1)));
+    if (target === activeDay) return;
+    activeDay = target;
+    renderTrip();
+  }, { passive: true });
+}
+attachTripDaySwipe();
 document.querySelector("#photoUploadInput").addEventListener("change", handlePhotoUploads);
 document.querySelector("#addBookingEntry").addEventListener("click", () => addUserEntry("booking"));
 document.querySelector("#addFoodEntry").addEventListener("click", () => addUserEntry("food"));
@@ -1027,7 +1057,7 @@ function readLocalTextAsset(url) {
 }
 
 function createExportRuntime() {
-  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function registerGuideServiceWorker(){if(!("serviceWorker"in navigator)||!location.protocol.startsWith("http"))return;try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(_){}}function chkKey(id){return 'ptg:chk:'+id;}function applyChecklist(){result.querySelectorAll('[data-chk-id]').forEach(function(row){var done=false;try{done=localStorage.getItem(chkKey(row.dataset.chkId))==='1';}catch(e){}row.classList.toggle('done',done);row.setAttribute('aria-pressed',done);var box=row.querySelector('.checklist-box');if(box)box.textContent=done?'✓':'';});result.querySelectorAll('.checklist-widget').forEach(function(w){var rows=w.querySelectorAll('[data-chk-id]'),done=0;rows.forEach(function(r){if(r.classList.contains('done'))done++;});var c=w.querySelector('.checklist-count');if(c)c.textContent=done+'/'+rows.length+' done';});}function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);applyChecklist();window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const chk=event.target.closest('[data-chk-id]');if(chk){try{const k=chkKey(chk.dataset.chkId);localStorage.setItem(k,localStorage.getItem(k)==='1'?'0':'1');}catch(e){}applyChecklist();return}const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});registerGuideServiceWorker();showTab('home');applyChecklist();`;
+  return `let currentDay=0,currentTab="home";const result=document.querySelector('.result');function registerGuideServiceWorker(){if(!("serviceWorker"in navigator)||!location.protocol.startsWith("http"))return;try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(_){}}function chkKey(id){return 'ptg:chk:'+id;}function applyChecklist(){result.querySelectorAll('[data-chk-id]').forEach(function(row){var done=false;try{done=localStorage.getItem(chkKey(row.dataset.chkId))==='1';}catch(e){}row.classList.toggle('done',done);row.setAttribute('aria-pressed',done);var box=row.querySelector('.checklist-box');if(box)box.textContent=done?'✓':'';});result.querySelectorAll('.checklist-widget').forEach(function(w){var rows=w.querySelectorAll('[data-chk-id]'),done=0;rows.forEach(function(r){if(r.classList.contains('done'))done++;});var c=w.querySelector('.checklist-count');if(c)c.textContent=done+'/'+rows.length+' done';});}function showTab(name){currentTab=name;result.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('active',p.dataset.panel===name));result.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));}function showDay(index){const next=Number(index)||0,template=document.querySelector('[data-export-template="'+next+'"]');if(!template)return;currentDay=next;result.replaceChildren(template.content.cloneNode(true));result.querySelectorAll('.day-button').forEach(b=>b.classList.toggle('active',Number(b.dataset.exportDay)===currentDay));showTab(currentTab);applyChecklist();window.scrollTo({top:0,behavior:'smooth'});}document.addEventListener('click',event=>{const chk=event.target.closest('[data-chk-id]');if(chk){try{const k=chkKey(chk.dataset.chkId);localStorage.setItem(k,localStorage.getItem(k)==='1'?'0':'1');}catch(e){}applyChecklist();return}const tab=event.target.closest('[data-tab]');if(tab){showTab(tab.dataset.tab);return}const day=event.target.closest('[data-export-day]');if(day){showDay(day.dataset.exportDay);return}const open=event.target.closest('[data-open-tab]');if(open){showTab(open.dataset.openTab);return}const print=event.target.closest('.print-button');if(print)window.print()});(function(){var sx=0,sy=0,st=0,tr=false,n=document.querySelectorAll('[data-export-template]').length;if(!result)return;result.addEventListener('touchstart',function(e){if(e.touches.length!==1){tr=false;return}sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();tr=true},{passive:true});result.addEventListener('touchend',function(e){if(!tr)return;tr=false;var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Date.now()-st>700)return;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.7)return;var d=currentDay+(dx<0?-1:1);if(d<0)d=0;if(d>n-1)d=n-1;if(d!==currentDay)showDay(d)},{passive:true})})();registerGuideServiceWorker();showTab('home');applyChecklist();`;
 }
 
 // Inline a local brand asset (e.g. the Adtona emblem) into an export so the single-file
