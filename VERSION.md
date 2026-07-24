@@ -1,5 +1,9 @@
 # Adtona — Version 5 UI working copy
 
+## v5.1.10 move Getting around & Daily budget into Bookings
+
+- Moved the **Getting around** ("Sets route and rest guidance") and **Daily budget** ("Guides meals and optional experiences") questions from **Travel style** (Step 3) into **Bookings & real-world constraints** (Step 4). Pure markup move — both are still read by their IDs, so preferences, saved-draft restore, and itinerary generation are unchanged.
+
 ## v5.1.9 Taller recommendation photography
 
 - Gives desktop Adventure recommendations a materially taller photo/card area while preserving the swipe actions and Back/Next navigation.
