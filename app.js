@@ -1514,7 +1514,7 @@ function getTripPreferences() {
     pace: document.querySelector("#tripPace").value,
     party: document.querySelector("#tripParty").value,
     start: document.querySelector("#dayStart").value,
-    evening: document.querySelector("#eveningStyle").value,
+    evening: "flexible",
     transport: document.querySelector("#transportStyle").value,
     budget: document.querySelector("#tripBudget").value,
     notes: document.querySelector("#mobilityNotes")?.value.trim() || "",
@@ -1533,7 +1533,7 @@ function getTripPreferences() {
 }
 
 function setTripPreferences(preferences = {}) {
-  const fields = { tripPace: "pace", tripParty: "party", dayStart: "start", eveningStyle: "evening", transportStyle: "transport", tripBudget: "budget", mobilityNotes: "notes", homeBase: "homeBase", groupSize: "groupSize", travelerAges: "travelerAges", tripPurpose: "purpose", foodRestrictions: "foodRestrictions", mobilityNeeds: "mobilityNeeds", mustDos: "mustDos", avoidList: "avoid", bookedItems: "bookedItems" };
+  const fields = { tripPace: "pace", tripParty: "party", dayStart: "start", transportStyle: "transport", tripBudget: "budget", mobilityNotes: "notes", homeBase: "homeBase", groupSize: "groupSize", travelerAges: "travelerAges", tripPurpose: "purpose", foodRestrictions: "foodRestrictions", mobilityNeeds: "mobilityNeeds", mustDos: "mustDos", avoidList: "avoid", bookedItems: "bookedItems" };
   Object.entries(fields).forEach(([id, key]) => { if (preferences[key]) { const el = document.querySelector(`#${id}`); if (el) el.value = preferences[key]; } });
   renderQuickPicks();
 }

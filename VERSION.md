@@ -1,5 +1,9 @@
 # Adtona — Version 5 UI working copy
 
+## v5.1.2 streamline Travel style: drop the "Evening style" question
+
+- Removed the **Evening style** ("Quiet nights or one more adventure?") select from Step 3 to shorten the survey. The `evening` preference now defaults to **flexible** (its previous default), so dinner and end-of-day timing are unchanged for everyone who didn't touch it. Saved-draft restore ignores the removed field gracefully.
+
 ## v5.1.1 fix: Skip/Include/Favorite buttons pushed off-screen
 
 - The earlier "no scrollbar on the recommendation card" change let the card grow to fit its content, which on shorter viewports pushed the **Skip / Include / Favorite / Redo action rail below the fold** — the buttons appeared to vanish.
