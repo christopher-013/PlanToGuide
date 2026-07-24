@@ -1,5 +1,12 @@
 # Adtona — Version 5 UI working copy
 
+## v5.1.9 Taller recommendation photography
+
+- Gives desktop Adventure recommendations a materially taller photo/card area while preserving the swipe actions and Back/Next navigation.
+- Allows only low-height desktop Adventure screens to scroll instead of clipping controls; the compact mobile layout remains unchanged.
+- Corrects canonical and social metadata to the production hostname `https://adtona.com/`.
+- Bumps the browser asset version so existing service-worker users receive the updated layout.
+
 ## v5.1.3 Cloudflare deployment packaging
 
 - Adds a deterministic Cloudflare build that publishes only the browser application from `dist/`, never the repository root or `node_modules`.

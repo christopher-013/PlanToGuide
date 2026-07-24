@@ -5979,6 +5979,69 @@ body.start-splash-active { overflow: hidden; }
 .suggestion-deck-complete p { max-width: 510px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .suggestion-review-button { min-height: 42px; margin-top: 4px; padding: 8px 16px; border: 1px solid var(--forest); border-radius: 999px; color: var(--forest); background: white; cursor: pointer; font-weight: 800; }
 
+/* On desktop the location photo already fills its card, but short browser
+   windows can leave the flexible card row too shallow. Give the recommendation
+   a useful photographic minimum and let only low-height desktops scroll rather
+   than clipping the action rail or workflow navigation. */
+@media (min-width: 761px) {
+  .builder.builder-wide:has(> .trip-form[data-current-step="2"]) {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] [data-form-step="2"].active {
+    height: max-content;
+    min-height: max-content;
+    grid-template-rows: auto;
+    align-self: start;
+    overflow: visible;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-board,
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-group,
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-shell {
+    height: auto;
+    overflow: visible;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-shell {
+    grid-template-rows: auto auto auto;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-deck {
+    height: clamp(250px, 34dvh, 330px);
+    min-height: clamp(250px, 34dvh, 330px);
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: clamp(18px, 2vw, 30px);
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-body > * {
+    grid-column: 1;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-top strong {
+    font: 600 clamp(24px, 2.1vw, 34px)/1.06 "Fraunces", serif;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-detail {
+    align-self: start;
+    font-size: clamp(13px, .95vw, 16px);
+    line-height: 1.4;
+    -webkit-line-clamp: 3;
+  }
+  .builder.builder-wide .trip-form[data-current-step="2"] .suggestion-swipe-card .suggestion-card-links {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
 @media (max-width: 760px) {
   .builder:not(.builder-wide) #startSplash.start-splash { padding: 28px 20px; }
   .builder:not(.builder-wide) #startSplash .builder-hero-lockup { grid-template-columns: 1fr; justify-items: center; gap: 20px; text-align: center; }

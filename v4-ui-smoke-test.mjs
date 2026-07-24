@@ -85,6 +85,12 @@ assert.match(script, /--include-progress/, "Rightward dragging must control only
 // its content instead of growing or scrolling.
 assert.match(styles, /\.suggestion-swipe-shell\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+auto\s+auto/s, "The swipe deck shell must keep the card row flexible (grid-template-rows: minmax(0,1fr) auto auto) so the Skip/Include/Favorite action rail stays visible");
 assert.match(styles, /\.suggestion-swipe-card\s+\.suggestion-card-body\s*\{[^}]*overflow:\s*hidden/s, "The recommendation card body must clip its content (overflow: hidden) so it can't grow and push the action rail below the fold");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\.suggestion-swipe-deck\s*\{[^}]*height:\s*clamp\(250px,\s*34dvh,\s*330px\)[^}]*min-height:\s*clamp\(250px,\s*34dvh,\s*330px\)/s, "Desktop recommendation photography must retain a useful responsive height");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\.trip-form\[data-current-step="2"\]\s*\{[^}]*height:\s*100%[^}]*max-height:\s*100%[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/s, "Low-height desktop Adventure screens must scroll instead of clipping the taller card or navigation");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\[data-form-step="2"\]\.active\s*\{[^}]*height:\s*max-content[^}]*min-height:\s*max-content[^}]*overflow:\s*visible/s, "The desktop Adventure step must grow with the taller card so its decision controls cannot overlap the selection summary");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\.suggestion-swipe-shell\s*\{[^}]*grid-template-rows:\s*auto\s+auto\s+auto/s, "The desktop swipe shell must flow the card, decision controls, and hint in separate rows");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\.suggestion-swipe-card\s+\.suggestion-card-body\s*\{[^}]*display:\s*grid[^}]*grid-template-rows:\s*auto\s+auto\s+minmax\(0,\s*1fr\)\s+auto/s, "Desktop recommendation text must reserve independent rows for the title, metadata, bounded description, and links");
+assert.match(styles, /@media\s*\(min-width:\s*761px\)[\s\S]*?\.suggestion-card-body\s*>\s*\*\s*\{[^}]*grid-column:\s*1/s, "Legacy card-column rules must be reset so desktop recommendation text cannot overlap across implicit columns");
 assert.match(script, /section\.innerHTML[^;]*suggestion-swipe-actions/s, "Every recommendation group must render the action-rail container");
 
 assert.match(applyDecisionSource, /decision\s*===\s*["']favorite["']/, "Favorite must be a first-class deck decision");

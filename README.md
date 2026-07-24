@@ -69,5 +69,5 @@ npm run deploy
 For a Cloudflare Git build, keep the deploy command as `npx wrangler deploy`.
 The committed `wrangler.jsonc` runs the static build and publishes only
 `./dist`; do not set the static-assets directory to the repository root (`.`).
-After the first successful deployment, attach `atona.com` to the `adtona`
+After the first successful deployment, attach `adtona.com` to the `adtona`
 Worker under **Settings → Domains & Routes → Add Custom Domain**.
